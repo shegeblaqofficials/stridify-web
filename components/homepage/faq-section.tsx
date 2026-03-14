@@ -64,7 +64,7 @@ function FaqRow({ faq }: { faq: FaqItem }) {
       >
         <span>{faq.question}</span>
         <ChevronIcon
-          className={`h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-300 ${open ? "rotate-180" : ""}`}
+          className={`h-5 w-5 shrink-0 transition-transform duration-300 ${open ? "rotate-180 text-primary" : "text-muted-foreground"}`}
         />
       </button>
       <div className={`accordion-body ${open ? "open" : ""}`}>

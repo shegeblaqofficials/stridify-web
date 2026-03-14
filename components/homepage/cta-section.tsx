@@ -10,7 +10,7 @@ export function CtaSection() {
       >
         {/* Decorative bolt */}
         <svg
-          className="pointer-events-none absolute right-8 top-1/2 -translate-y-1/2 opacity-[0.06]"
+          className="pointer-events-none absolute right-8 top-1/2 -translate-y-1/2 opacity-[0.12]"
           width="180"
           height="220"
           viewBox="0 0 180 220"
@@ -20,7 +20,7 @@ export function CtaSection() {
           <path
             d="M100 0L0 130h70L50 220l130-140h-70L100 0z"
             fill="currentColor"
-            className="text-background"
+            className="text-accent"
           />
         </svg>
 

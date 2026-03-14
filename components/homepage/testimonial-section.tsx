@@ -37,7 +37,7 @@ export function TestimonialSection() {
                 data-aos-delay={String(i * 200)}
               >
                 {/* Quote mark */}
-                <span className="mb-6 block text-4xl font-bold leading-none text-primary/50">
+                <span className="mb-6 block text-4xl font-bold leading-none text-secondary">
                   &#x201C;&#x201C;
                 </span>
 

@@ -10,18 +10,21 @@ const steps = [
     title: "Prompt",
     description:
       "Describe your agent's personality, goals, and workflow in plain language — no code required.",
+    color: "bg-primary/10 text-primary ring-primary/20",
   },
   {
     icon: HiOutlineCpuChip,
     title: "Build",
     description:
       "Our engine orchestrates the LLM, generates the voice interface, and wires up the agent logic instantly.",
+    color: "bg-secondary/10 text-secondary ring-secondary/20",
   },
   {
     icon: HiOutlineRocketLaunch,
     title: "Deploy",
     description:
       "Export the code, deploy on our cloud, expose as an API, or embed directly into your mobile app.",
+    color: "bg-accent/10 text-accent ring-accent/20",
   },
 ];
 
@@ -51,7 +54,9 @@ export function HowItWorksSection() {
               data-aos-delay={String(i * 150)}
               className="flex flex-col items-center text-center"
             >
-              <div className="relative z-10 flex h-18 w-18 items-center justify-center rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/20">
+              <div
+                className={`relative z-10 flex h-18 w-18 items-center justify-center rounded-2xl ring-1 ${step.color}`}
+              >
                 <step.icon className="h-7 w-7" />
               </div>
               <h3 className="mt-6 text-lg font-bold">{step.title}</h3>

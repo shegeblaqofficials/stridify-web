@@ -32,7 +32,9 @@ export function HeroSection() {
       >
         Build Voice Apps
         <br />
-        <span className="text-muted-foreground">Just by Prompting.</span>
+        <span className="bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent">
+          Just by Prompting.
+        </span>
       </h1>
 
       {/* Sub-copy */}

@@ -160,7 +160,10 @@ function Waveform({
     ? ["h-2", "h-5", "h-3", "h-4", "h-2"]
     : ["h-3", "h-3", "h-3", "h-3", "h-3"];
   return (
-    <div className={`waveform text-primary ${className}`} aria-hidden>
+    <div
+      className={`waveform ${active ? "text-secondary" : "text-primary"} ${className}`}
+      aria-hidden
+    >
       {heights.map((h, i) => (
         <span
           key={i}
