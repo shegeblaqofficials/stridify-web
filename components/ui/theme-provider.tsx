@@ -36,15 +36,15 @@ function getSystemTheme(): "light" | "dark" {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("system");
+  const [theme, setThemeState] = useState<Theme>(() => {
+    if (typeof window === "undefined") return "system";
+    return (localStorage.getItem("theme") as Theme) ?? "system";
+  });
 
-  // Read persisted preference on mount
+  // Apply the correct class on mount
   useEffect(() => {
-    const stored = localStorage.getItem("theme") as Theme | null;
-    const initial = stored ?? "system";
-    setThemeState(initial);
-    applyClass(initial === "system" ? getSystemTheme() : initial);
-  }, []);
+    applyClass(theme === "system" ? getSystemTheme() : theme);
+  }, [theme]);
 
   // Listen for OS-level changes when in system mode
   useEffect(() => {
