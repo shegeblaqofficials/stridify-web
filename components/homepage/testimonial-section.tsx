@@ -17,7 +17,7 @@ const testimonials = [
 
 export function TestimonialSection() {
   return (
-    <section id="testimonials" className="px-6 py-24 bg-section-muted">
+    <section id="testimonials" className="px-6 py-24">
       <div className="mx-auto max-w-7xl">
         <div data-aos="fade-up" className="mb-16">
           <h2 className="mb-4 text-3xl font-bold">What People Are Saying</h2>
@@ -37,7 +37,7 @@ export function TestimonialSection() {
                 data-aos-delay={String(i * 200)}
               >
                 {/* Quote mark */}
-                <span className="mb-6 block text-4xl font-bold leading-none text-secondary">
+                <span className="mb-6 block text-4xl font-bold leading-none text-primary/50">
                   &#x201C;&#x201C;
                 </span>
 

@@ -9,6 +9,7 @@ import { TestimonialSection } from "@/components/homepage/testimonial-section";
 import { FaqSection } from "@/components/homepage/faq-section";
 import { CtaSection } from "@/components/homepage/cta-section";
 import { Footer } from "@/components/homepage/footer";
+import { ScrollToTop } from "@/components/ui/scroll-to-top";
 
 export default function Home() {
   return (
@@ -27,8 +28,8 @@ export default function Home() {
         <FaqSection />
         <CtaSection />
       </main>
-
       <Footer />
+      <ScrollToTop />
     </>
   );
 }
