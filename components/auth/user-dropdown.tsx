@@ -70,7 +70,7 @@ export function UserDropdown({ user }: { user: User }) {
           {/* Menu items */}
           <div className="p-1.5">
             <Link
-              href="/account"
+              href="/beta-access"
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground"
             >
@@ -78,7 +78,7 @@ export function UserDropdown({ user }: { user: User }) {
               Account
             </Link>
             <Link
-              href="/projects"
+              href="/beta-access"
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground"
             >
