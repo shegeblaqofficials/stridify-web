@@ -4,7 +4,6 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Navbar } from "@/components/homepage/navbar";
 import { Footer } from "@/components/homepage/footer";
-import { Button } from "@/components/ui/button";
 import {
   HiOutlineBuildingOffice2,
   HiOutlineShoppingBag,
@@ -14,12 +13,12 @@ import {
   HiOutlineCpuChip,
   HiOutlineBookOpen,
   HiOutlineDocumentText,
-  HiOutlineArrowRight,
   HiOutlineMagnifyingGlass,
   HiOutlineArrowPathRoundedSquare,
   HiOutlinePlay,
 } from "react-icons/hi2";
 import type { ComponentType } from "react";
+import { useAccount } from "@/provider/account-provider";
 
 /* ------------------------------------------------------------------ */
 /*  Data                                                               */
@@ -174,7 +173,7 @@ const allTemplates: Template[] = [
 export default function TemplatesPage() {
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [search, setSearch] = useState("");
-  const { account, user } = require("@/provider/account-provider").useAccount();
+  const { account, user } = useAccount();
 
   const handleRemix = (templateId: string) => {
     if (!user) {

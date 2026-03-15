@@ -8,8 +8,6 @@ import { AuthModal } from "@/components/auth/auth-modal";
 import {
   HiOutlineBuildingOffice2,
   HiOutlineShoppingBag,
-  HiOutlineAcademicCap,
-  HiOutlineSpeakerWave,
   HiOutlineArrowRight,
   HiOutlineArrowPathRoundedSquare,
   HiOutlinePlay,
