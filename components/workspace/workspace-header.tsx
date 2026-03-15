@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { StridifyLogo } from "@/components/ui/logo";
-import { useUser } from "@/hooks/use-user";
+import { useAccount } from "@/provider/account-provider";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
 import { DeployModal } from "@/components/workspace/deploy-modal";
 import {
@@ -41,7 +41,7 @@ export function WorkspaceHeader({
   activeVersionId,
   onVersionChange,
 }: WorkspaceHeaderProps) {
-  const { user } = useUser();
+  const { user } = useAccount();
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(projectName);
   const [showVersions, setShowVersions] = useState(false);

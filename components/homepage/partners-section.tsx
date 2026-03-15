@@ -3,7 +3,8 @@ const partners = [
   { name: "Stripe", wordmark: "stripe" },
   { name: "Supabase", wordmark: "⚡ Supabase" },
   { name: "OpenAI", wordmark: "OpenAI" },
-  { name: "AWS", wordmark: "aws" },
+  { name: "LiveKit", wordmark: "LiveKit" },
+  { name: "ElevenLabs", wordmark: "llElevenLabs" },
   { name: "Twilio", wordmark: "twilio" },
 ];
 
@@ -15,7 +16,7 @@ export function PartnersSection() {
           data-aos="fade-up"
           className="text-center text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground"
         >
-          Trusted by teams at
+          Powered by the tools we trust
         </p>
 
         <div

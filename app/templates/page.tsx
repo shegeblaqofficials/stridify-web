@@ -47,123 +47,123 @@ const categories = [
 const allTemplates: Template[] = [
   {
     id: "1a43ds8pqw",
-    name: "Concierge Pro",
-    slug: "concierge-pro",
+    name: "Reception Voice Agent",
+    slug: "reception-voice-agent",
     category: "Hospitality",
     icon: HiOutlineBuildingOffice2,
     description:
-      "Automate room service requests, booking inquiries, and local recommendations with zero latency.",
-    active: true,
+      "Handles live guest calls, answers questions, and connects to staff for real-time hotel support.",
+    active: false,
   },
   {
     id: "2b34ds9qwe",
-    name: "SaaS Support Bot",
-    slug: "saas-support-bot",
+    name: "Support Call Bot",
+    slug: "support-call-bot",
     category: "Customer Support",
     icon: HiOutlineCpuChip,
     description:
-      "Expert-level technical troubleshooting and ticket management for complex software products.",
-    active: true,
+      "Receives and makes customer calls, resolves issues, and provides instant voice troubleshooting.",
+    active: false,
   },
   {
     id: "3c56df7asd",
-    name: "Storyteller AI",
-    slug: "storyteller-ai",
+    name: "Story Voice AI",
+    slug: "story-voice-ai",
     category: "Creative",
     icon: HiOutlineBookOpen,
     description:
-      "Engaging narrative agent capable of creating immersive roleplay and collaborative fiction.",
-    active: true,
+      "Creates interactive stories, narrates live, and responds to callers for collaborative fiction.",
+    active: false,
   },
   {
     id: "4d78gh6fgh",
-    name: "Sales Assistant",
-    slug: "sales-assistant",
+    name: "Sales Call Assistant",
+    slug: "sales-call-assistant",
     category: "Customer Support",
     icon: HiOutlineShoppingBag,
     description:
-      "An e-commerce voice agent that introduces products, answers questions, and guides purchases.",
+      "Calls customers, introduces products, answers questions, and guides purchases by voice.",
     active: false,
   },
   {
     id: "5e89jk7hij",
-    name: "Data Synthesizer",
-    slug: "data-synthesizer",
+    name: "Data Voice Synthesizer",
+    slug: "data-voice-synthesizer",
     category: "Utilities",
     icon: HiOutlineChartBarSquare,
     description:
-      "Extract, clean, and format raw data into actionable insights through simple natural language.",
-    active: true,
+      "Speaks data insights, answers live queries, and calls users to deliver actionable results.",
+    active: false,
   },
   {
     id: "6f90lm8nop",
-    name: "Knowledge Base Hub",
-    slug: "knowledge-base-hub",
+    name: "Knowledge Voice Hub",
+    slug: "knowledge-voice-hub",
     category: "Enterprise",
     icon: HiOutlineCpuChip,
     description:
-      "Internal employee assistant that indexes entire Notion, Jira, and Slack workspaces.",
-    active: true,
+      "Answers employee calls, indexes workspace info, and provides live voice support instantly.",
+    active: false,
   },
   {
     id: "7g01no9pqr",
-    name: "Report Generator",
-    slug: "report-generator",
+    name: "Report Voice Generator",
+    slug: "report-voice-generator",
     category: "Utilities",
     icon: HiOutlineDocumentText,
     description:
-      "Generate polished weekly performance reports and executive summaries instantly.",
-    active: true,
+      "Calls managers, delivers weekly reports, and summarizes performance via live voice.",
+    active: false,
   },
   {
     id: "8h12op0stu",
-    name: "Course Advisor",
-    slug: "course-advisor",
+    name: "Course Voice Advisor",
+    slug: "course-voice-advisor",
     category: "Creative",
     icon: HiOutlineAcademicCap,
     description:
-      "Helps students explore programs, check prerequisites, and plan their academic path in real time.",
-    active: true,
+      "Advises students by phone, checks prerequisites, and plans academic paths in real time.",
+    active: false,
   },
   {
     id: "9i23pq1vwx",
-    name: "Voice Coach",
-    slug: "voice-coach",
+    name: "Voice Coaching Agent",
+    slug: "voice-coaching-agent",
     category: "Customer Support",
     icon: HiOutlineSpeakerWave,
     description:
-      "Real-time guidance on public speaking, pronunciation, and communication skills.",
-    active: true,
+      "Coaches users live, gives feedback on calls, and improves speaking skills in real time.",
+    active: false,
   },
   {
     id: "0j34qr2xyz",
-    name: "Event Coordinator",
-    slug: "event-coordinator",
+    name: "Event Voice Coordinator",
+    slug: "event-voice-coordinator",
     category: "Hospitality",
     icon: HiOutlineBuildingOffice2,
     description:
-      "Manage event logistics, RSVPs, vendor coordination, and real-time schedule updates.",
+      "Manages event logistics, RSVPs, and vendor calls, updating schedules by voice instantly.",
     active: false,
   },
   {
     id: "1k45st3uvw",
-    name: "Compliance Checker",
-    slug: "compliance-checker",
+    name: "Compliance Voice Checker",
+    slug: "compliance-voice-checker",
     category: "Enterprise",
     icon: HiOutlineDocumentText,
     description:
-      "Automated policy review and compliance auditing for regulated industries.",
-    active: true,
+      "Reviews policies, audits compliance, and answers regulatory calls with live voice support.",
+    active: false,
   },
   {
     id: "2l56uv4xyz",
-    name: "Content Writer",
-    slug: "content-writer",
+    name: "Content Voice Writer",
+    slug: "content-voice-writer",
     category: "Creative",
     icon: HiOutlineBookOpen,
     description:
-      "Draft blog posts, social copy, and marketing emails in your brand voice instantly.",
-    active: true,
+      "Drafts blog posts, social copy, and marketing emails by phone in your brand voice instantly.",
+    active: false,
   },
 ];
 
@@ -174,6 +174,23 @@ const allTemplates: Template[] = [
 export default function TemplatesPage() {
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [search, setSearch] = useState("");
+  const { account, user } = require("@/provider/account-provider").useAccount();
+
+  const handleRemix = (templateId: string) => {
+    if (!user) {
+      window.location.href = "/auth";
+      return;
+    }
+    if (account && account.is_active === false) {
+      window.location.href = "/beta-access";
+      return;
+    }
+    if (account && account.is_active === true) {
+      window.location.href = `/project/${templateId}?remix=true`;
+      return;
+    }
+    return;
+  };
 
   const filtered = useMemo(() => {
     return allTemplates.filter((t) => {
@@ -283,7 +300,7 @@ export default function TemplatesPage() {
                 data-aos="fade-up"
                 data-aos-delay={String(Math.min(i * 80, 400))}
               >
-                <TemplateCard template={template} />
+                <TemplateCard template={template} onRemix={handleRemix} />
               </div>
             ))}
           </div>
@@ -308,7 +325,13 @@ export default function TemplatesPage() {
 /*  Template Card                                                      */
 /* ------------------------------------------------------------------ */
 
-function TemplateCard({ template }: { template: Template }) {
+function TemplateCard({
+  template,
+  onRemix,
+}: {
+  template: Template;
+  onRemix: (id: string) => void;
+}) {
   const Icon = template.icon;
 
   return (
@@ -334,27 +357,28 @@ function TemplateCard({ template }: { template: Template }) {
 
         {/* Actions */}
         <div className="flex items-center gap-2">
-          <Link
-            href={`/project/${template.id}?remix=true`}
+          <button
+            type="button"
+            onClick={() => onRemix(template.id)}
             className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-surface-elevated/30 px-5 py-2 text-xs font-bold whitespace-nowrap transition-all hover:bg-foreground hover:text-background active:scale-[0.98]"
           >
             <HiOutlineArrowPathRoundedSquare className="h-3.5 w-3.5" />
             Remix
-          </Link>
-          {template.active ? (
-            <Link
-              href={`/templates/${template.slug}/demo`}
-              className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-surface-elevated/30 px-5 py-2 text-xs font-bold transition-all hover:bg-foreground hover:text-background active:scale-[0.98]"
-            >
-              <HiOutlinePlay className="h-3.5 w-3.5" />
-              Try Live
-            </Link>
-          ) : (
-            <span className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-surface-elevated/30 px-5 py-2 text-xs font-bold text-muted-foreground/30 cursor-not-allowed">
-              <HiOutlinePlay className="h-3.5 w-3.5" />
-              Try Live
-            </span>
-          )}
+          </button>
+          <button
+            type="button"
+            disabled={!template.active}
+            onClick={() => {}}
+            className={[
+              "inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-surface-elevated/30 px-5 py-2 text-xs font-bold transition-all",
+              template.active
+                ? "hover:bg-foreground hover:text-background active:scale-[0.98]"
+                : "text-muted-foreground/30 cursor-not-allowed",
+            ].join(" ")}
+          >
+            <HiOutlinePlay className="h-3.5 w-3.5" />
+            Try Live
+          </button>
         </div>
       </div>
     </article>

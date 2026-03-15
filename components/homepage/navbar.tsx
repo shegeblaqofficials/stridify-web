@@ -9,7 +9,7 @@ import { StridifyLogo } from "@/components/ui/logo";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
 import { AuthModal } from "@/components/auth/auth-modal";
 import { UserDropdown } from "@/components/auth/user-dropdown";
-import { useUser } from "@/hooks/use-user";
+import { useAccount } from "@/provider/account-provider";
 import { HiOutlineBars3, HiOutlineXMark } from "react-icons/hi2";
 
 type NavLink = {
@@ -32,7 +32,7 @@ export function Navbar() {
   const [authOpen, setAuthOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const closeAuth = useCallback(() => setAuthOpen(false), []);
-  const { user, loading } = useUser();
+  const { user, loading } = useAccount();
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -101,7 +101,7 @@ export function Navbar() {
                     <button
                       type="button"
                       onClick={() => setAuthOpen(true)}
-                      className="cursor-pointer text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                      className="cursor-pointer rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground"
                     >
                       Sign In
                     </button>

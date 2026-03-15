@@ -16,7 +16,7 @@ const faqs: FaqItem[] = [
   {
     question: "Can I export my voice agents?",
     answer:
-      "Yes, all agents built on Stridify can be exported as standardized JSON configuration files or containerized modules for deployment in your own infrastructure. Pro users also get access to raw model weights for custom-trained voices.",
+      "Yes, all agents built on Stridify can be exported as a zip file containing the agent code and clear instructions for deployment and integration.",
   },
   {
     question: "How does pricing work for high-volume apps?",
@@ -27,6 +27,11 @@ const faqs: FaqItem[] = [
     question: "Is there a discount for open-source projects?",
     answer:
       "Absolutely. We believe in the power of the open community. Verified open-source contributors and non-profits can apply for a 50% discount on the Pro plan or free Enterprise credits.",
+  },
+  {
+    question: "Can I switch plans at any time?",
+    answer:
+      "Yes — all plans are flexible. You can upgrade, downgrade, or cancel at any time. Changes take effect immediately and billing is prorated automatically.",
   },
 ];
 

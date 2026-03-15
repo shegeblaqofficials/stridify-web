@@ -9,21 +9,21 @@ const steps = [
     icon: HiOutlineChatBubbleBottomCenterText,
     title: "Prompt",
     description:
-      "Describe your agent's personality, goals, and workflow in plain language — no code required.",
+      "Share your agent’s vibe, goals, and workflow in your own words with no code needed.",
     color: "bg-primary/10 text-primary ring-primary/20",
   },
   {
     icon: HiOutlineCpuChip,
     title: "Build",
     description:
-      "Our engine orchestrates the LLM, generates the voice interface, and wires up the agent logic instantly.",
+      "Stridify spins up your agent, builds the voice interface, and connects the logic instantly.",
     color: "bg-secondary/10 text-secondary ring-secondary/20",
   },
   {
     icon: HiOutlineRocketLaunch,
     title: "Deploy",
     description:
-      "Export the code, deploy on our cloud, expose as an API, or embed directly into your mobile app.",
+      "Go live in minutes and launch to our cloud, use as an API, or drop into your app or website.",
     color: "bg-accent/10 text-accent ring-accent/20",
   },
 ];

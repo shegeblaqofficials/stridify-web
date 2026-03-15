@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Navbar } from "@/components/homepage/navbar";
 import { Footer } from "@/components/homepage/footer";
 import { Button } from "@/components/ui/button";
+import { ScrollToTop } from "@/components/ui/scroll-to-top";
 
 /* ------------------------------------------------------------------ */
 /*  Data                                                               */
@@ -31,12 +32,12 @@ const plans: Plan[] = [
     price: "$0",
     suffix: "/mo",
     description:
-      "Perfect for exploring vibe coding and building personal agents.",
+      "Get started with vibe coding and create your first live voice agents.",
     features: [
-      { label: "500 prompts / month", included: true },
-      { label: "Standard voice models", included: true },
+      { label: "1,000 credits / month", included: true },
+      { label: "Access to standard voice models", included: true },
       { label: "Custom voice training", included: false },
-      { label: "Priority API access", included: false },
+      { label: "Priority platform access", included: false },
     ],
     cta: "Start for free",
   },
@@ -44,12 +45,14 @@ const plans: Plan[] = [
     name: "Professional",
     price: "$29",
     suffix: "/mo",
-    description: "For developers building production-ready voice applications.",
+    description:
+      "For creators building and deploying live voice apps at scale.",
     features: [
-      { label: "Unlimited prompts", included: true },
+      { label: "10,000 credits / month", included: true },
       { label: "Custom voice models", included: true },
-      { label: "Advanced API access", included: true },
+      { label: "Advanced platform features", included: true },
       { label: "Priority support", included: true },
+      { label: "Cloud deployment included", included: true },
     ],
     cta: "Get Pro",
     highlighted: true,
@@ -58,12 +61,14 @@ const plans: Plan[] = [
     name: "Team",
     price: "$79",
     suffix: "/mo",
-    description: "For growing teams that need collaboration and shared agents.",
+    description:
+      "For teams collaborating on voice agents and sharing resources.",
     features: [
+      { label: "100,000 credits / month", included: true },
       { label: "Everything in Pro", included: true },
-      { label: "5 team members", included: true },
-      { label: "Shared agent library", included: true },
-      { label: "Team analytics", included: true },
+      { label: "Up to 5 team members", included: true },
+      { label: "Shared agent workspace", included: true },
+      { label: "Team usage analytics", included: true },
     ],
     cta: "Get Team",
   },
@@ -71,12 +76,12 @@ const plans: Plan[] = [
     name: "Enterprise",
     price: "Custom",
     description:
-      "Tailored solutions for large-scale operations and high-volume needs.",
+      "Custom solutions for organizations with high-volume or specialized needs.",
     features: [
-      { label: "Volume discounts", included: true },
-      { label: "SLA guarantee", included: true },
+      { label: "Volume credit discounts", included: true },
+      { label: "SLA & uptime guarantee", included: true },
       { label: "Dedicated account manager", included: true },
-      { label: "SSO & Custom integration", included: true },
+      { label: "SSO & custom integrations", included: true },
     ],
     cta: "Contact Sales",
   },
@@ -106,7 +111,7 @@ const faqs: FaqItem[] = [
   {
     question: "Can I export my voice agents?",
     answer:
-      "Yes, all agents built on Stridify can be exported as standardized JSON configuration files or containerized modules for deployment in your own infrastructure. Pro users also get access to raw model weights for custom-trained voices.",
+      "Yes, all agents built on Stridify can be exported as a zip file containing the agent code and clear instructions for deployment and integration. Pro users also get access to raw model weights for custom-trained voices.",
   },
   {
     question: "How does pricing work for high-volume apps?",
@@ -130,13 +135,17 @@ const featureGroups: FeatureGroup[] = [
     category: "Usage",
     rows: [
       {
-        label: "Prompts per month",
-        values: ["500", "Unlimited", "Unlimited", "Unlimited"],
+        label: "Credits per month",
+        values: ["1,000", "10,000", "100,000", "Custom"],
       },
       { label: "Concurrent agents", values: ["1", "10", "25", "Unlimited"] },
       {
-        label: "API requests / day",
-        values: ["1,000", "50,000", "200,000", "Unlimited"],
+        label: "Current agent user limit",
+        values: ["1", "1", "5", "Unlimited"],
+      },
+      {
+        label: "Cloud deployment included",
+        values: [false, true, true, true],
       },
       { label: "Storage", values: ["500 MB", "10 GB", "50 GB", "Custom"] },
     ],
@@ -144,28 +153,37 @@ const featureGroups: FeatureGroup[] = [
   {
     category: "Voice & Models",
     rows: [
-      { label: "Standard voice models", values: [true, true, true, true] },
+      {
+        label: "Access to standard voice models",
+        values: [true, true, true, true],
+      },
+      { label: "Custom voice models", values: [false, true, true, true] },
       { label: "Custom voice training", values: [false, true, true, true] },
-      { label: "Voice cloning", values: [false, true, true, true] },
       { label: "Multilingual support", values: [false, true, true, true] },
     ],
   },
   {
     category: "Collaboration",
     rows: [
-      { label: "Team members", values: ["1", "1", "5", "Unlimited"] },
-      { label: "Shared agent library", values: [false, false, true, true] },
-      { label: "Team analytics", values: [false, false, true, true] },
-      { label: "Role-based access", values: [false, false, true, true] },
+      { label: "Up to 5 team members", values: [false, false, true, true] },
+      { label: "Everything in Pro", values: [false, true, true, true] },
+      { label: "Shared agent workspace", values: [false, false, true, true] },
+      { label: "Team usage analytics", values: [false, false, true, true] },
     ],
   },
   {
     category: "Platform",
     rows: [
-      { label: "Advanced API access", values: [false, true, true, true] },
-      { label: "Webhooks", values: [false, true, true, true] },
+      {
+        label: "Advanced platform features",
+        values: [false, true, true, true],
+      },
+      { label: "Priority platform access", values: [false, false, true, true] },
       { label: "Custom integrations", values: [false, false, true, true] },
-      { label: "SSO / SAML", values: [false, false, false, true] },
+      {
+        label: "SSO & custom integrations",
+        values: [false, false, false, true],
+      },
       { label: "Audit logs", values: [false, false, true, true] },
     ],
   },
@@ -173,12 +191,13 @@ const featureGroups: FeatureGroup[] = [
     category: "Support",
     rows: [
       { label: "Community support", values: [true, true, true, true] },
-      { label: "Priority email support", values: [false, true, true, true] },
+      { label: "Priority support", values: [false, true, true, true] },
+      { label: "Volume credit discounts", values: [false, false, false, true] },
+      { label: "SLA & uptime guarantee", values: [false, false, false, true] },
       {
         label: "Dedicated account manager",
         values: [false, false, false, true],
       },
-      { label: "SLA guarantee", values: [false, false, false, true] },
       { label: "Onboarding assistance", values: [false, false, true, true] },
     ],
   },
@@ -256,7 +275,7 @@ export default function PricingPage() {
                   ].join(" ")}
                 >
                   {plan.highlighted && (
-                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-foreground px-3 py-1 text-[10px] font-bold uppercase tracking-tight text-background">
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-accent px-3 py-1 text-[10px] font-bold uppercase tracking-tight text-accent-foreground">
                       Most Popular
                     </span>
                   )}
@@ -437,6 +456,7 @@ export default function PricingPage() {
       </main>
 
       <Footer />
+      <ScrollToTop />
     </>
   );
 }

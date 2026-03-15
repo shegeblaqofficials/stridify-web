@@ -1,17 +1,19 @@
+import React, { Fragment } from "react";
+
 const testimonials = [
   {
     quote:
-      "Stridify completely changed how we handle customer support. We went from 'idea' to a fully functioning voice agent in less than ten minutes.",
-    name: "Alex Rivera",
-    role: "Head of Engineering",
-    company: "FlowState",
+      "I just typed what I wanted and Stridify made it real. My voice agent was live and working in minutes with no tech skills needed!",
+    name: "Jordan Lee",
+    role: "Small Business Owner",
+    company: "FreshBites",
   },
   {
     quote:
-      "The latency is unbelievable. Our users can't tell they aren't speaking to a human. The prompt-to-app workflow is the future.",
-    name: "Sarah Chen",
-    role: "Lead Developer",
-    company: "NexaVoice",
+      "It’s so easy! I got a voice bot for my website and phone line without any coding. My customers love talking to it.",
+    name: "Priya Patel",
+    role: "Shop Manager",
+    company: "Urban Goods",
   },
 ];
 
@@ -29,13 +31,14 @@ export function TestimonialSection() {
 
         <div className="grid gap-16 md:grid-cols-[1fr_1px_1fr] md:gap-12">
           {testimonials.map((t, i) => (
-            <>
-              {i > 0 && <div className="hidden bg-border md:block" />}
-              <div
-                key={t.name}
-                data-aos="fade-up"
-                data-aos-delay={String(i * 200)}
-              >
+            <Fragment key={t.name}>
+              {i > 0 && (
+                <div
+                  key={`divider-${i}`}
+                  className="hidden bg-border md:block"
+                />
+              )}
+              <div data-aos="fade-up" data-aos-delay={String(i * 200)}>
                 {/* Quote mark */}
                 <span className="mb-6 block text-4xl font-bold leading-none text-primary/50">
                   &#x201C;&#x201C;
@@ -59,7 +62,7 @@ export function TestimonialSection() {
                   </div>
                 </div>
               </div>
-            </>
+            </Fragment>
           ))}
         </div>
       </div>

@@ -287,10 +287,10 @@ const features = [
     icon: HiOutlineChatBubbleBottomCenterText,
     badge: "AI Builder",
     title: "Design with Natural Language",
-    subtitle: "Prompt-driven development",
+    subtitle: "Prompt driven development",
     description:
-      "Describe your voice agent in plain English. Our AI understands your intent, generates the conversation flow, and wires up the logic — no code required. Iterate with follow-up prompts to refine behavior in real time.",
-    cta: { label: "Start Building", href: "/project/new" },
+      "Describe your voice agent in plain English. Stridify gets your intent, builds the conversation flow, and connects the logic with no code needed. Refine your agent instantly with follow-up prompts as you go.",
+    cta: { label: "Start Building", href: "/beta-access" },
     mockup: ChatBuilderMockup,
     reverse: false,
     bg: "bg-section-alt",
@@ -299,9 +299,9 @@ const features = [
     icon: HiOutlineEye,
     badge: "Live Preview",
     title: "See Changes Instantly",
-    subtitle: "Real-time agent preview",
+    subtitle: "Realtime agent preview",
     description:
-      "Every prompt instantly reflects in a live preview. Test voice interactions, conversation flows, and UI components side-by-side as you build. No waiting, no refresh — what you describe is what you get.",
+      "See your changes live as you build. Test voice interactions, conversation flows, and UI components side by side. No waiting, what you describe is what you get.",
     cta: { label: "Explore Templates", href: "/templates" },
     mockup: LivePreviewMockup,
     reverse: true,
@@ -313,7 +313,7 @@ const features = [
     title: "Ship to Production in One Click",
     subtitle: "Global infrastructure, zero config",
     description:
-      "Deploy your agent as a web app, mobile PWA, or API endpoint. Stridify handles auto-scaling, low-latency routing, and SSL — your agent goes from prototype to production with a single click.",
+      "Deploy your agent as a web app, mobile PWA, or API endpoint. Stridify takes care of scaling, fast routing, and security, your agent goes from prototype to production in one click.",
     cta: { label: "View Pricing", href: "/pricing" },
     mockup: DeployMockup,
     reverse: false,
@@ -338,8 +338,8 @@ export function FeaturesSection() {
             Everything You Need to Build
           </h2>
           <p className="mx-auto mt-5 max-w-2xl text-lg md:text-xl text-muted-foreground leading-relaxed">
-            A complete workspace to design, test, and deploy production-ready
-            voice agents — powered by AI.
+            A complete workspace to design, test, and deploy production ready
+            live voice agents powered by AI.
           </p>
         </div>
       </div>

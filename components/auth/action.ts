@@ -8,7 +8,6 @@ export const signInWithGoogle = async () => {
   const supabase = await createClient();
   const headersList = await headers();
   const origin = headersList.get("origin") || "http://localhost:3000";
-  console.log("Origin for OAuth redirect:", origin);
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {

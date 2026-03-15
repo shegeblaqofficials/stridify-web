@@ -1,18 +1,31 @@
 import Link from "next/link";
 import { StridifyLogo } from "@/components/ui/logo";
 
-const columns = [
+type FooterLink = { label: string; href: string };
+
+const columns: { title: string; links: FooterLink[] }[] = [
   {
     title: "Product",
-    links: ["Discover", "Solutions", "Pricing"],
+    links: [
+      { label: "Discover", href: "/templates" },
+      { label: "Solutions", href: "/#features" },
+      { label: "Pricing", href: "/pricing" },
+    ],
   },
   {
     title: "Resources",
-    links: ["Integrations", "How It Works", "FAQ"],
+    links: [
+      { label: "Integrations", href: "/#features" },
+      { label: "How It Works", href: "/#how-it-works" },
+      { label: "FAQ", href: "/#faq" },
+    ],
   },
   {
     title: "Legal",
-    links: ["Privacy Policy", "Terms of Service", "Cookie Policy"],
+    links: [
+      { label: "Privacy Policy", href: "/privacy" },
+      { label: "Terms of Service", href: "/terms" },
+    ],
   },
 ];
 
@@ -43,11 +56,11 @@ export function Footer() {
               </h4>
               {col.links.map((link) => (
                 <Link
-                  key={link}
-                  href="#"
+                  key={link.label}
+                  href={link.href}
                   className="text-sm text-muted-foreground transition-colors hover:text-foreground"
                 >
-                  {link}
+                  {link.label}
                 </Link>
               ))}
             </div>

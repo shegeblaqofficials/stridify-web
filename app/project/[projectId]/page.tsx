@@ -1,6 +1,8 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAccount } from "@/provider/account-provider";
 import { WorkspaceHeader } from "@/components/workspace/workspace-header";
 import { ChatPanel } from "@/components/workspace/chat-panel";
 import { PreviewPanel } from "@/components/workspace/preview-panel";
@@ -12,6 +14,18 @@ interface PageProps {
 export default function ProjectPage({ params }: PageProps) {
   const { projectId } = use(params);
   const [previewUrl, setPreviewUrl] = useState<string>();
+  const router = useRouter();
+  const { account } = useAccount();
+
+  useEffect(() => {
+    if (account && account.is_active !== true) {
+      router.replace("/beta-access");
+    }
+  }, [account, router]);
+
+  if (!account) {
+    return null;
+  }
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-background text-foreground">
