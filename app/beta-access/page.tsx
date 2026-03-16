@@ -1,10 +1,27 @@
+"use client";
 import { Navbar } from "@/components/homepage/navbar";
 import { Footer } from "@/components/homepage/footer";
 import { Button } from "@/components/ui/button";
 import { HiOutlineEnvelope, HiOutlineArrowLeft } from "react-icons/hi2";
 import Link from "next/link";
+import { useAccount } from "@/provider/account-provider";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function BetaAccessPage() {
+  const { user, loading } = useAccount();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace("/");
+    }
+  }, [loading]);
+
+  if (!user) {
+    return <PageLoader />;
+  }
   return (
     <>
       <Navbar />
@@ -99,30 +116,6 @@ export default function BetaAccessPage() {
             </svg>
             Follow us on X
           </Button>
-        </div>
-
-        {/* Queue info */}
-        <div className="mb-16 grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div className="rounded-xl border border-border bg-surface/40 px-6 py-4 text-center">
-            <div className="mb-1 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-              Queue Position
-            </div>
-            <div className="text-lg font-bold">Top 5%</div>
-          </div>
-          <div className="rounded-xl border border-border bg-surface/40 px-6 py-4 text-center">
-            <div className="mb-1 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-              Beta Version
-            </div>
-            <div className="text-lg font-bold">0.4.1</div>
-          </div>
-          <div className="rounded-xl border border-border bg-surface/40 px-6 py-4 text-center">
-            <div className="mb-1 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-              Invite Code
-            </div>
-            <div className="text-lg font-bold text-muted-foreground/60">
-              Coming Soon
-            </div>
-          </div>
         </div>
 
         {/* Return to homepage */}

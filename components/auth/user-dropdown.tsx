@@ -10,10 +10,12 @@ import {
   HiOutlineFolder,
   HiOutlineArrowRightOnRectangle,
 } from "react-icons/hi2";
+import { useRouter } from "next/navigation";
 
 export function UserDropdown({ user }: { user: User }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   const name =
     user.user_metadata?.full_name || user.user_metadata?.name || "User";
@@ -93,7 +95,7 @@ export function UserDropdown({ user }: { user: User }) {
               action={async () => {
                 await signOutUser();
                 setOpen(false);
-                window.location.href = "/";
+                router.push("/");
               }}
             >
               <button

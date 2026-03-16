@@ -7,6 +7,7 @@ import { useAccount } from "@/provider/account-provider";
 import { HiOutlineMicrophone } from "react-icons/hi2";
 import { HiOutlinePaperClip } from "react-icons/hi2";
 import { HiOutlineSparkles } from "react-icons/hi2";
+import { useRouter } from "next/navigation";
 
 const examplePrompts = [
   "Customer support voice agent",
@@ -71,6 +72,7 @@ export function HeroSection() {
   const { account, user } = useAccount();
   const [authOpen, setAuthOpen] = useState(false);
   const closeAuth = useCallback(() => setAuthOpen(false), []);
+  const router = useRouter();
 
   const handleGenerate = () => {
     if (!user) {
@@ -78,7 +80,7 @@ export function HeroSection() {
       return;
     }
     if (account && account.is_active === false) {
-      window.location.href = "/beta-access";
+      router.push("/beta-access");
       return;
     }
   };

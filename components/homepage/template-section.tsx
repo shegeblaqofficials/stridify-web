@@ -29,42 +29,42 @@ type Template = {
 const templates: Template[] = [
   {
     id: "1a43ds8pqw",
-    name: "Reception Voice Agent",
-    slug: "reception-voice-agent",
-    category: "Hospitality",
+    name: "City Travel Guide",
+    slug: "city-travel-guide",
+    category: "Travel",
     icon: HiOutlineBuildingOffice2,
     description:
-      "Handles live guest calls, answers questions, and connects to staff for real-time hotel support.",
-    active: false,
+      "A conversational voice tour guide for a city. Provides information on landmarks, directions, and local tips to tourists.",
+    active: true,
   },
   {
     id: "2b34ds9qwe",
-    name: "Support Call Bot",
-    slug: "support-call-bot",
+    name: "Restaurant Assistant",
+    slug: "restaurant-assistant",
     category: "Customer Support",
     icon: HiOutlineCpuChip,
     description:
-      "Receives and makes customer calls, resolves issues, and provides instant voice troubleshooting.",
+      "An agent that answers the phone to help customers check reservations and bookings. It can handle inquiries about menu, hours, and location.",
     active: false,
   },
   {
     id: "3c56df7asd",
-    name: "Story Voice AI",
-    slug: "story-voice-ai",
+    name: "Language Practice Coach",
+    slug: "language-practice-coach",
     category: "Creative",
     icon: HiOutlineBookOpen,
     description:
-      "Creates interactive stories, narrates live, and responds to callers for collaborative fiction.",
-    active: false,
+      "A voice AI agent that helps users practice speaking a new language through live and interactive conversation.",
+    active: true,
   },
   {
     id: "4d78gh6fgh",
-    name: "Sales Call Assistant",
-    slug: "sales-call-assistant",
+    name: "Product Advisor",
+    slug: "product-advisor",
     category: "Customer Support",
     icon: HiOutlineShoppingBag,
     description:
-      "Calls customers, introduces products, answers questions, and guides purchases by voice.",
+      "An assistant that helps users choose the right product, provide recommendations, and guide users through the buying process.",
     active: false,
   },
 ];
@@ -81,7 +81,7 @@ export function TemplateSection() {
       return;
     }
     if (account && account.is_active === false) {
-      window.location.href = "/beta-access";
+      router.push("/beta-access");
       return;
     }
     if (account && account.is_active === true) {
@@ -166,20 +166,21 @@ function TemplateCard({
             <HiOutlineArrowPathRoundedSquare className="h-3.5 w-3.5" />
             Remix
           </button>
-          <button
-            type="button"
-            disabled={!template.active}
-            onClick={() => {}}
-            className={[
-              "inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-surface-elevated/30 px-5 py-2 text-xs font-bold transition-all",
-              template.active
-                ? "hover:bg-foreground hover:text-background active:scale-[0.98]"
-                : "text-muted-foreground/30 cursor-not-allowed",
-            ].join(" ")}
-          >
-            <HiOutlinePlay className="h-3.5 w-3.5" />
-            Try Live
-          </button>
+          {template.active ? (
+            <Link
+              href={`/discover/${template.slug}`}
+              target="_blank"
+              className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface-elevated/30 px-5 py-2 text-xs font-bold whitespace-nowrap transition-all hover:bg-foreground hover:text-background active:scale-[0.98]"
+            >
+              <HiOutlinePlay className="h-3.5 w-3.5" />
+              Try Live
+            </Link>
+          ) : (
+            <span className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface-elevated/30 px-5 py-2 text-xs font-bold whitespace-nowrap text-muted-foreground/40 cursor-not-allowed">
+              <HiOutlinePlay className="h-3.5 w-3.5" />
+              Try Live
+            </span>
+          )}
         </div>
       </div>
     </article>

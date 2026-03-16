@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { Navbar } from "@/components/homepage/navbar";
 import { Footer } from "@/components/homepage/footer";
@@ -19,6 +19,8 @@ import {
 } from "react-icons/hi2";
 import type { ComponentType } from "react";
 import { useAccount } from "@/provider/account-provider";
+import { useRouter } from "next/navigation";
+import { AuthModal } from "@/components/auth/auth-modal";
 
 /* ------------------------------------------------------------------ */
 /*  Data                                                               */
@@ -46,52 +48,52 @@ const categories = [
 const allTemplates: Template[] = [
   {
     id: "1a43ds8pqw",
-    name: "Reception Voice Agent",
-    slug: "reception-voice-agent",
+    name: "City Travel Guide",
+    slug: "city-travel-guide",
     category: "Hospitality",
     icon: HiOutlineBuildingOffice2,
     description:
-      "Handles live guest calls, answers questions, and connects to staff for real-time hotel support.",
+      "A conversational voice tour guide for a city. Provides information on landmarks, directions, and local tips to tourists.",
     active: false,
   },
   {
     id: "2b34ds9qwe",
-    name: "Support Call Bot",
-    slug: "support-call-bot",
-    category: "Customer Support",
+    name: "Restaurant Assistant",
+    slug: "restaurant-assistant",
+    category: "Hospitality",
     icon: HiOutlineCpuChip,
     description:
-      "Receives and makes customer calls, resolves issues, and provides instant voice troubleshooting.",
+      "An agent that answers the phone to help customers check reservations and bookings. It can handle inquiries about menu, hours, and location.",
     active: false,
   },
   {
     id: "3c56df7asd",
-    name: "Story Voice AI",
-    slug: "story-voice-ai",
+    name: "Language Practice Coach",
+    slug: "language-practice-coach",
     category: "Creative",
     icon: HiOutlineBookOpen,
     description:
-      "Creates interactive stories, narrates live, and responds to callers for collaborative fiction.",
+      "A voice AI agent that helps users practice speaking a new language through live and interactive conversation.",
     active: false,
   },
   {
     id: "4d78gh6fgh",
-    name: "Sales Call Assistant",
-    slug: "sales-call-assistant",
+    name: "Product Advisor",
+    slug: "product-advisor",
     category: "Customer Support",
     icon: HiOutlineShoppingBag,
     description:
-      "Calls customers, introduces products, answers questions, and guides purchases by voice.",
+      "An assistant that helps users choose the right product, provide recommendations, and guide users through the buying process.",
     active: false,
   },
   {
     id: "5e89jk7hij",
-    name: "Data Voice Synthesizer",
-    slug: "data-voice-synthesizer",
-    category: "Utilities",
+    name: "Business FAQ Phone Agent",
+    slug: "business-faq-phone-agent",
+    category: "Customer Support",
     icon: HiOutlineChartBarSquare,
     description:
-      "Speaks data insights, answers live queries, and calls users to deliver actionable results.",
+      "Handles common business inquiries, answers FAQs, and provides instant voice support to callers 24/7.",
     active: false,
   },
   {
@@ -145,23 +147,23 @@ const allTemplates: Template[] = [
     active: false,
   },
   {
-    id: "1k45st3uvw",
-    name: "Compliance Voice Checker",
-    slug: "compliance-voice-checker",
+    id: "1k45rs3abc",
+    name: "Voice Survey Conductor",
+    slug: "voice-survey-conductor",
     category: "Enterprise",
-    icon: HiOutlineDocumentText,
+    icon: HiOutlineChartBarSquare,
     description:
-      "Reviews policies, audits compliance, and answers regulatory calls with live voice support.",
+      "Conducts live voice surveys, collects feedback, and provides real-time insights to businesses.",
     active: false,
   },
   {
-    id: "2l56uv4xyz",
-    name: "Content Voice Writer",
-    slug: "content-voice-writer",
-    category: "Creative",
-    icon: HiOutlineBookOpen,
+    id: "2l56st4def",
+    name: "Personal Finance Assistant",
+    slug: "personal-finance-voice-assistant",
+    category: "Utilities",
+    icon: HiOutlineDocumentText,
     description:
-      "Drafts blog posts, social copy, and marketing emails by phone in your brand voice instantly.",
+      "Provides financial advice, tracks expenses, and answers money-related questions via live voice.",
     active: false,
   },
 ];
@@ -174,18 +176,21 @@ export default function TemplatesPage() {
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [search, setSearch] = useState("");
   const { account, user } = useAccount();
+  const [authOpen, setAuthOpen] = useState(false);
+  const closeAuth = useCallback(() => setAuthOpen(false), []);
+  const router = useRouter();
 
   const handleRemix = (templateId: string) => {
     if (!user) {
-      window.location.href = "/auth";
+      setAuthOpen(true);
       return;
     }
     if (account && account.is_active === false) {
-      window.location.href = "/beta-access";
+      router.push("/beta-access");
       return;
     }
     if (account && account.is_active === true) {
-      window.location.href = `/project/${templateId}?remix=true`;
+      router.push(`/project/${templateId}?remix=true`);
       return;
     }
     return;
@@ -314,8 +319,8 @@ export default function TemplatesPage() {
           )}
         </section>
       </main>
-
       <Footer />
+      <AuthModal open={authOpen} onClose={closeAuth} />
     </>
   );
 }
