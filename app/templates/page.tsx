@@ -40,6 +40,7 @@ const categories = [
   "All",
   "Customer Support",
   "Hospitality",
+  "Telephony",
   "Creative",
   "Enterprise",
   "Utilities",
@@ -54,17 +55,17 @@ const allTemplates: Template[] = [
     icon: HiOutlineBuildingOffice2,
     description:
       "A conversational voice tour guide for a city. Provides information on landmarks, directions, and local tips to tourists.",
-    active: false,
+    active: true,
   },
   {
     id: "2b34ds9qwe",
     name: "Restaurant Assistant",
     slug: "restaurant-assistant",
-    category: "Hospitality",
+    category: "Telephony",
     icon: HiOutlineCpuChip,
     description:
       "An agent that answers the phone to help customers check reservations and bookings. It can handle inquiries about menu, hours, and location.",
-    active: false,
+    active: true,
   },
   {
     id: "3c56df7asd",
@@ -74,7 +75,7 @@ const allTemplates: Template[] = [
     icon: HiOutlineBookOpen,
     description:
       "A voice AI agent that helps users practice speaking a new language through live and interactive conversation.",
-    active: false,
+    active: true,
   },
   {
     id: "4d78gh6fgh",
@@ -84,7 +85,7 @@ const allTemplates: Template[] = [
     icon: HiOutlineShoppingBag,
     description:
       "An assistant that helps users choose the right product, provide recommendations, and guide users through the buying process.",
-    active: false,
+    active: true,
   },
   {
     id: "5e89jk7hij",

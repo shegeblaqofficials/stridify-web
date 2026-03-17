@@ -49,7 +49,7 @@ export function CtaSection() {
           className="relative mx-auto max-w-2xl text-4xl font-black leading-tight tracking-tight text-background md:text-5xl"
           style={{ zIndex: 1 }}
         >
-          Ready to prompt your next app into existence?
+          Your next voice agent is one prompt away.
         </h2>
         <p
           className="mx-auto mt-6 max-w-xl text-lg text-background/80 font-normal"

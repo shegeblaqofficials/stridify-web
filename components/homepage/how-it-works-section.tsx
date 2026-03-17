@@ -35,10 +35,11 @@ export function HowItWorksSection() {
         {/* Header */}
         <div data-aos="fade-up" className="text-center">
           <h2 className="text-4xl font-black tracking-tight md:text-5xl">
-            How it Works
+            Three Steps. One Voice Agent.
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-lg text-muted-foreground">
-            From concept to production-ready agent in three simple steps.
+            Go from idea to live, production ready voice agent in minutes with
+            no backend setup and complex integrations.
           </p>
         </div>
 

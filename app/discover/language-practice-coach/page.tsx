@@ -4,6 +4,7 @@ import Image from "next/image";
 import {
   HiOutlineBars3,
   HiOutlineMicrophone,
+  HiOutlineLanguage,
   HiOutlineArrowRight,
   HiOutlineChatBubbleLeftRight,
   HiOutlineSpeakerWave,
@@ -126,10 +127,10 @@ export default function LanguagePracticeCoachPage() {
               className="w-10 h-10 rounded-full flex items-center justify-center text-white"
               style={{ background: "var(--lpc-primary)" }}
             >
-              <HiOutlineMicrophone className="w-5 h-5" />
+              <HiOutlineLanguage className="w-5 h-5" />
             </div>
             <span
-              className="text-xl font-bold tracking-tight"
+              className="text-xl font-bold tracking-tight whitespace-nowrap"
               style={{ color: "var(--lpc-text)" }}
             >
               Voice Coach
@@ -152,7 +153,7 @@ export default function LanguagePracticeCoachPage() {
           <div className="flex items-center gap-3">
             <LpcThemeSwitcher />
             <button
-              className="px-6 py-3 rounded-full font-semibold text-sm text-white transition-transform hover:scale-105"
+              className="hidden md:inline-flex px-6 py-3 rounded-full font-semibold text-sm text-white transition-transform hover:scale-105"
               style={{ background: "var(--lpc-primary-gradient)" }}
             >
               Start Speaking
@@ -680,7 +681,7 @@ export default function LanguagePracticeCoachPage() {
                 className="w-10 h-10 rounded-full flex items-center justify-center text-white"
                 style={{ background: "var(--lpc-primary)" }}
               >
-                <HiOutlineMicrophone className="w-5 h-5" />
+                <HiOutlineLanguage className="w-5 h-5" />
               </div>
               <span
                 className="text-xl font-bold"

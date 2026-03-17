@@ -16,7 +16,7 @@ export function PartnersSection() {
           data-aos="fade-up"
           className="text-center text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground"
         >
-          Powered by the tools we trust
+          Powered by world class AI infrastructure
         </p>
 
         <div

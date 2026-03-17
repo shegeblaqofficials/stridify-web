@@ -3,16 +3,16 @@ import React, { Fragment } from "react";
 const testimonials = [
   {
     quote:
-      "I just typed what I wanted and Stridify made it real. My voice agent was live and working in minutes with no tech skills needed!",
+      "I described what I wanted my support agent to do, and Stridify had it live on my website in under ten minutes. My customers can actually call it. This is wild.",
     name: "Jordan Lee",
-    role: "Small Business Owner",
+    role: "Founder",
     company: "FreshBites",
   },
   {
     quote:
-      "It’s so easy! I got a voice bot for my website and phone line without any coding. My customers love talking to it.",
+      "We replaced our entire IVR phone tree with a Stridify voice agent. It sounds natural, handles bookings, and we didn’t write a single line of code.",
     name: "Priya Patel",
-    role: "Shop Manager",
+    role: "Operations Lead",
     company: "Urban Goods",
   },
 ];
@@ -22,10 +22,10 @@ export function TestimonialSection() {
     <section id="testimonials" className="px-6 py-24">
       <div className="mx-auto max-w-7xl">
         <div data-aos="fade-up" className="mb-16">
-          <h2 className="mb-4 text-3xl font-bold">What People Are Saying</h2>
+          <h2 className="mb-4 text-3xl font-bold">Builders Love Stridify</h2>
           <p className="max-w-md text-muted-foreground">
-            Hear from teams already building production voice agents with
-            Stridify.
+            Hear from people already shipping voice agents to production with
+            nothing but a prompt.
           </p>
         </div>
 

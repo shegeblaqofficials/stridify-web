@@ -25,10 +25,11 @@ const plans: Plan[] = [
     price: "$0",
     suffix: "/mo",
     description:
-      "Get started with vibe coding and create your first live voice agents.",
+      "Build your first voice agent for free, perfect for experimenting.",
     features: [
       { label: "1,000 credits / month", included: true },
       { label: "Access to standard voice models", included: true },
+      { label: "Community support", included: true },
       { label: "Custom voice training", included: false },
       { label: "Priority platform access", included: false },
     ],
@@ -39,7 +40,7 @@ const plans: Plan[] = [
     price: "$29",
     suffix: "/mo",
     description:
-      "For creators building and deploying live voice apps at scale.",
+      "For builders shipping voice agents to real users, with cloud hosting, and priority support.",
     features: [
       { label: "10,000 credits / month", included: true },
       { label: "Custom voice models", included: true },
@@ -55,7 +56,7 @@ const plans: Plan[] = [
     price: "$79",
     suffix: "/mo",
     description:
-      "For teams collaborating on voice agents and sharing resources.",
+      "For teams building multiple agents together with shared workspaces and usage insights.",
     features: [
       { label: "100,000 credits / month", included: true },
       { label: "Everything in Pro", included: true },
@@ -69,12 +70,13 @@ const plans: Plan[] = [
     name: "Enterprise",
     price: "Custom",
     description:
-      "Custom solutions for organizations with high-volume or specialized needs.",
+      "For organizations running voice agents at scale with dedicated support and custom SLAs.",
     features: [
       { label: "Volume credit discounts", included: true },
       { label: "SLA & uptime guarantee", included: true },
       { label: "Dedicated account manager", included: true },
       { label: "SSO & custom integrations", included: true },
+      { label: "Custom voice model support", included: true },
     ],
     cta: "Contact Sales",
   },
@@ -88,11 +90,11 @@ export function PricingSection() {
       {/* Header */}
       <div data-aos="fade-up" className="mx-auto max-w-3xl text-center">
         <h2 className="text-4xl font-bold tracking-tight md:text-5xl">
-          Simple, scalable pricing.
+          Pricing that grows with you.
         </h2>
         <p className="mx-auto mt-5 max-w-2xl text-lg text-muted-foreground">
-          Choose the plan that fits your needs. Upgrade as your agent fleet
-          grows from hobby to production.
+          Start free, build your first voice agent today, and scale to
+          production when you’re ready. No surprise fees.
         </p>
       </div>
 
@@ -117,8 +119,8 @@ export function PricingSection() {
       <div data-aos="fade-up" className="mx-auto mt-14 max-w-xl text-center">
         <p className="text-sm leading-relaxed text-muted-foreground">
           <span className="text-foreground">
-            Every plan is flexible and you can upgrade, downgrade, or cancel
-            anytime.
+            All plans are flexible — upgrade, downgrade, or cancel anytime. No
+            lock-in, no hidden fees.
           </span>
         </p>
         <Link

@@ -43,8 +43,8 @@ export function Footer() {
               </span>
             </Link>
             <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
-              Defining the future of interaction through vibe-centric agent
-              engineering.
+              The vibe coding platform for voice AI. Write a prompt, get a
+              production-ready voice agent.
             </p>
           </div>
 
@@ -69,7 +69,7 @@ export function Footer() {
 
         <div className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-border pt-8 md:flex-row">
           <p className="text-xs text-muted-foreground">
-            © 2025 Stridify Inc. All rights reserved.
+            © 2026 Stridify Inc. All rights reserved.
           </p>
         </div>
       </div>

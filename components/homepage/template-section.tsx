@@ -15,6 +15,7 @@ import {
   HiOutlineBookOpen,
 } from "react-icons/hi2";
 import type { ComponentType } from "react";
+import { tr } from "zod/locales";
 
 type Template = {
   id: string;
@@ -41,11 +42,11 @@ const templates: Template[] = [
     id: "2b34ds9qwe",
     name: "Restaurant Assistant",
     slug: "restaurant-assistant",
-    category: "Customer Support",
+    category: "Telephony",
     icon: HiOutlineCpuChip,
     description:
       "An agent that answers the phone to help customers check reservations and bookings. It can handle inquiries about menu, hours, and location.",
-    active: false,
+    active: true,
   },
   {
     id: "3c56df7asd",
@@ -65,7 +66,7 @@ const templates: Template[] = [
     icon: HiOutlineShoppingBag,
     description:
       "An assistant that helps users choose the right product, provide recommendations, and guide users through the buying process.",
-    active: false,
+    active: true,
   },
 ];
 
