@@ -189,7 +189,7 @@ function PricingCard({
       </div>
 
       {/* Features */}
-      <ul className="mb-8 flex-grow space-y-4">
+      <ul className="mb-8 grow space-y-4">
         {plan.features.map((f) => (
           <li key={f.label} className="flex items-center gap-3 text-sm">
             {f.included ? (
@@ -205,18 +205,20 @@ function PricingCard({
       </ul>
 
       {/* CTA */}
-      {isSelected ? (
-        <Button
-          size="lg"
-          className="w-full rounded-lg bg-foreground text-background hover:bg-foreground/80"
-        >
-          {plan.cta}
-        </Button>
-      ) : (
-        <Button variant="outline" size="lg" className="w-full rounded-lg">
-          {plan.cta}
-        </Button>
-      )}
+      <>
+        {isSelected ? (
+          <Button
+            size="lg"
+            className="w-full rounded-lg bg-foreground text-background hover:bg-foreground/80"
+          >
+            {plan.cta}
+          </Button>
+        ) : (
+          <Button variant="outline" size="lg" className="w-full rounded-lg">
+            {plan.cta}
+          </Button>
+        )}
+      </>
     </article>
   );
 }

@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Navbar } from "@/components/homepage/navbar";
-import { Footer } from "@/components/homepage/footer";
+import { Navbar } from "@/components/landing-page/navbar";
+import { Footer } from "@/components/landing-page/footer";
 import { Button } from "@/components/ui/button";
 import { ScrollToTop } from "@/components/ui/scroll-to-top";
 
@@ -261,12 +261,19 @@ export default function PricingPage() {
             {plans.map((plan, i) => {
               const isSelected = selectedPlan === plan.name;
               return (
-                <button
+                <div
                   key={plan.name}
-                  type="button"
+                  role="button"
+                  tabIndex={0}
                   data-aos="fade-up"
                   data-aos-delay={String(i * 100)}
                   onClick={() => setSelectedPlan(plan.name)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSelectedPlan(plan.name);
+                    }
+                  }}
                   className={[
                     "glass-card relative flex flex-col items-center rounded-xl p-8 text-center transition-all cursor-pointer",
                     isSelected
@@ -335,7 +342,7 @@ export default function PricingPage() {
                       </Button>
                     )}
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>

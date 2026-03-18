@@ -25,11 +25,10 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const supabase = createClient();
-
     supabase.auth.getUser().then(({ data }) => {
       setUser(data.user);
       if (data.user) {
-        getAccount().then((acc) => {
+        getAccount(data.user.id).then((acc) => {
           setAccount(acc);
           setLoading(false);
         });
@@ -49,7 +48,7 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
           const acc = await upsertAccount();
           setAccount(acc);
         } else {
-          const acc = await getAccount();
+          const acc = await getAccount(currentUser.id);
           setAccount(acc);
         }
       } else {

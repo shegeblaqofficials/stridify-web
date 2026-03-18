@@ -11,7 +11,6 @@ import {
   HiOutlineArrowTrendingUp,
   HiOutlineSignal,
 } from "react-icons/hi2";
-import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 /* ──────────────────────────────────────────────
@@ -370,10 +369,11 @@ export function FeaturesSection() {
                 {feature.description}
               </p>
               <div className="mt-8">
-                <Link href={feature.cta.href}>
-                  <Button variant="outline" size="md">
-                    {feature.cta.label}
-                  </Button>
+                <Link
+                  href={feature.cta.href}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl transition-all active:scale-[0.98] border border-border bg-surface text-muted-foreground hover:border-muted-foreground hover:text-foreground px-5 py-2.5 text-sm font-bold"
+                >
+                  {feature.cta.label}
                 </Link>
               </div>
             </div>

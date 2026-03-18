@@ -1,7 +1,7 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import type { Account } from "@/model/account/account";
+import { createClient } from "../supabase/server";
 
 export async function upsertAccount(): Promise<Account | null> {
   const supabase = await createClient();
@@ -44,20 +44,12 @@ export async function upsertAccount(): Promise<Account | null> {
   return created as Account;
 }
 
-export async function getAccount(): Promise<Account | null> {
+export async function getAccount(userId: string): Promise<Account | null> {
   const supabase = await createClient();
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user?.email) return null;
-
   const { data } = await supabase
     .from("account")
     .select("*")
-    .eq("email", user.email)
+    .eq("user_id", userId)
     .single();
-
   return (data as Account) ?? null;
 }

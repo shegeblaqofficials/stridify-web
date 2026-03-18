@@ -7,7 +7,23 @@ import { useAccount } from "@/provider/account-provider";
 import { HiOutlineMicrophone } from "react-icons/hi2";
 import { HiOutlinePaperClip } from "react-icons/hi2";
 import { HiOutlineSparkles } from "react-icons/hi2";
+import {
+  HiOutlineGlobeAlt,
+  HiOutlinePhone,
+  HiOutlineCodeBracketSquare,
+  HiOutlineDevicePhoneMobile,
+  HiOutlineChevronDown,
+} from "react-icons/hi2";
 import { useRouter } from "next/navigation";
+
+const agentTypes = [
+  { id: "web", label: "Web", icon: HiOutlineGlobeAlt },
+  { id: "telephony", label: "Telephony", icon: HiOutlinePhone },
+  { id: "widget", label: "Widget", icon: HiOutlineCodeBracketSquare },
+  { id: "mobile", label: "Mobile", icon: HiOutlineDevicePhoneMobile },
+] as const;
+
+type AgentType = (typeof agentTypes)[number]["id"];
 
 const examplePrompts = [
   "Customer support voice agent",
@@ -71,8 +87,25 @@ export function HeroSection() {
   const placeholder = useTypingPlaceholder(placeholderPhrases);
   const { account, user } = useAccount();
   const [authOpen, setAuthOpen] = useState(false);
+  const [agentType, setAgentType] = useState<AgentType>("web");
+  const [typeOpen, setTypeOpen] = useState(false);
   const closeAuth = useCallback(() => setAuthOpen(false), []);
   const router = useRouter();
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
+        setTypeOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleGenerate = () => {
     if (!user) {
@@ -133,10 +166,10 @@ export function HeroSection() {
         <div
           data-aos="fade-up"
           data-aos-delay="500"
-          className="relative mx-auto mb-12 max-w-3xl"
+          className="relative mx-auto mb-12 max-w-3xl z-10"
         >
           <div className="absolute -inset-1 rounded-2xl bg-primary/20 opacity-40 blur-xl" />
-          <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-surface shadow-2xl shadow-primary/5">
+          <div className="relative rounded-2xl border border-primary/20 bg-surface shadow-2xl shadow-primary/5">
             <div className="flex items-start gap-3 p-5">
               <HiOutlineSparkles className="mt-0.5 h-5 w-5 shrink-0 text-primary/60" />
               <textarea
@@ -145,12 +178,73 @@ export function HeroSection() {
                 onKeyDown={handleKeyDown}
               />
             </div>
-            <div className="flex items-center justify-between border-t border-primary/10 bg-surface/80 p-4">
-              <div className="flex gap-4 text-muted-foreground/60">
+            {/* Toolbar */}
+            <div className="flex items-center justify-between border-t border-primary/10 p-4">
+              <div className="flex items-center gap-4 text-muted-foreground/60">
                 <HiOutlineMicrophone className="h-5 w-5 cursor-pointer transition-colors hover:text-primary" />
                 <HiOutlinePaperClip className="h-5 w-5 cursor-pointer transition-colors hover:text-primary" />
+
+                {/* Agent type dropdown */}
+                <div ref={dropdownRef} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setTypeOpen(!typeOpen)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-elevated/50 px-2.5 py-1.5 text-xs font-semibold text-muted-foreground transition-all hover:border-muted-foreground/40 hover:text-foreground"
+                  >
+                    {(() => {
+                      const active = agentTypes.find(
+                        (t) => t.id === agentType,
+                      )!;
+                      const ActiveIcon = active.icon;
+                      return (
+                        <>
+                          <ActiveIcon className="h-3.5 w-3.5" />
+                          {active.label}
+                        </>
+                      );
+                    })()}
+                    <HiOutlineChevronDown
+                      className={`h-3 w-3 transition-transform ${typeOpen ? "rotate-180" : ""}`}
+                    />
+                  </button>
+
+                  {typeOpen && (
+                    <div className="absolute left-0 top-full z-10 mt-2 min-w-[160px] rounded-xl border border-border bg-surface shadow-xl">
+                      {agentTypes.map((type) => {
+                        const Icon = type.icon;
+                        const isActive = agentType === type.id;
+                        return (
+                          <button
+                            key={type.id}
+                            type="button"
+                            onClick={() => {
+                              setAgentType(type.id);
+                              setTypeOpen(false);
+                            }}
+                            className={[
+                              "flex w-full items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold transition-colors",
+                              isActive
+                                ? "bg-primary/10 text-primary"
+                                : "text-muted-foreground hover:bg-surface-elevated hover:text-foreground",
+                            ].join(" ")}
+                          >
+                            <Icon className="h-4 w-4" />
+                            {type.label}
+                            {isActive && (
+                              <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
-              <Button size="lg" onClick={handleGenerate}>
+              <Button
+                size="lg"
+                className="px-4 py-2 text-xs sm:px-10 sm:py-3.5 sm:text-sm"
+                onClick={handleGenerate}
+              >
                 Generate App ⚡
               </Button>
             </div>
