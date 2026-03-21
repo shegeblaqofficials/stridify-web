@@ -9,13 +9,16 @@ import {
   HiOutlineUser,
   HiOutlineFolder,
   HiOutlineArrowRightOnRectangle,
+  HiOutlineBolt,
 } from "react-icons/hi2";
 import { useRouter } from "next/navigation";
+import { useAccount } from "@/provider/account-provider";
 
 export function UserDropdown({ user }: { user: User }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const { organization } = useAccount();
 
   const name =
     user.user_metadata?.full_name || user.user_metadata?.name || "User";
@@ -62,17 +65,32 @@ export function UserDropdown({ user }: { user: User }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-64 overflow-hidden rounded-xl border border-border bg-background shadow-xl">
+        <div className="absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-xl border border-border bg-background shadow-xl">
           {/* User info */}
           <div className="border-b border-border px-4 py-3.5">
             <p className="truncate text-sm font-semibold">{name}</p>
             <p className="truncate text-xs text-muted-foreground">{email}</p>
           </div>
 
+          {/* Token balance */}
+          {organization && (
+            <div className="border-b border-border px-4 py-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <HiOutlineBolt className="size-3.5 text-amber-500" />
+                  <span>Credits</span>
+                </div>
+                <span className="text-xs font-bold tabular-nums">
+                  {organization.token_balance.toLocaleString()}
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* Menu items */}
           <div className="p-1.5">
             <Link
-              href="/"
+              href="/home"
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground"
             >

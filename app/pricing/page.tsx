@@ -263,85 +263,80 @@ export default function PricingPage() {
               return (
                 <div
                   key={plan.name}
-                  role="button"
-                  tabIndex={0}
                   data-aos="fade-up"
                   data-aos-delay={String(i * 100)}
-                  onClick={() => setSelectedPlan(plan.name)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      setSelectedPlan(plan.name);
-                    }
-                  }}
-                  className={[
-                    "glass-card relative flex flex-col items-center rounded-xl p-8 text-center transition-all cursor-pointer",
-                    isSelected
-                      ? "border-primary shadow-[0_0_30px_rgba(17,82,212,0.12)] ring-1 ring-primary/30"
-                      : "hover:border-muted-foreground/30",
-                  ].join(" ")}
                 >
-                  {plan.highlighted && (
-                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-accent px-3 py-1 text-[10px] font-bold uppercase tracking-tight text-accent-foreground">
-                      Most Popular
-                    </span>
-                  )}
-                  <h3 className="mb-3 text-sm font-medium uppercase tracking-widest text-muted-foreground">
-                    {plan.name}
-                  </h3>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-4xl font-bold">{plan.price}</span>
-                    {plan.suffix && (
-                      <span className="text-muted-foreground">
-                        {plan.suffix}
+                  <article
+                    onClick={() => setSelectedPlan(plan.name)}
+                    className={[
+                      "glass-card relative flex cursor-pointer flex-col items-center rounded-xl p-8 text-center transition-all",
+                      isSelected
+                        ? "border-primary shadow-[0_0_30px_rgba(17,82,212,0.12)] ring-1 ring-primary/30"
+                        : "hover:border-muted-foreground/30",
+                    ].join(" ")}
+                  >
+                    {plan.highlighted && (
+                      <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-accent px-3 py-1 text-[10px] font-bold uppercase tracking-tight text-accent-foreground">
+                        Most Popular
                       </span>
                     )}
-                  </div>
-                  <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                    {plan.description}
-                  </p>
-
-                  {/* Features */}
-                  <ul className="mt-6 w-full space-y-3 text-left">
-                    {plan.features.map((f) => (
-                      <li
-                        key={f.label}
-                        className="flex items-center gap-2.5 text-sm"
-                      >
-                        {f.included ? (
-                          <CheckIcon className="h-4 w-4 shrink-0 text-foreground" />
-                        ) : (
-                          <XIcon className="h-4 w-4 shrink-0 text-muted-foreground/40" />
-                        )}
-                        <span
-                          className={
-                            f.included ? "" : "text-muted-foreground/50"
-                          }
-                        >
-                          {f.label}
+                    <h3 className="mb-3 text-sm font-medium uppercase tracking-widest text-muted-foreground">
+                      {plan.name}
+                    </h3>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-4xl font-bold">{plan.price}</span>
+                      {plan.suffix && (
+                        <span className="text-muted-foreground">
+                          {plan.suffix}
                         </span>
-                      </li>
-                    ))}
-                  </ul>
+                      )}
+                    </div>
+                    <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                      {plan.description}
+                    </p>
 
-                  <div className="mt-6 w-full">
-                    {isSelected ? (
-                      <Button
-                        size="lg"
-                        className="w-full rounded-lg bg-foreground text-background hover:bg-foreground/80"
-                      >
-                        {plan.cta}
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="lg"
-                        className="w-full rounded-lg"
-                      >
-                        {plan.cta}
-                      </Button>
-                    )}
-                  </div>
+                    {/* Features */}
+                    <ul className="mt-6 w-full space-y-3 text-left">
+                      {plan.features.map((f) => (
+                        <li
+                          key={f.label}
+                          className="flex items-center gap-2.5 text-sm"
+                        >
+                          {f.included ? (
+                            <CheckIcon className="h-4 w-4 shrink-0 text-foreground" />
+                          ) : (
+                            <XIcon className="h-4 w-4 shrink-0 text-muted-foreground/40" />
+                          )}
+                          <span
+                            className={
+                              f.included ? "" : "text-muted-foreground/50"
+                            }
+                          >
+                            {f.label}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <div className="mt-6 w-full">
+                      {isSelected ? (
+                        <Button
+                          size="lg"
+                          className="w-full rounded-lg bg-foreground text-background hover:bg-foreground/80"
+                        >
+                          {plan.cta}
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="lg"
+                          className="w-full rounded-lg"
+                        >
+                          {plan.cta}
+                        </Button>
+                      )}
+                    </div>
+                  </article>
                 </div>
               );
             })}

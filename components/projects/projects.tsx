@@ -1,72 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { DashboardLayout } from "@/components/dashboard/layout";
+import { useAccount } from "@/provider/account-provider";
+import { getProjects } from "@/lib/project/actions";
+import type { Project, ProjectStatus } from "@/model/project/project";
 import {
   HiOutlineCog6Tooth,
   HiOutlineTrash,
   HiOutlinePlus,
   HiOutlineClock,
-  HiOutlineChartBar,
-  HiOutlineArrowPath,
-  HiOutlineBookmarkSquare,
-  HiOutlineEllipsisHorizontal,
-  HiOutlineGlobeAlt,
   HiOutlineArrowTopRightOnSquare,
+  HiOutlineGlobeAlt,
+  HiOutlinePhone,
+  HiOutlineCodeBracketSquare,
+  HiOutlineDevicePhoneMobile,
+  HiOutlineSparkles,
 } from "react-icons/hi2";
 import { HiViewGrid, HiViewList } from "react-icons/hi";
 
-type ProjectStatus = "deployed" | "building" | "draft";
-type FilterTab = "all" | "recent" | "deployed" | "archived";
-
-interface Project {
-  id: string;
-  name: string;
-  stack: string;
-  status: ProjectStatus;
-  icon: string;
-  timeAgo: string;
-  metric: string;
-  metricIcon: "chart" | "sync" | "save";
-  actionLabel: string;
-}
-
-const mockProjects: Project[] = [
-  {
-    id: "1",
-    name: "Smart Home Assistant",
-    stack: "Next.js • Python • AI Engine",
-    status: "deployed",
-    icon: "🤖",
-    timeAgo: "2h ago",
-    metric: "1.2k req/h",
-    metricIcon: "chart",
-    actionLabel: "Open",
-  },
-  {
-    id: "2",
-    name: "Customer Support Bot",
-    stack: "React • Node.js • LangChain",
-    status: "building",
-    icon: "💬",
-    timeAgo: "5h ago",
-    metric: "84% complete",
-    metricIcon: "sync",
-    actionLabel: "Resume",
-  },
-  {
-    id: "3",
-    name: "Reservations AI",
-    stack: "Svelte • Go • PostgreSQL",
-    status: "draft",
-    icon: "📋",
-    timeAgo: "1d ago",
-    metric: "Last saved",
-    metricIcon: "save",
-    actionLabel: "Edit",
-  },
-];
+type FilterTab = "all" | "draft" | "building" | "deployed";
 
 const statusConfig: Record<
   ProjectStatus,
@@ -77,6 +31,12 @@ const statusConfig: Record<
     dotColor: "bg-emerald-500",
     bgColor: "bg-emerald-500/10",
     textColor: "text-emerald-600 dark:text-emerald-400",
+  },
+  ready: {
+    label: "Ready",
+    dotColor: "bg-amber-500",
+    bgColor: "bg-amber-500/10",
+    textColor: "text-amber-600 dark:text-amber-400",
   },
   building: {
     label: "Building",
@@ -92,27 +52,66 @@ const statusConfig: Record<
   },
 };
 
+const agentIcons: Record<
+  string,
+  React.ComponentType<{ className?: string }>
+> = {
+  web: HiOutlineGlobeAlt,
+  telephony: HiOutlinePhone,
+  widget: HiOutlineCodeBracketSquare,
+  mobile: HiOutlineDevicePhoneMobile,
+};
+
 const filterTabs: { id: FilterTab; label: string }[] = [
   { id: "all", label: "All Projects" },
-  { id: "recent", label: "Recent" },
+  { id: "draft", label: "Drafts" },
+  { id: "building", label: "Building" },
   { id: "deployed", label: "Deployed" },
-  { id: "archived", label: "Archived" },
 ];
 
-function MetricIcon({ type }: { type: Project["metricIcon"] }) {
-  switch (type) {
-    case "chart":
-      return <HiOutlineChartBar className="h-3.5 w-3.5 text-primary" />;
-    case "sync":
-      return <HiOutlineArrowPath className="h-3.5 w-3.5" />;
-    case "save":
-      return <HiOutlineBookmarkSquare className="h-3.5 w-3.5" />;
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days}d ago`;
+  return `${Math.floor(days / 30)}mo ago`;
+}
+
+function actionLabel(status: ProjectStatus): string {
+  switch (status) {
+    case "deployed":
+      return "Open";
+    case "building":
+      return "Resume";
+    default:
+      return "Edit";
   }
 }
 
 export default function Projects() {
+  const { organization } = useAccount();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<FilterTab>("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+
+  useEffect(() => {
+    if (!organization) return;
+    setLoading(true);
+    getProjects(organization.organization_id).then((data) => {
+      setProjects(data);
+      setLoading(false);
+    });
+  }, [organization]);
+
+  const filtered =
+    activeFilter === "all"
+      ? projects
+      : projects.filter((p) => p.status === activeFilter);
 
   return (
     <DashboardLayout>
@@ -123,7 +122,8 @@ export default function Projects() {
             <div>
               <h1 className="text-2xl font-bold text-foreground">Projects</h1>
               <p className="mt-1 text-sm text-muted-foreground">
-                Manage and monitor your applications
+                All your agents in one place. Create, manage, and deploy with
+                ease.
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -154,7 +154,7 @@ export default function Projects() {
                 </button>
               </div>
               <Link
-                href="/"
+                href="/home"
                 className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.98]"
               >
                 <HiOutlinePlus className="h-4 w-4" />
@@ -182,16 +182,50 @@ export default function Projects() {
             ))}
           </div>
 
+          {/* Loading */}
+          {loading && (
+            <div className="mt-16 flex flex-col items-center justify-center gap-3 text-muted-foreground">
+              <div className="size-8 animate-spin rounded-full border-2 border-border border-t-primary" />
+              <p className="text-sm">Loading projects…</p>
+            </div>
+          )}
+
+          {/* Empty state */}
+          {!loading && filtered.length === 0 && (
+            <div className="mt-16 flex flex-col items-center justify-center gap-4 text-center">
+              <div className="size-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <HiOutlineSparkles className="size-7 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">
+                  {activeFilter === "all"
+                    ? "No projects yet"
+                    : `No ${activeFilter} projects`}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Create your first voice agent to get started.
+                </p>
+              </div>
+              <Link
+                href="/home"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:bg-primary/90"
+              >
+                <HiOutlinePlus className="h-4 w-4" />
+                New Project
+              </Link>
+            </div>
+          )}
+
           {/* Grid view */}
-          {viewMode === "grid" && (
-            <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {mockProjects.map((project) => (
-                <ProjectCard key={project.id} project={project} />
+          {!loading && filtered.length > 0 && viewMode === "grid" && (
+            <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {filtered.map((project) => (
+                <ProjectCard key={project.project_id} project={project} />
               ))}
 
               {/* Create new */}
               <Link
-                href="/"
+                href="/home"
                 className="group flex min-h-[260px] flex-col items-center justify-center rounded-2xl border border-dashed border-border transition-all hover:border-primary/50 hover:bg-surface-elevated/30"
               >
                 <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface-elevated transition-colors group-hover:border-primary/30 group-hover:bg-primary/10 group-hover:text-primary">
@@ -208,7 +242,7 @@ export default function Projects() {
           )}
 
           {/* List view */}
-          {viewMode === "list" && (
+          {!loading && filtered.length > 0 && viewMode === "list" && (
             <div className="mt-8 overflow-hidden rounded-xl border border-border">
               <table className="w-full text-left text-sm">
                 <thead>
@@ -217,10 +251,10 @@ export default function Projects() {
                       Project
                     </th>
                     <th className="px-5 py-3 text-xs font-semibold text-muted-foreground">
-                      Status
+                      Type
                     </th>
                     <th className="px-5 py-3 text-xs font-semibold text-muted-foreground">
-                      Metric
+                      Status
                     </th>
                     <th className="px-5 py-3 text-xs font-semibold text-muted-foreground">
                       Updated
@@ -231,27 +265,33 @@ export default function Projects() {
                   </tr>
                 </thead>
                 <tbody>
-                  {mockProjects.map((project) => {
+                  {filtered.map((project) => {
                     const status = statusConfig[project.status];
+                    const Icon =
+                      agentIcons[project.agent_type] ?? HiOutlineGlobeAlt;
                     return (
                       <tr
-                        key={project.id}
+                        key={project.project_id}
                         className="border-b border-border last:border-b-0 transition-colors hover:bg-surface-elevated/30"
                       >
                         <td className="px-5 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-elevated text-lg">
-                              {project.icon}
+                          <Link
+                            href={`/projects/${project.project_id}`}
+                            className="flex items-center gap-3 group/title"
+                          >
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-elevated">
+                              <Icon className="h-4 w-4 text-muted-foreground" />
                             </div>
-                            <div>
-                              <p className="text-sm font-semibold text-foreground">
-                                {project.name}
-                              </p>
-                              <p className="text-[11px] text-muted-foreground">
-                                {project.stack}
-                              </p>
-                            </div>
-                          </div>
+                            <p
+                              className="text-sm font-semibold text-foreground truncate max-w-[200px] group-hover/title:text-primary transition-colors"
+                              title={project.title}
+                            >
+                              {project.title}
+                            </p>
+                          </Link>
+                        </td>
+                        <td className="px-5 py-4 text-xs capitalize text-muted-foreground">
+                          {project.agent_type}
                         </td>
                         <td className="px-5 py-4">
                           <span
@@ -273,21 +313,15 @@ export default function Projects() {
                             {status.label}
                           </span>
                         </td>
-                        <td className="px-5 py-4">
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <MetricIcon type={project.metricIcon} />
-                            {project.metric}
-                          </div>
-                        </td>
                         <td className="px-5 py-4 text-xs text-muted-foreground">
-                          {project.timeAgo}
+                          {timeAgo(project.updated_at)}
                         </td>
                         <td className="px-5 py-4">
                           <Link
-                            href={`/projects/${project.id}`}
+                            href={`/projects/${project.project_id}`}
                             className="text-xs font-semibold text-primary transition-colors hover:text-primary/80"
                           >
-                            {project.actionLabel}
+                            {actionLabel(project.status)}
                           </Link>
                         </td>
                       </tr>
@@ -309,14 +343,13 @@ export default function Projects() {
 
 function ProjectCard({ project }: { project: Project }) {
   const status = statusConfig[project.status];
+  const Icon = agentIcons[project.agent_type] ?? HiOutlineGlobeAlt;
 
   return (
     <div className="group relative overflow-hidden rounded-2xl border border-border bg-surface transition-all duration-200 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5">
       {/* Preview */}
       <div className="relative flex h-28 items-center justify-center bg-surface-elevated/40">
-        <span className="text-4xl opacity-20 transition-transform duration-300 group-hover:scale-110">
-          {project.icon}
-        </span>
+        <Icon className="h-10 w-10 text-muted-foreground/20 transition-transform duration-300 group-hover:scale-110" />
 
         {/* Status badge */}
         <div className="absolute left-4 top-4">
@@ -356,35 +389,29 @@ function ProjectCard({ project }: { project: Project }) {
       </div>
 
       {/* Body */}
-      <div className="p-5">
-        <h3 className="text-sm font-bold text-foreground transition-colors group-hover:text-primary">
-          {project.name}
+      <Link href={`/projects/${project.project_id}`} className="block p-5">
+        <h3
+          className="text-sm font-bold text-foreground transition-colors group-hover:text-primary truncate"
+          title={project.title}
+        >
+          {project.title}
         </h3>
-        <p className="mt-1 text-[11px] text-muted-foreground">
-          {project.stack}
+        <p className="mt-1 text-[11px] capitalize text-muted-foreground">
+          {project.agent_type} agent
         </p>
 
         {/* Meta row */}
         <div className="mt-5 flex items-center justify-between border-t border-border pt-4">
-          <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <HiOutlineClock className="h-3.5 w-3.5" />
-              {project.timeAgo}
-            </span>
-            <span className="flex items-center gap-1">
-              <MetricIcon type={project.metricIcon} />
-              {project.metric}
-            </span>
-          </div>
-          <Link
-            href={`/projects/${project.id}`}
-            className="inline-flex items-center gap-1 rounded-lg bg-surface-elevated px-3 py-1.5 text-[11px] font-semibold text-foreground transition-all hover:bg-primary hover:text-primary-foreground active:scale-[0.97]"
-          >
-            {project.actionLabel}
+          <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+            <HiOutlineClock className="h-3.5 w-3.5" />
+            {timeAgo(project.updated_at)}
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-lg bg-surface-elevated px-3 py-1.5 text-[11px] font-semibold text-foreground transition-all group-hover:bg-primary group-hover:text-primary-foreground">
+            {actionLabel(project.status)}
             <HiOutlineArrowTopRightOnSquare className="h-3 w-3" />
-          </Link>
+          </span>
         </div>
-      </div>
+      </Link>
     </div>
   );
 }

@@ -5,21 +5,12 @@ import { Button } from "@/components/ui/button";
 import { HiOutlineEnvelope, HiOutlineArrowLeft } from "react-icons/hi2";
 import Link from "next/link";
 import { useAccount } from "@/provider/account-provider";
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { PageLoader } from "@/components/ui/page-loader";
 
 export function BetaAccess() {
   const { user, loading } = useAccount();
-  const router = useRouter();
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push("/");
-    }
-  }, [loading]);
-
-  if (!user) {
+  if (loading || !user) {
     return <PageLoader />;
   }
   return (

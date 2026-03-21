@@ -14,11 +14,12 @@ import {
   HiOutlineUser,
   HiOutlineArrowRightOnRectangle,
   HiOutlineChevronUp,
+  HiOutlineBolt,
   HiHome,
 } from "react-icons/hi2";
 
 const navItems = [
-  { href: "/", label: "Home", icon: HiHome },
+  { href: "/home", label: "Home", icon: HiHome },
   { href: "/projects", label: "Projects", icon: HiOutlineFolder },
   { href: "/deployments", label: "Deployments", icon: HiOutlineRocketLaunch },
   { href: "/templates", label: "Templates", icon: HiOutlineDocumentText },
@@ -28,7 +29,7 @@ const navItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, account } = useAccount();
+  const { user, account, organization } = useAccount();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -96,6 +97,21 @@ export function Sidebar() {
               <p className="truncate text-sm font-semibold">{fullName}</p>
               <p className="truncate text-xs text-muted-foreground">{email}</p>
             </div>
+
+            {/* Token balance */}
+            {organization && (
+              <div className="border-b border-border px-4 py-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <HiOutlineBolt className="size-3.5 text-amber-500" />
+                    <span>Credits</span>
+                  </div>
+                  <span className="text-xs font-bold tabular-nums">
+                    {organization.token_balance.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            )}
 
             <div className="p-1.5">
               <Link

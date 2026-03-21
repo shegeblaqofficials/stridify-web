@@ -16,6 +16,7 @@ import {
   HiOutlineArrowRight,
   HiOutlineCommandLine,
 } from "react-icons/hi2";
+import { createProject } from "@/lib/project/actions";
 
 const agentTypes = [
   { id: "web", label: "Web", icon: HiOutlineGlobeAlt },
@@ -91,6 +92,7 @@ export default function DashboardHome() {
   const [prompt, setPrompt] = useState("");
   const [agentType, setAgentType] = useState<AgentType>("web");
   const [typeOpen, setTypeOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -106,13 +108,24 @@ export default function DashboardHome() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleGenerate = useCallback(() => {
-    if (account && account.is_active === false) {
-      router.push("/beta-access");
-      return;
+  const handleGenerate = useCallback(async () => {
+    if (!prompt.trim() || !account || isCreating) return;
+    setIsCreating(true);
+    try {
+      const result = await createProject(
+        account.organization_id,
+        account.user_id,
+        prompt.trim().slice(0, 80),
+        agentType,
+        prompt.trim(),
+      );
+      if (result) {
+        router.push(`/projects/${result.project.project_id}`);
+      }
+    } finally {
+      setIsCreating(false);
     }
-    // TODO: create project with prompt
-  }, [account, router]);
+  }, [account, router, prompt, agentType, isCreating]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
@@ -213,9 +226,10 @@ export default function DashboardHome() {
                   size="lg"
                   className="px-4 py-2 text-xs sm:px-10 sm:py-3.5 sm:text-sm"
                   onClick={handleGenerate}
+                  disabled={isCreating}
                 >
-                  Generate App
-                  <HiOutlineBolt className="h-4 w-4" />
+                  {isCreating ? "Creating..." : "Generate App"}
+                  {!isCreating && <HiOutlineBolt className="h-4 w-4" />}
                 </Button>
               </div>
             </div>

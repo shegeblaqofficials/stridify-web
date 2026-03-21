@@ -15,6 +15,7 @@ import {
   HiOutlineChevronDown,
 } from "react-icons/hi2";
 import { useRouter } from "next/navigation";
+import { createProject, setPendingPrompt } from "@/lib/project/actions";
 
 const agentTypes = [
   { id: "web", label: "Web", icon: HiOutlineGlobeAlt },
@@ -87,8 +88,10 @@ export function HeroSection() {
   const placeholder = useTypingPlaceholder(placeholderPhrases);
   const { account, user } = useAccount();
   const [authOpen, setAuthOpen] = useState(false);
+  const [prompt, setPrompt] = useState("");
   const [agentType, setAgentType] = useState<AgentType>("web");
   const [typeOpen, setTypeOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const closeAuth = useCallback(() => setAuthOpen(false), []);
   const router = useRouter();
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -107,14 +110,29 @@ export function HeroSection() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (!user) {
+      if (prompt.trim()) {
+        await setPendingPrompt(prompt.trim(), agentType);
+      }
       setAuthOpen(true);
       return;
     }
-    if (account && account.is_active === false) {
-      router.push("/beta-access");
-      return;
+    if (!prompt.trim() || !account || isCreating) return;
+    setIsCreating(true);
+    try {
+      const result = await createProject(
+        account.organization_id,
+        account.user_id,
+        prompt.trim().slice(0, 80),
+        agentType,
+        prompt.trim(),
+      );
+      if (result) {
+        router.push(`/projects/${result.project.project_id}`);
+      }
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -146,7 +164,7 @@ export function HeroSection() {
         >
           Build Voice Apps
           <br />
-          <span className="bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-muted-foreground via-muted-foreground/60 to-muted-foreground bg-clip-text text-transparent">
             Just by Prompting.
           </span>
         </h1>
@@ -173,6 +191,8 @@ export function HeroSection() {
             <div className="flex items-start gap-3 p-5">
               <HiOutlineSparkles className="mt-0.5 h-5 w-5 shrink-0 text-primary/60" />
               <textarea
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
                 className="h-24 w-full resize-none bg-transparent text-xl font-medium text-foreground placeholder:text-muted-foreground focus:outline-none"
                 placeholder={placeholder + "│"}
                 onKeyDown={handleKeyDown}
@@ -244,8 +264,9 @@ export function HeroSection() {
                 size="lg"
                 className="px-4 py-2 text-xs sm:px-10 sm:py-3.5 sm:text-sm"
                 onClick={handleGenerate}
+                disabled={isCreating}
               >
-                Generate App ⚡
+                {isCreating ? "Creating..." : "Generate App ⚡"}
               </Button>
             </div>
           </div>
@@ -257,14 +278,15 @@ export function HeroSection() {
           data-aos-delay="650"
           className="flex flex-wrap justify-center gap-3"
         >
-          {examplePrompts.map((prompt) => (
+          {examplePrompts.map((p) => (
             <Button
-              key={prompt}
+              key={p}
               variant="outline"
               size="sm"
               className="rounded-full uppercase tracking-tight"
+              onClick={() => setPrompt(p)}
             >
-              {prompt}
+              {p}
             </Button>
           ))}
         </div>

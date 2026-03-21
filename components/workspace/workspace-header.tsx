@@ -5,6 +5,7 @@ import Link from "next/link";
 import { StridifyLogo } from "@/components/ui/logo";
 import { useAccount } from "@/provider/account-provider";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
+import { UserDropdown } from "@/components/auth/user-dropdown";
 import { DeployModal } from "@/components/workspace/deploy-modal";
 import {
   HiOutlineFolderOpen,
@@ -13,11 +14,18 @@ import {
   HiOutlineCog6Tooth,
   HiOutlineRocketLaunch,
   HiOutlineCheck,
+  HiOutlineBolt,
 } from "react-icons/hi2";
 
 export interface ProjectVersion {
   id: string;
   label: string;
+}
+
+export interface TokenUsageDisplay {
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
 }
 
 interface WorkspaceHeaderProps {
@@ -26,6 +34,7 @@ interface WorkspaceHeaderProps {
   versions?: ProjectVersion[];
   activeVersionId?: string;
   onVersionChange?: (versionId: string) => void;
+  tokenUsage?: TokenUsageDisplay | null;
 }
 
 const defaultVersions: ProjectVersion[] = [
@@ -40,6 +49,7 @@ export function WorkspaceHeader({
   versions = defaultVersions,
   activeVersionId,
   onVersionChange,
+  tokenUsage,
 }: WorkspaceHeaderProps) {
   const { user } = useAccount();
   const [isEditing, setIsEditing] = useState(false);
@@ -97,19 +107,10 @@ export function WorkspaceHeader({
     [onVersionChange],
   );
 
-  const avatarUrl = user?.user_metadata?.avatar_url;
-  const initials =
-    user?.user_metadata?.full_name
-      ?.split(" ")
-      .map((n: string) => n[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase() ?? "U";
-
   return (
     <header className="flex h-14 items-center justify-between px-6 border-b border-border bg-surface shrink-0">
       <div className="flex items-center gap-4">
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/home" className="flex items-center gap-2">
           <StridifyLogo className="h-5 w-5 text-foreground" />
           <span className="text-base font-bold uppercase tracking-widest">
             Stridify
@@ -138,7 +139,8 @@ export function WorkspaceHeader({
           ) : (
             <button
               onClick={() => setIsEditing(true)}
-              className="text-sm font-medium hover:text-foreground transition-colors"
+              className="text-sm font-medium hover:text-foreground transition-colors truncate max-w-[200px]"
+              title={name}
             >
               {name}
             </button>
@@ -151,7 +153,7 @@ export function WorkspaceHeader({
               className="flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-surface-elevated transition-colors"
             >
               <span className="text-xs text-muted-foreground">
-                {versions.find((v) => v.id === currentVersionId)?.id ??
+                {versions.find((v) => v.id === currentVersionId)?.label ??
                   "version"}
               </span>
               <HiOutlineChevronDown
@@ -191,6 +193,15 @@ export function WorkspaceHeader({
       </div>
 
       <div className="flex items-center gap-3">
+        {tokenUsage && (
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-elevated border border-border text-xs text-muted-foreground">
+            <HiOutlineBolt className="size-3.5 text-amber-500" />
+            <span className="font-medium tabular-nums">
+              {tokenUsage.totalTokens.toLocaleString()}
+            </span>
+            <span className="text-muted-foreground/60">tokens</span>
+          </div>
+        )}
         <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold rounded-lg bg-surface-elevated hover:opacity-80 transition-colors">
           <HiOutlineShare className="size-4" />
           <span>Share</span>
@@ -207,20 +218,7 @@ export function WorkspaceHeader({
           <span>Deploy</span>
         </button>
 
-        <div className="size-8 rounded-full bg-surface-elevated flex items-center justify-center overflow-hidden border border-border ml-2">
-          {avatarUrl ? (
-            <img
-              src={avatarUrl}
-              alt=""
-              className="size-full object-cover"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <span className="text-xs font-bold text-muted-foreground">
-              {initials}
-            </span>
-          )}
-        </div>
+        {user && <UserDropdown user={user} />}
         <ThemeSwitcher />
       </div>
 

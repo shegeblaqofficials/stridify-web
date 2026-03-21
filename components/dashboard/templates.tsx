@@ -177,10 +177,6 @@ export function DashboardTemplates() {
   const router = useRouter();
 
   const handleRemix = (templateId: string) => {
-    if (account && account.is_active === false) {
-      router.push("/beta-access");
-      return;
-    }
     router.push(`/project/${templateId}?remix=true`);
   };
 

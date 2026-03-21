@@ -1,21 +1,26 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useAccount } from "@/provider/account-provider";
 import { Button } from "@/components/ui/button";
+import { getOrganizationMetrics } from "@/lib/metric/actions";
 import {
   HiOutlinePlus,
   HiOutlineTrash,
   HiOutlineEllipsisVertical,
   HiOutlineUserPlus,
   HiOutlinePencil,
+  HiOutlineBolt,
+  HiOutlineChartBar,
+  HiOutlineArrowDown,
+  HiOutlineArrowUp,
 } from "react-icons/hi2";
 
 /* ------------------------------------------------------------------ */
 /*  Data                                                               */
 /* ------------------------------------------------------------------ */
 
-const tabs = ["Profile", "API Keys", "Team", "Billing"] as const;
+const tabs = ["Profile", "API Keys", "Team", "Billing", "Usage"] as const;
 type Tab = (typeof tabs)[number];
 
 const sectionIds: Record<Tab, string> = {
@@ -23,6 +28,7 @@ const sectionIds: Record<Tab, string> = {
   "API Keys": "api-keys",
   Team: "team",
   Billing: "billing",
+  Usage: "usage",
 };
 
 const apiKeys = [
@@ -58,9 +64,22 @@ const teamMembers = [
 /* ------------------------------------------------------------------ */
 
 export function Settings() {
-  const { user, account } = useAccount();
+  const { user, account, organization } = useAccount();
   const [activeTab, setActiveTab] = useState<Tab>("Profile");
   const containerRef = useRef<HTMLDivElement>(null);
+
+  type ProjectUsage = {
+    project_id: string;
+    project_title: string;
+    sessions: number;
+    input_tokens: number;
+    output_tokens: number;
+    total_tokens: number;
+    last_active: string;
+  };
+  const [usageData, setUsageData] = useState<ProjectUsage[]>([]);
+  const [usageLoading, setUsageLoading] = useState(false);
+  const [usageLoaded, setUsageLoaded] = useState(false);
 
   const avatarUrl = user?.user_metadata?.avatar_url;
   const fullName =
@@ -73,6 +92,20 @@ export function Settings() {
     .slice(0, 2)
     .toUpperCase();
   const planLabel = account?.is_active ? "Pro" : "Free";
+
+  const fetchUsage = useCallback(async () => {
+    if (!account?.organization_id || usageLoaded) return;
+    setUsageLoading(true);
+    const data = await getOrganizationMetrics(account.organization_id);
+    setUsageData(data);
+    setUsageLoading(false);
+    setUsageLoaded(true);
+  }, [account?.organization_id, usageLoaded]);
+
+  // Fetch usage when tab becomes active
+  useEffect(() => {
+    if (activeTab === "Usage") fetchUsage();
+  }, [activeTab, fetchUsage]);
 
   function scrollToSection(tab: Tab) {
     setActiveTab(tab);
@@ -380,6 +413,131 @@ export function Settings() {
                   Update Method
                 </button>
               </div>
+            </div>
+          </section>
+
+          {/* ── Usage ──────────────────────────────────── */}
+          <section id="usage">
+            <h2 className="mb-6 text-xl font-bold text-foreground">Usage</h2>
+
+            {/* Summary cards */}
+            {organization && (
+              <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="rounded-xl border border-border bg-surface p-5">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Credit Balance
+                  </span>
+                  <p className="mt-2 text-2xl font-bold tabular-nums text-foreground">
+                    {organization.token_balance.toLocaleString()}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-border bg-surface p-5">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Total Tokens Used
+                  </span>
+                  <p className="mt-2 text-2xl font-bold tabular-nums text-foreground">
+                    {usageData
+                      .reduce((sum, p) => sum + p.total_tokens, 0)
+                      .toLocaleString()}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-border bg-surface p-5">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Agent Sessions
+                  </span>
+                  <p className="mt-2 text-2xl font-bold tabular-nums text-foreground">
+                    {usageData
+                      .reduce((sum, p) => sum + p.sessions, 0)
+                      .toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Per-project breakdown */}
+            <div className="overflow-hidden rounded-xl border border-border">
+              {usageLoading ? (
+                <div className="flex items-center justify-center py-16">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-border border-t-foreground" />
+                    <p className="text-sm text-muted-foreground">
+                      Loading usage data…
+                    </p>
+                  </div>
+                </div>
+              ) : usageData.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-surface-elevated">
+                    <HiOutlineChartBar className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm font-semibold text-foreground">
+                    No usage yet
+                  </p>
+                  <p className="mt-1 max-w-xs text-center text-xs text-muted-foreground">
+                    Token usage will appear here once you start building with
+                    the AI coding agent.
+                  </p>
+                </div>
+              ) : (
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-border bg-surface-elevated/50">
+                      <th className="px-6 py-3 text-right text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                        Sessions
+                      </th>
+                      <th className="px-6 py-3 text-right text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                        <span className="inline-flex items-center gap-1">
+                          <HiOutlineArrowDown className="h-3 w-3" />
+                          Input
+                        </span>
+                      </th>
+                      <th className="px-6 py-3 text-right text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                        <span className="inline-flex items-center gap-1">
+                          <HiOutlineArrowUp className="h-3 w-3" />
+                          Output
+                        </span>
+                      </th>
+                      <th className="px-6 py-3 text-right text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                        Total
+                      </th>
+                      <th className="px-6 py-3 text-right text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                        Last Active
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {usageData.map((row) => (
+                      <tr
+                        key={row.project_id}
+                        className="border-b border-border last:border-b-0 transition-colors hover:bg-surface-elevated/30"
+                      >
+                        <td className="px-6 py-4 text-right tabular-nums text-sm text-muted-foreground">
+                          {row.sessions.toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 text-right tabular-nums text-sm text-muted-foreground">
+                          {row.input_tokens.toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 text-right tabular-nums text-sm text-muted-foreground">
+                          {row.output_tokens.toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 text-right tabular-nums text-sm font-semibold text-foreground">
+                          {row.total_tokens.toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 text-right text-sm text-muted-foreground">
+                          {new Date(row.last_active).toLocaleDateString(
+                            "en-US",
+                            {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            },
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </section>
 

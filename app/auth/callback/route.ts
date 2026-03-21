@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { upsertAccount } from "@/lib/account/actions";
+import { createProjectFromPendingPrompt } from "@/lib/project/actions";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  let next = searchParams.get("next") ?? "/";
+  let next = searchParams.get("next") ?? "/home";
   if (!next.startsWith("/")) {
-    next = "/";
+    next = "/home";
   }
 
   if (code) {
@@ -18,6 +19,18 @@ export async function GET(request: Request) {
       if (account && account.is_active === false) {
         return NextResponse.redirect(`${origin}/beta-access`);
       }
+
+      // Pick up pending prompt: create project and redirect straight to workspace
+      if (account) {
+        const result = await createProjectFromPendingPrompt(
+          account.organization_id,
+          account.user_id,
+        );
+        if (result) {
+          next = `/projects/${result.project.project_id}`;
+        }
+      }
+
       const forwardedHost = request.headers.get("x-forwarded-host");
       const isLocalEnv = process.env.NODE_ENV === "development";
       if (isLocalEnv) {
@@ -29,6 +42,5 @@ export async function GET(request: Request) {
       }
     }
   }
-
-  return NextResponse.redirect(`${origin}/`);
+  return NextResponse.redirect(`${origin}/home`);
 }

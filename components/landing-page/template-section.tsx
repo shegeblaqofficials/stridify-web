@@ -81,15 +81,7 @@ export function TemplateSection() {
       setAuthOpen(true);
       return;
     }
-    if (account && account.is_active === false) {
-      router.push("/beta-access");
-      return;
-    }
-    if (account && account.is_active === true) {
-      router.push(`/project/${templateId}?remix=true`);
-      return;
-    }
-    return;
+    router.push(`/project/${templateId}?remix=true`);
   };
 
   return (

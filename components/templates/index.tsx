@@ -186,15 +186,7 @@ export default function Templates() {
       setAuthOpen(true);
       return;
     }
-    if (account && account.is_active === false) {
-      router.push("/beta-access");
-      return;
-    }
-    if (account && account.is_active === true) {
-      router.push(`/project/${templateId}?remix=true`);
-      return;
-    }
-    return;
+    router.push(`/project/${templateId}?remix=true`);
   };
 
   const filtered = useMemo(() => {
@@ -221,7 +213,7 @@ export default function Templates() {
           <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
             <div>
               <Link
-                href="/"
+                href="/home"
                 data-aos="fade-right"
                 className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
