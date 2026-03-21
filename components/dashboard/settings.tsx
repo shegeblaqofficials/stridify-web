@@ -138,18 +138,18 @@ export function Settings() {
     <div ref={containerRef} className="flex-1 overflow-y-auto">
       {/* Sticky tab header */}
       <div className="sticky top-0 z-10 border-b border-border bg-surface/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-4xl items-center gap-8 px-8">
+        <div className="mx-auto flex max-w-4xl items-center gap-4 px-4 md:gap-8 md:px-8">
           <h1 className="shrink-0 text-base font-semibold text-foreground">
             Settings
           </h1>
-          <nav className="flex gap-6">
+          <nav className="flex gap-4 overflow-x-auto md:gap-6 scrollbar-none">
             {tabs.map((tab) => (
               <button
                 key={tab}
                 type="button"
                 onClick={() => scrollToSection(tab)}
                 className={[
-                  "relative py-4 text-sm font-medium transition-colors",
+                  "relative shrink-0 whitespace-nowrap py-4 text-sm font-medium transition-colors",
                   activeTab === tab
                     ? "text-foreground"
                     : "text-muted-foreground hover:text-foreground",
@@ -164,9 +164,9 @@ export function Settings() {
           </nav>
         </div>
       </div>
-      <div className="mx-auto max-w-7xl px-6 py-8">
+      <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
         {/* Content */}
-        <div className="mx-auto max-w-4xl space-y-12 px-8 py-8">
+        <div className="mx-auto max-w-4xl space-y-12 px-2 py-4 md:px-8 md:py-8">
           {/* ── Profile ─────────────────────────────────── */}
           <section id="profile">
             <h2 className="mb-6 text-xl font-bold text-foreground">Profile</h2>
