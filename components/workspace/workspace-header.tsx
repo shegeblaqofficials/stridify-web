@@ -115,6 +115,12 @@ export function WorkspaceHeader({
           <span className="hidden sm:inline text-base font-bold uppercase tracking-widest">
             Stridify
           </span>
+          <span
+            className="hidden sm:inline rounded-md border border-foreground/30 px-2 py-[3px] text-[9px] font-bold uppercase leading-none tracking-wide dark:border-primary/50"
+            style={{ color: "var(--foreground)" }}
+          >
+            Beta
+          </span>
         </Link>
 
         <div className="hidden sm:block h-4 w-px bg-border mx-2" />

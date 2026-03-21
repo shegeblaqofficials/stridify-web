@@ -13,7 +13,12 @@ import type { Project } from "@/model/project/project";
 import type { Prompt } from "@/model/project/prompt";
 import type { Snapshot } from "@/model/project/snapshot";
 import type { ProjectVersion } from "@/components/workspace/workspace-header";
-import { HiOutlineChatBubbleLeftRight, HiOutlineEye } from "react-icons/hi2";
+import {
+  HiOutlineChatBubbleLeftRight,
+  HiOutlineEye,
+  HiOutlineComputerDesktop,
+  HiOutlineXMark,
+} from "react-icons/hi2";
 
 type MobileTab = "chat" | "preview";
 
@@ -31,6 +36,7 @@ export default function Workspace({ projectId }: WorkspaceProps) {
   const [previewRefreshKey, setPreviewRefreshKey] = useState(0);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>("chat");
+  const [showMobileBanner, setShowMobileBanner] = useState(true);
   const { user, account, loading } = useAccount();
 
   const refreshProject = useCallback(async () => {
@@ -126,6 +132,23 @@ export default function Workspace({ projectId }: WorkspaceProps) {
         activeVersionId={snapshots[0]?.snapshot_id}
         tokenUsage={tokenUsage}
       />
+
+      {/* Mobile desktop-suggestion banner — phones only */}
+      {showMobileBanner && (
+        <div className="flex items-center gap-2.5 px-3 py-2 bg-primary/10 text-primary text-[11px] leading-tight border-b border-primary/15 shrink-0 sm:hidden animate-in fade-in slide-in-from-top-1 duration-300">
+          <HiOutlineComputerDesktop className="size-3.5 shrink-0" />
+          <span className="flex-1">
+            For the best experience, use a desktop browser.
+          </span>
+          <button
+            type="button"
+            onClick={() => setShowMobileBanner(false)}
+            className="p-0.5 rounded hover:bg-primary/10 transition-colors"
+          >
+            <HiOutlineXMark className="size-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Mobile tab bar */}
       <div className="flex h-10 items-center border-b border-border bg-surface shrink-0 md:hidden">

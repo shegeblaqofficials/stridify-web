@@ -133,3 +133,16 @@ export async function updateProjectSandbox(
     .update({ sandbox_id: sandboxId, preview_url: previewUrl })
     .eq("project_id", projectId);
 }
+
+export async function deleteProject(projectId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("projects")
+    .delete()
+    .eq("project_id", projectId);
+  if (error) {
+    console.error("Error deleting project:", error.message);
+    return false;
+  }
+  return true;
+}

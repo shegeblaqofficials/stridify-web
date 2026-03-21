@@ -16,7 +16,7 @@ import {
   HiOutlineArrowRight,
   HiOutlineCommandLine,
 } from "react-icons/hi2";
-import { createProject } from "@/lib/project/actions";
+import { createProject, getProjects } from "@/lib/project/actions";
 
 const agentTypes = [
   { id: "web", label: "Web", icon: HiOutlineGlobeAlt },
@@ -94,6 +94,14 @@ export default function DashboardHome() {
   const [typeOpen, setTypeOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [projectCount, setProjectCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!account) return;
+    getProjects(account.organization_id).then((projects) =>
+      setProjectCount(projects.length),
+    );
+  }, [account]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -236,13 +244,13 @@ export default function DashboardHome() {
           </div>
 
           {/* Quick prompts */}
-          <div className="mb-12 flex flex-wrap justify-center gap-3">
+          <div className="mb-8 flex flex-wrap justify-center gap-2 sm:mb-12 sm:gap-3">
             {quickPrompts.map((label) => (
               <button
                 key={label}
                 type="button"
                 onClick={() => setPrompt(label)}
-                className="rounded-full border border-border bg-surface px-5 py-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground transition-all hover:border-foreground hover:text-foreground"
+                className="rounded-full border border-border bg-surface px-3 py-1.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground transition-all hover:border-foreground hover:text-foreground sm:px-5 sm:py-2 sm:text-[10px] sm:font-bold sm:tracking-widest"
               >
                 {label}
               </button>
@@ -251,7 +259,7 @@ export default function DashboardHome() {
 
           {/* Bento cards */}
           <div className="grid grid-cols-12 gap-4">
-            <div className="col-span-12 flex cursor-pointer flex-col justify-between rounded-xl border border-border bg-surface p-6 shadow-sm transition-colors hover:border-primary md:col-span-8">
+            <div className="order-2 col-span-12 flex cursor-pointer flex-col justify-between rounded-xl border border-border bg-surface p-6 shadow-sm transition-colors hover:border-primary md:order-1 md:col-span-8">
               <div>
                 <div className="mb-2 flex items-center gap-2">
                   <HiOutlineCommandLine className="h-4 w-4 text-muted-foreground" />
@@ -268,12 +276,14 @@ export default function DashboardHome() {
               </div>
             </div>
 
-            <div className="col-span-12 flex flex-col justify-between rounded-xl bg-primary p-6 text-primary-foreground shadow-sm md:col-span-4">
+            <div className="order-1 col-span-12 flex flex-col justify-between rounded-xl bg-primary p-6 text-primary-foreground shadow-sm md:order-2 md:col-span-4">
               <HiOutlineSparkles className="mb-4 h-6 w-6" />
               <div>
                 <h3 className="mb-1 text-sm font-bold">Recent Projects</h3>
                 <p className="text-[10px] opacity-80">
-                  You have 12 active deployments.
+                  {projectCount !== null
+                    ? `You have ${projectCount} active project${projectCount !== 1 ? "s" : ""}.`
+                    : "Loading projects..."}
                 </p>
               </div>
             </div>

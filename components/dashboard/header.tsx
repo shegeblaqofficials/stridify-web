@@ -5,7 +5,6 @@ import { ThemeSwitcher } from "@/components/ui/theme-switcher";
 import { StridifyLogo } from "@/components/ui/logo";
 import {
   HiOutlineMagnifyingGlass,
-  HiOutlinePlus,
   HiOutlineBolt,
   HiOutlineBars3,
 } from "react-icons/hi2";
@@ -17,8 +16,8 @@ export function DashboardHeader({
 }) {
   return (
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-surface/80 px-4 backdrop-blur-md md:px-6">
-      {/* Left: menu + logo + search */}
-      <div className="flex flex-1 items-center gap-3 md:gap-5">
+      {/* Left: menu + logo */}
+      <div className="flex items-center gap-3 md:gap-5">
         {/* Mobile hamburger */}
         <button
           type="button"
@@ -29,16 +28,23 @@ export function DashboardHeader({
           <HiOutlineBars3 className="h-5 w-5" />
         </button>
 
-        <div className="flex shrink-0 items-center pl-0 md:w-48">
-          <Link href="/home" className="flex items-center gap-2">
-            <StridifyLogo className="h-5 w-5 text-foreground" />
-            <span className="text-base font-bold uppercase tracking-widest text-foreground">
-              Stridify
-            </span>
-          </Link>
-        </div>
-        <div className="hidden h-6 w-px bg-border md:block" />
-        <div className="relative hidden max-w-md flex-1 md:block">
+        <Link href="/home" className="flex items-center gap-2">
+          <StridifyLogo className="h-5 w-5 text-foreground" />
+          <span className="text-base font-bold uppercase tracking-widest text-foreground">
+            Stridify
+          </span>
+          <span
+            className="rounded-md border border-foreground/30 px-2 py-[3px] text-[9px] font-bold uppercase leading-none tracking-wide dark:border-primary/50"
+            style={{ color: "var(--foreground)" }}
+          >
+            Beta
+          </span>
+        </Link>
+      </div>
+
+      {/* Center: search */}
+      <div className="hidden max-w-md flex-1 mx-8 md:block">
+        <div className="relative">
           <HiOutlineMagnifyingGlass className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
@@ -57,16 +63,6 @@ export function DashboardHeader({
         >
           <HiOutlineBolt className="h-3.5 w-3.5" />
           Upgrade
-        </Link>
-        <div className="mx-1 hidden h-6 w-px bg-border md:block" />
-
-        {/* New Project — hidden on mobile */}
-        <Link
-          href="/home"
-          className="hidden items-center gap-1.5 rounded-lg bg-foreground px-3.5 py-1.5 text-xs font-semibold text-background transition-all hover:opacity-90 active:scale-[0.98] md:inline-flex"
-        >
-          <HiOutlinePlus className="h-3.5 w-3.5" />
-          New Project
         </Link>
         <div className="mx-1 hidden h-6 w-px bg-border md:block" />
         <ThemeSwitcher />

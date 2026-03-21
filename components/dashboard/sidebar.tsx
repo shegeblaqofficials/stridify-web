@@ -78,6 +78,12 @@ export function Sidebar({
           <span className="text-base font-bold uppercase tracking-widest text-foreground">
             Stridify
           </span>
+          <span
+            className="rounded-md border border-foreground/30 px-2 py-[3px] text-[9px] font-bold uppercase leading-none tracking-wide dark:border-primary/50"
+            style={{ color: "var(--foreground)" }}
+          >
+            Beta
+          </span>
         </div>
         <button
           type="button"

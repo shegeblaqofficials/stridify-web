@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { DashboardLayout } from "@/components/dashboard/layout";
 import { useAccount } from "@/provider/account-provider";
-import { getProjects } from "@/lib/project/actions";
+import { getProjects, deleteProject } from "@/lib/project/actions";
 import type { Project, ProjectStatus } from "@/model/project/project";
 import {
   HiOutlineCog6Tooth,
@@ -17,6 +17,8 @@ import {
   HiOutlineCodeBracketSquare,
   HiOutlineDevicePhoneMobile,
   HiOutlineSparkles,
+  HiOutlineExclamationTriangle,
+  HiOutlineXMark,
 } from "react-icons/hi2";
 import { HiViewGrid, HiViewList } from "react-icons/hi";
 
@@ -98,6 +100,8 @@ export default function Projects() {
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<FilterTab>("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (!organization) return;
@@ -112,6 +116,19 @@ export default function Projects() {
     activeFilter === "all"
       ? projects
       : projects.filter((p) => p.status === activeFilter);
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    const success = await deleteProject(deleteTarget.project_id);
+    if (success) {
+      setProjects((prev) =>
+        prev.filter((p) => p.project_id !== deleteTarget.project_id),
+      );
+    }
+    setIsDeleting(false);
+    setDeleteTarget(null);
+  };
 
   return (
     <DashboardLayout>
@@ -220,7 +237,11 @@ export default function Projects() {
           {!loading && filtered.length > 0 && viewMode === "grid" && (
             <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {filtered.map((project) => (
-                <ProjectCard key={project.project_id} project={project} />
+                <ProjectCard
+                  key={project.project_id}
+                  project={project}
+                  onDelete={setDeleteTarget}
+                />
               ))}
 
               {/* Create new */}
@@ -333,6 +354,14 @@ export default function Projects() {
           )}
         </div>
       </div>
+
+      {/* Delete confirmation modal */}
+      <DeleteConfirmModal
+        project={deleteTarget}
+        isDeleting={isDeleting}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </DashboardLayout>
   );
 }
@@ -341,7 +370,13 @@ export default function Projects() {
 /*  Project Card                                                       */
 /* ------------------------------------------------------------------ */
 
-function ProjectCard({ project }: { project: Project }) {
+function ProjectCard({
+  project,
+  onDelete,
+}: {
+  project: Project;
+  onDelete: (project: Project) => void;
+}) {
   const status = statusConfig[project.status];
   const Icon = agentIcons[project.agent_type] ?? HiOutlineGlobeAlt;
 
@@ -371,8 +406,8 @@ function ProjectCard({ project }: { project: Project }) {
           </span>
         </div>
 
-        {/* Quick actions (visible on hover) */}
-        <div className="absolute right-3 top-3 flex items-center gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+        {/* Quick actions — always visible on mobile, hover on desktop */}
+        <div className="absolute right-3 top-3 flex items-center gap-1 md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
           <button
             type="button"
             className="rounded-lg bg-surface/80 p-1.5 text-muted-foreground backdrop-blur-sm transition-colors hover:text-foreground"
@@ -381,6 +416,7 @@ function ProjectCard({ project }: { project: Project }) {
           </button>
           <button
             type="button"
+            onClick={() => onDelete(project)}
             className="rounded-lg bg-surface/80 p-1.5 text-muted-foreground backdrop-blur-sm transition-colors hover:text-danger"
           >
             <HiOutlineTrash className="h-3.5 w-3.5" />
@@ -412,6 +448,93 @@ function ProjectCard({ project }: { project: Project }) {
           </span>
         </div>
       </Link>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Delete Confirmation Modal                                          */
+/* ------------------------------------------------------------------ */
+
+function DeleteConfirmModal({
+  project,
+  isDeleting,
+  onConfirm,
+  onCancel,
+}: {
+  project: Project | null;
+  isDeleting: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const overlayRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!project) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !isDeleting) onCancel();
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [project, isDeleting, onCancel]);
+
+  if (!project) return null;
+
+  return (
+    <div
+      ref={overlayRef}
+      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
+      onClick={(e) => {
+        if (e.target === overlayRef.current && !isDeleting) onCancel();
+      }}
+    >
+      <div className="relative w-full max-w-sm mx-4 mb-4 sm:mb-0 rounded-2xl border border-border bg-surface shadow-2xl animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-2 duration-200">
+        <div className="p-6">
+          {/* Icon */}
+          <div className="mx-auto mb-4 size-12 rounded-xl bg-red-500/10 flex items-center justify-center">
+            <HiOutlineExclamationTriangle className="size-6 text-red-500" />
+          </div>
+
+          {/* Copy */}
+          <h3 className="text-center text-base font-bold text-foreground">
+            Delete project?
+          </h3>
+          <p className="mt-1.5 text-center text-sm text-muted-foreground leading-relaxed">
+            <span className="font-medium text-foreground">{project.title}</span>{" "}
+            will be permanently deleted. This action cannot be undone.
+          </p>
+
+          {/* Actions */}
+          <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:gap-3">
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={isDeleting}
+              className="flex-1 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-surface-elevated disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              disabled={isDeleting}
+              className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-red-700 active:scale-[0.98] disabled:opacity-60"
+            >
+              {isDeleting ? (
+                <>
+                  <span className="size-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  Deleting…
+                </>
+              ) : (
+                <>
+                  <HiOutlineTrash className="size-4" />
+                  Delete
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
