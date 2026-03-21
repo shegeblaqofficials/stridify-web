@@ -13,6 +13,9 @@ import type { Project } from "@/model/project/project";
 import type { Prompt } from "@/model/project/prompt";
 import type { Snapshot } from "@/model/project/snapshot";
 import type { ProjectVersion } from "@/components/workspace/workspace-header";
+import { HiOutlineChatBubbleLeftRight, HiOutlineEye } from "react-icons/hi2";
+
+type MobileTab = "chat" | "preview";
 
 interface WorkspaceProps {
   projectId: string;
@@ -27,6 +30,7 @@ export default function Workspace({ projectId }: WorkspaceProps) {
   const [tokenUsage, setTokenUsage] = useState<TokenUsage | null>(null);
   const [previewRefreshKey, setPreviewRefreshKey] = useState(0);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [mobileTab, setMobileTab] = useState<MobileTab>("chat");
   const { user, account, loading } = useAccount();
 
   const refreshProject = useCallback(async () => {
@@ -122,20 +126,75 @@ export default function Workspace({ projectId }: WorkspaceProps) {
         activeVersionId={snapshots[0]?.snapshot_id}
         tokenUsage={tokenUsage}
       />
+
+      {/* Mobile tab bar */}
+      <div className="flex h-10 items-center border-b border-border bg-surface shrink-0 md:hidden">
+        <button
+          type="button"
+          onClick={() => setMobileTab("chat")}
+          className={[
+            "flex flex-1 items-center justify-center gap-2 h-full text-xs font-semibold transition-colors relative",
+            mobileTab === "chat" ? "text-foreground" : "text-muted-foreground",
+          ].join(" ")}
+        >
+          <HiOutlineChatBubbleLeftRight className="size-3.5" />
+          Chat
+          {mobileTab === "chat" && (
+            <span className="absolute bottom-0 left-4 right-4 h-0.5 rounded-full bg-foreground" />
+          )}
+        </button>
+        <div className="w-px h-5 bg-border" />
+        <button
+          type="button"
+          onClick={() => setMobileTab("preview")}
+          className={[
+            "flex flex-1 items-center justify-center gap-2 h-full text-xs font-semibold transition-colors relative",
+            mobileTab === "preview"
+              ? "text-foreground"
+              : "text-muted-foreground",
+          ].join(" ")}
+        >
+          <HiOutlineEye className="size-3.5" />
+          Preview
+          {mobileTab === "preview" && (
+            <span className="absolute bottom-0 left-4 right-4 h-0.5 rounded-full bg-foreground" />
+          )}
+        </button>
+      </div>
+
       <main className="flex flex-1 overflow-hidden">
-        <ChatPanel
-          projectId={projectId}
-          initialPrompt={initialPrompt}
-          isNewProject={snapshots.length === 0}
-          onTokenUpdate={setTokenUsage}
-          onStreamingComplete={handleStreamingComplete}
-          onInsufficientBalance={() => setShowUpgradeModal(true)}
-        />
-        <PreviewPanel
-          previewUrl={project?.preview_url ?? undefined}
-          projectStatus={project?.status}
-          refreshKey={previewRefreshKey}
-        />
+        {/* Chat — full width on mobile when active, fixed width on desktop */}
+        <div
+          className={[
+            "flex flex-col md:flex h-full",
+            mobileTab === "chat" ? "flex w-full" : "hidden",
+            "md:w-auto md:flex!",
+          ].join(" ")}
+        >
+          <ChatPanel
+            projectId={projectId}
+            initialPrompt={initialPrompt}
+            isNewProject={snapshots.length === 0}
+            onTokenUpdate={setTokenUsage}
+            onStreamingComplete={handleStreamingComplete}
+            onInsufficientBalance={() => setShowUpgradeModal(true)}
+          />
+        </div>
+
+        {/* Preview — full width on mobile when active, flex-1 on desktop */}
+        <div
+          className={[
+            "flex flex-col flex-1 md:flex",
+            mobileTab === "preview" ? "flex" : "hidden",
+            "md:flex!",
+          ].join(" ")}
+        >
+          <PreviewPanel
+            previewUrl={project?.preview_url ?? undefined}
+            projectStatus={project?.status}
+            refreshKey={previewRefreshKey}
+          />
+        </div>
       </main>
       <UpgradeModal
         open={showUpgradeModal}

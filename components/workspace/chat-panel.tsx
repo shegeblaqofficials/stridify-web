@@ -144,11 +144,11 @@ export function ChatPanel({
   };
 
   return (
-    <aside className="w-[420px] flex flex-col border-r border-border bg-surface shrink-0">
+    <aside className="w-full md:w-[420px] h-full flex flex-col border-r border-border bg-surface shrink-0 min-h-0">
       {/* Messages */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-4 space-y-4 workspace-scrollbar"
+        className="flex-1 overflow-y-auto p-4 space-y-4 workspace-scrollbar min-h-0"
       >
         {messages.length === 0 && !initialPrompt ? (
           <div className="flex flex-col items-center justify-center text-center px-6 pt-24">
@@ -242,51 +242,52 @@ export function ChatPanel({
         )}
       </div>
 
-      {/* Quick actions */}
-      <div className="px-4 pb-2">
-        <div className="flex flex-wrap gap-2">
-          {quickActions.map((action) => (
-            <button
-              key={action.label}
-              className="px-2.5 py-1 text-[11px] font-medium rounded-md bg-surface-elevated text-muted-foreground border border-transparent hover:border-primary/30 hover:text-primary transition-all flex items-center gap-1"
-            >
-              <action.icon className="size-3" />
-              {action.label}
-            </button>
-          ))}
+      {/* Quick actions + Input — always pinned to bottom */}
+      <div className="mt-auto shrink-0">
+        <div className="px-3 pb-2 md:px-4">
+          <div className="flex flex-wrap gap-1.5 md:gap-2">
+            {quickActions.map((action) => (
+              <button
+                key={action.label}
+                className="px-2 py-0.5 md:px-2.5 md:py-1 text-[10px] md:text-[11px] font-medium rounded-md bg-surface-elevated text-muted-foreground border border-transparent hover:border-primary/30 hover:text-primary transition-all flex items-center gap-1"
+              >
+                <action.icon className="size-3" />
+                {action.label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Input */}
-      <div className="p-4 border-t border-border">
-        <div className="relative">
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-            className="w-full h-32 p-4 pr-12 rounded-xl bg-surface-elevated border border-border focus:ring-1 focus:ring-primary focus:border-primary outline-none text-sm resize-none workspace-scrollbar placeholder:text-muted-foreground"
-            placeholder="Describe the feature or logic you want to build..."
-          />
-          <div className="absolute bottom-3 right-3 flex items-center gap-2">
-            <button
-              type="button"
-              className="p-1.5 rounded-md hover:bg-surface text-muted-foreground transition-colors"
-            >
-              <HiOutlinePaperClip className="size-5" />
-            </button>
-            <button
-              type="button"
-              onClick={handleSend}
-              disabled={isLoading || !input.trim()}
-              className="p-1.5 rounded-md bg-primary text-primary-foreground disabled:opacity-50 transition-opacity"
-            >
-              <HiOutlinePaperAirplane className="size-5" />
-            </button>
+        <div className="p-3 md:p-4 border-t border-border">
+          <div className="relative">
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              className="w-full h-20 md:h-32 p-3 md:p-4 pr-12 rounded-xl bg-surface-elevated border border-border focus:ring-1 focus:ring-primary focus:border-primary outline-none text-sm resize-none workspace-scrollbar placeholder:text-muted-foreground"
+              placeholder="Describe the feature or logic you want to build..."
+            />
+            <div className="absolute bottom-3 right-3 flex items-center gap-2">
+              <button
+                type="button"
+                className="p-1.5 rounded-md hover:bg-surface text-muted-foreground transition-colors"
+              >
+                <HiOutlinePaperClip className="size-5" />
+              </button>
+              <button
+                type="button"
+                onClick={handleSend}
+                disabled={isLoading || !input.trim()}
+                className="p-1.5 rounded-md bg-primary text-primary-foreground disabled:opacity-50 transition-opacity"
+              >
+                <HiOutlinePaperAirplane className="size-5" />
+              </button>
+            </div>
           </div>
         </div>
       </div>

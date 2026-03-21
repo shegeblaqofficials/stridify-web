@@ -108,19 +108,19 @@ export function WorkspaceHeader({
   );
 
   return (
-    <header className="flex h-14 items-center justify-between px-6 border-b border-border bg-surface shrink-0">
-      <div className="flex items-center gap-4">
-        <Link href="/home" className="flex items-center gap-2">
+    <header className="flex h-14 items-center justify-between px-3 md:px-6 border-b border-border bg-surface shrink-0">
+      <div className="flex items-center gap-2 md:gap-4 min-w-0">
+        <Link href="/home" className="flex items-center gap-2 shrink-0">
           <StridifyLogo className="h-5 w-5 text-foreground" />
-          <span className="text-base font-bold uppercase tracking-widest">
+          <span className="hidden sm:inline text-base font-bold uppercase tracking-widest">
             Stridify
           </span>
         </Link>
 
-        <div className="h-4 w-px bg-border mx-2" />
+        <div className="hidden sm:block h-4 w-px bg-border mx-2" />
 
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <HiOutlineFolderOpen className="size-4 shrink-0" />
+        <div className="flex items-center gap-2 text-muted-foreground min-w-0">
+          <HiOutlineFolderOpen className="size-4 shrink-0 hidden sm:block" />
           {isEditing ? (
             <input
               ref={inputRef}
@@ -192,9 +192,9 @@ export function WorkspaceHeader({
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
         {tokenUsage && (
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-elevated border border-border text-xs text-muted-foreground">
+          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-elevated border border-border text-xs text-muted-foreground">
             <HiOutlineBolt className="size-3.5 text-amber-500" />
             <span className="font-medium tabular-nums">
               {tokenUsage.totalTokens.toLocaleString()}
@@ -202,20 +202,20 @@ export function WorkspaceHeader({
             <span className="text-muted-foreground/60">tokens</span>
           </div>
         )}
-        <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold rounded-lg bg-surface-elevated hover:opacity-80 transition-colors">
+        <button className="hidden md:flex items-center gap-2 px-3 py-1.5 text-sm font-semibold rounded-lg bg-surface-elevated hover:opacity-80 transition-colors">
           <HiOutlineShare className="size-4" />
           <span>Share</span>
         </button>
-        <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold rounded-lg bg-surface-elevated hover:opacity-80 transition-colors">
+        <button className="hidden md:flex items-center gap-2 px-3 py-1.5 text-sm font-semibold rounded-lg bg-surface-elevated hover:opacity-80 transition-colors">
           <HiOutlineCog6Tooth className="size-4" />
           <span>Settings</span>
         </button>
         <button
           onClick={() => setShowDeploy(true)}
-          className="flex items-center gap-2 px-4 py-1.5 text-sm font-semibold rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+          className="flex items-center gap-1.5 md:gap-2 p-1.5 md:px-4 md:py-1.5 text-xs md:text-sm font-semibold rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
         >
           <HiOutlineRocketLaunch className="size-4" />
-          <span>Deploy</span>
+          <span className="hidden md:inline">Deploy</span>
         </button>
 
         {user && <UserDropdown user={user} />}

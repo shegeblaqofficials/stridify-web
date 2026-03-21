@@ -148,19 +148,19 @@ export default function DashboardHome() {
           <div className="relative mx-auto mb-10 max-w-3xl">
             <div className="absolute -inset-0.5 rounded-2xl bg-primary/10 opacity-30 blur-xl" />
             <div className="relative rounded-2xl border border-border bg-surface shadow-xl shadow-black/2">
-              <div className="flex items-start gap-3 p-5">
-                <HiOutlineSparkles className="mt-1 h-5 w-5 shrink-0 text-muted-foreground/40" />
+              <div className="flex items-start gap-2 p-3 sm:gap-3 sm:p-5">
+                <HiOutlineSparkles className="mt-1 h-4 w-4 shrink-0 text-muted-foreground/40 sm:h-5 sm:w-5" />
                 <textarea
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="h-28 w-full resize-none bg-transparent text-xl font-medium text-foreground placeholder:text-muted-foreground/30 focus:outline-none"
+                  className="h-20 w-full resize-none bg-transparent text-base font-medium text-foreground placeholder:text-muted-foreground/30 focus:outline-none sm:h-28 sm:text-xl"
                   placeholder={placeholder + "│"}
                 />
               </div>
 
               {/* Toolbar */}
-              <div className="flex items-center justify-between rounded-b-2xl border-t border-border/50 bg-surface-elevated/30 p-4">
+              <div className="flex items-center justify-between rounded-b-2xl border-t border-border/50 bg-surface-elevated/30 p-2.5 sm:p-4">
                 <div className="flex items-center gap-4 text-muted-foreground/50">
                   <HiOutlineMicrophone className="h-5 w-5 cursor-pointer transition-colors hover:text-foreground" />
                   <HiOutlinePaperClip className="h-5 w-5 cursor-pointer transition-colors hover:text-foreground" />
@@ -223,8 +223,8 @@ export default function DashboardHome() {
                 </div>
 
                 <Button
-                  size="lg"
-                  className="px-4 py-2 text-xs sm:px-10 sm:py-3.5 sm:text-sm"
+                  size="sm"
+                  className="sm:px-10 sm:py-3.5 sm:text-sm"
                   onClick={handleGenerate}
                   disabled={isCreating}
                 >

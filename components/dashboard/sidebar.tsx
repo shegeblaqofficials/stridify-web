@@ -15,6 +15,7 @@ import {
   HiOutlineArrowRightOnRectangle,
   HiOutlineChevronUp,
   HiOutlineBolt,
+  HiOutlineXMark,
   HiHome,
 } from "react-icons/hi2";
 
@@ -26,7 +27,13 @@ const navItems = [
   { href: "/settings", label: "Settings", icon: HiOutlineCog6Tooth },
 ] as const;
 
-export function Sidebar() {
+export function Sidebar({
+  mobileOpen,
+  onMobileClose,
+}: {
+  mobileOpen: boolean;
+  onMobileClose: () => void;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, account, organization } = useAccount();
@@ -57,10 +64,33 @@ export function Sidebar() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [menuOpen]);
 
-  return (
-    <aside className="flex w-60 flex-col border-r border-border bg-surface">
+  // Close sidebar on route change (mobile)
+  useEffect(() => {
+    onMobileClose();
+  }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const sidebarContent = (
+    <>
+      {/* Mobile close header */}
+      <div className="flex h-14 items-center justify-between border-b border-border px-4 md:hidden">
+        <div className="flex items-center gap-2">
+          <StridifyLogo className="h-5 w-5 text-foreground" />
+          <span className="text-base font-bold uppercase tracking-widest text-foreground">
+            Stridify
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={onMobileClose}
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-foreground transition-colors hover:bg-surface-elevated"
+          aria-label="Close menu"
+        >
+          <HiOutlineXMark className="h-5 w-5" />
+        </button>
+      </div>
+
       {/* Nav */}
-      <div className="p-6">
+      <div className="flex-1 overflow-y-auto p-6">
         <nav className="space-y-1">
           {navItems.map(({ href, label, icon: Icon }) => {
             const isActive =
@@ -89,16 +119,13 @@ export function Sidebar() {
         ref={menuRef}
         className="relative mt-auto border-t border-border p-4"
       >
-        {/* Dropdown (opens upward) */}
         {menuOpen && (
           <div className="absolute bottom-full left-3 right-3 mb-2 overflow-hidden rounded-xl border border-border bg-surface shadow-xl">
-            {/* User info */}
             <div className="border-b border-border px-4 py-3">
               <p className="truncate text-sm font-semibold">{fullName}</p>
               <p className="truncate text-xs text-muted-foreground">{email}</p>
             </div>
 
-            {/* Token balance */}
             {organization && (
               <div className="border-b border-border px-4 py-3">
                 <div className="flex items-center justify-between">
@@ -160,7 +187,6 @@ export function Sidebar() {
           </div>
         )}
 
-        {/* Avatar button */}
         <button
           type="button"
           onClick={() => setMenuOpen((v) => !v)}
@@ -194,6 +220,32 @@ export function Sidebar() {
           />
         </button>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop sidebar — always visible */}
+      <aside className="hidden w-60 flex-col border-r border-border bg-surface md:flex">
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile overlay */}
+      <div
+        className={`fixed inset-0 z-40 bg-background/60 backdrop-blur-sm transition-opacity duration-300 md:hidden ${
+          mobileOpen ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+        onClick={onMobileClose}
+      />
+
+      {/* Mobile slide-in sidebar */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-surface shadow-2xl transition-transform duration-300 ease-out md:hidden ${
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        {sidebarContent}
+      </aside>
+    </>
   );
 }
