@@ -6,7 +6,7 @@ import {
 } from "@/lib/sandbox/manager";
 import { getLatestSnapshot } from "@/lib/snapshot/actions";
 import { getProject, updateProjectSandbox } from "@/lib/project/actions";
-import { getOrganizationBalance } from "@/lib/metric/actions";
+import { getOrganizationBalance } from "@/lib/redis/metrics";
 
 export async function POST(req: NextRequest) {
   const { projectId } = await req.json();
@@ -37,11 +37,6 @@ export async function POST(req: NextRequest) {
       console.log(
         `[warmup] reusing existing sandbox ${existing.sandbox.sandboxId}`,
       );
-      await updateProjectSandbox(
-        projectId,
-        existing.sandbox.sandboxId,
-        existing.previewUrl,
-      );
       return Response.json({
         previewUrl: existing.previewUrl,
         sandboxId: existing.sandbox.sandboxId,
@@ -49,10 +44,10 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Sandbox not running — create a new one from snapshot or template
+  // No sandbox_id or sandbox no longer exists — create a new one
   const latestSnapshot = await getLatestSnapshot(projectId);
   console.log(
-    `[warmup] latestSnapshot=${latestSnapshot?.snapshot_id ?? "none"}`,
+    `[warmup] creating new sandbox, latestSnapshot=${latestSnapshot?.snapshot_id ?? "none"}`,
   );
 
   const { sandbox, previewUrl } = latestSnapshot

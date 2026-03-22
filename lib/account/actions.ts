@@ -25,6 +25,10 @@ export async function upsertAccount(): Promise<Account | null> {
   const nameParts = fullName.split(" ");
   // Create new account if it doesn't exist
   const company = await createOrganization("Default");
+  if (!company) {
+    console.error("Failed to create organization for new account");
+    return null;
+  }
   const { data: created, error } = await supabase
     .from("accounts")
     .insert({
@@ -33,7 +37,7 @@ export async function upsertAccount(): Promise<Account | null> {
       first_name: nameParts[0] || null,
       last_name: nameParts.slice(1).join(" ") || null,
       photo_url: (user.user_metadata?.avatar_url as string) || null,
-      organization_id: company?.organization_id ?? "",
+      organization_id: company.organization_id,
       is_active: true,
     })
     .select()
@@ -63,7 +67,11 @@ export async function createOrganization(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("organizations")
-    .insert({ name, organization_id: crypto.randomUUID() })
+    .insert({
+      name,
+      organization_id: crypto.randomUUID(),
+      token_balance: 200000,
+    })
     .select()
     .single();
   if (error || !data) {

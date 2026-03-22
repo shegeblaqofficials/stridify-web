@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useAccount } from "@/provider/account-provider";
 import { Button } from "@/components/ui/button";
-import { getOrganizationMetrics } from "@/lib/metric/actions";
+import { getRedisOrganizationMetrics } from "@/lib/redis/actions";
 import {
   HiOutlinePlus,
   HiOutlineTrash,
@@ -96,7 +96,7 @@ export function Settings() {
   const fetchUsage = useCallback(async () => {
     if (!account?.organization_id || usageLoaded) return;
     setUsageLoading(true);
-    const data = await getOrganizationMetrics(account.organization_id);
+    const data = await getRedisOrganizationMetrics(account.organization_id);
     setUsageData(data);
     setUsageLoading(false);
     setUsageLoaded(true);

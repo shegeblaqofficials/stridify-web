@@ -164,7 +164,7 @@ export function HeroSection() {
         >
           Build Voice Apps
           <br />
-          <span className="bg-gradient-to-r from-muted-foreground via-muted-foreground/60 to-muted-foreground bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-muted-foreground/50 via-muted-foreground/50 to-muted-foreground/50 bg-clip-text text-transparent">
             Just by Prompting.
           </span>
         </h1>
@@ -175,9 +175,8 @@ export function HeroSection() {
           data-aos-delay="350"
           className="mx-auto mb-16 mt-8 max-w-2xl text-lg font-medium leading-relaxed text-muted-foreground md:text-xl"
         >
-          Write a prompt and Stridify turns your idea into a live AI voice agent
-          you can test, deploy, and use anywhere. Build for web, phone, or
-          mobile.
+          Write a prompt and turn your idea into a live AI voice agent you can
+          test, deploy, and use anywhere. Build for web or telephony in seconds.
         </p>
 
         {/* Prompt box */}

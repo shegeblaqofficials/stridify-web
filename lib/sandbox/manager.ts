@@ -82,8 +82,37 @@ export async function takeSandboxSnapshot(sandbox: Sandbox): Promise<string> {
 }
 
 /**
- * Try to reconnect to an existing sandbox. Returns the sandbox + previewUrl
- * if it's still running, or null if it needs to be recreated.
+ * Extend the sandbox timeout by 4 minutes only if remaining time
+ * is under 2 minutes. Avoids unnecessary API calls on quick steps.
+ */
+export async function extendSandboxTimeout(sandbox: Sandbox): Promise<void> {
+  try {
+    if (sandbox.timeout > 120_000) return;
+    await sandbox.extendTimeout(SANDBOX_TIMEOUT);
+    console.log(
+      `[sandbox] extended timeout for ${sandbox.sandboxId} (was ${sandbox.timeout}ms remaining)`,
+    );
+  } catch (err) {
+    console.error(`[sandbox] failed to extend timeout:`, err);
+  }
+}
+
+/**
+ * Immediately stop a running sandbox.
+ */
+export async function shutdownSandbox(sandbox: Sandbox): Promise<void> {
+  try {
+    await sandbox.stop({ blocking: true });
+    console.log(`[sandbox] stopped ${sandbox.sandboxId}`);
+  } catch (err) {
+    console.error(`[sandbox] failed to stop:`, err);
+  }
+}
+
+/**
+ * Try to reconnect to an existing running sandbox. Returns null if
+ * the sandbox is stopped, failed, or no longer exists — the caller
+ * should create a new one from snapshot or template.
  */
 export async function getExistingSandbox(
   sandboxId: string,
@@ -91,10 +120,14 @@ export async function getExistingSandbox(
   try {
     console.log(`[sandbox] attempting to get existing sandbox ${sandboxId}...`);
     const sandbox = await Sandbox.get({ sandboxId });
-
-    // Wait for pending sandbox to finish starting
     let status = sandbox.status;
     console.log(`[sandbox] current status=${status}`);
+
+    if (status === "running") {
+      const previewUrl = sandbox.domain(3000);
+      console.log(`[sandbox] already running at ${previewUrl}`);
+      return { sandbox, previewUrl };
+    }
 
     if (status === "pending") {
       console.log("[sandbox] sandbox is pending, waiting for it to start...");
@@ -109,20 +142,13 @@ export async function getExistingSandbox(
         console.log(`[sandbox] sandbox never started, status=${status}`);
         return null;
       }
-      // Re-fetch to get the running instance
       const runningSandbox = await Sandbox.get({ sandboxId });
       const previewUrl = runningSandbox.domain(3000);
       console.log(`[sandbox] sandbox now running at ${previewUrl}`);
       return { sandbox: runningSandbox, previewUrl };
     }
 
-    if (status === "running") {
-      const previewUrl = sandbox.domain(3000);
-      console.log(`[sandbox] already running at ${previewUrl}`);
-      return { sandbox, previewUrl };
-    }
-
-    // stopped, failed, aborted, snapshotting — need to recreate
+    // stopped, failed, or any other non-running state — needs recreation
     console.log(`[sandbox] status=${status}, needs recreation`);
     return null;
   } catch (err) {

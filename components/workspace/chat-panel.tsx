@@ -3,11 +3,13 @@
 import { useRef, useEffect, useState, useMemo } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
+import type { UIMessage } from "ai";
 import type { Prompt } from "@/model/project/prompt";
 import type {
   CodingAgentUIMessage,
   AgentMessageMetadata,
 } from "@/lib/agents/coding-agent";
+import { checkProjectBalance } from "@/lib/project/actions";
 import {
   HiOutlineUser,
   HiOutlinePaperClip,
@@ -26,13 +28,13 @@ import {
   HiOutlineChevronDown,
   HiOutlineChevronRight,
   HiOutlineCheck,
+  HiOutlineBolt,
 } from "react-icons/hi2";
 
 const quickActions = [
   { label: "Add Feature", icon: HiOutlinePlus },
   { label: "Edit Voice Flow", icon: HiOutlineMicrophone },
   { label: "Change UI", icon: HiOutlinePaintBrush },
-  { label: "Add API", icon: HiOutlineCodeBracket },
   { label: "Improve Conversation", icon: HiOutlineSparkles },
 ];
 
@@ -45,22 +47,27 @@ export interface TokenUsage {
 interface ChatPanelProps {
   projectId: string;
   initialPrompt?: Prompt | null;
+  initialMessages?: UIMessage[];
   isNewProject?: boolean;
   onTokenUpdate?: (usage: TokenUsage) => void;
   onStreamingComplete?: () => void;
   onInsufficientBalance?: () => void;
+  onBuyCredits?: () => void;
 }
 
 export function ChatPanel({
   projectId,
   initialPrompt,
+  initialMessages,
   isNewProject,
   onTokenUpdate,
   onStreamingComplete,
   onInsufficientBalance,
+  onBuyCredits,
 }: ChatPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [input, setInput] = useState("");
+  const [balanceExhausted, setBalanceExhausted] = useState(false);
   const initialPromptSent = useRef(false);
 
   const transport = useMemo(
@@ -68,12 +75,23 @@ export function ChatPanel({
       new DefaultChatTransport({
         api: "/api/agent",
         body: { projectId },
+        // Only send the last message — history is loaded server-side from Redis
+        prepareSendMessagesRequest({ messages, id }) {
+          return {
+            body: {
+              message: messages[messages.length - 1],
+              id,
+              projectId,
+            },
+          };
+        },
       }),
     [projectId],
   );
 
   const { messages, sendMessage, status } = useChat<CodingAgentUIMessage>({
     id: projectId,
+    messages: initialMessages as CodingAgentUIMessage[] | undefined,
     transport,
     onError(error) {
       // The transport throws on non-2xx. Check for 402 insufficient balance.
@@ -81,8 +99,18 @@ export function ChatPanel({
         error?.message?.includes("402") ||
         error?.message?.includes("insufficient_balance")
       ) {
+        setBalanceExhausted(true);
         onInsufficientBalance?.();
+        return;
       }
+      // Stream may have been aborted server-side due to balance exhaustion.
+      // Verify by checking the actual balance.
+      checkProjectBalance(projectId).then(({ exhausted }) => {
+        if (exhausted) {
+          setBalanceExhausted(true);
+          onInsufficientBalance?.();
+        }
+      });
     },
   });
 
@@ -115,9 +143,8 @@ export function ChatPanel({
     prevStatus.current = status;
   }, [status, onStreamingComplete]);
 
-  // Extract token usage from the latest assistant message metadata
+  // Extract token usage and balance status from the latest assistant message metadata
   useEffect(() => {
-    if (!onTokenUpdate) return;
     const lastAssistant = [...messages]
       .reverse()
       .find((m) => m.role === "assistant");
@@ -125,9 +152,13 @@ export function ChatPanel({
       | AgentMessageMetadata
       | undefined;
     if (metadata?.tokenUsage) {
-      onTokenUpdate(metadata.tokenUsage);
+      onTokenUpdate?.(metadata.tokenUsage);
     }
-  }, [messages, onTokenUpdate]);
+    if (metadata?.balanceExhausted && !balanceExhausted) {
+      setBalanceExhausted(true);
+      onInsufficientBalance?.();
+    }
+  }, [messages, onTokenUpdate, onInsufficientBalance, balanceExhausted]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({
@@ -240,6 +271,36 @@ export function ChatPanel({
             </div>
           </div>
         )}
+
+        {/* Balance exhausted inline banner */}
+        {balanceExhausted && (
+          <div className="mx-1 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+              <div className="flex items-start gap-3">
+                <div className="size-8 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
+                  <HiOutlineBolt className="size-4 text-amber-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground">
+                    Out of credits
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">
+                    Your progress has been saved. Upgrade your plan to keep
+                    building.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => onBuyCredits?.()}
+                    className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-amber-600 active:scale-[0.97]"
+                  >
+                    <HiOutlineSparkles className="size-3" />
+                    Buy Credits
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Quick actions + Input — always pinned to bottom */}
@@ -269,8 +330,13 @@ export function ChatPanel({
                   handleSend();
                 }
               }}
-              className="w-full h-20 md:h-32 p-3 md:p-4 pr-12 rounded-xl bg-surface-elevated border border-border focus:ring-1 focus:ring-primary focus:border-primary outline-none text-sm resize-none workspace-scrollbar placeholder:text-muted-foreground"
-              placeholder="Describe the feature or logic you want to build..."
+              disabled={balanceExhausted}
+              className="w-full h-20 md:h-32 p-3 md:p-4 pr-12 rounded-xl bg-surface-elevated border border-border focus:ring-1 focus:ring-primary focus:border-primary outline-none text-sm resize-none workspace-scrollbar placeholder:text-muted-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+              placeholder={
+                balanceExhausted
+                  ? "Upgrade your plan to continue..."
+                  : "Describe the feature or logic you want to build..."
+              }
             />
             <div className="absolute bottom-3 right-3 flex items-center gap-2">
               <button
@@ -282,7 +348,7 @@ export function ChatPanel({
               <button
                 type="button"
                 onClick={handleSend}
-                disabled={isLoading || !input.trim()}
+                disabled={isLoading || !input.trim() || balanceExhausted}
                 className="p-1.5 rounded-md bg-primary text-primary-foreground disabled:opacity-50 transition-opacity"
               >
                 <HiOutlinePaperAirplane className="size-5" />

@@ -4,6 +4,7 @@ import type { Project, AgentType } from "@/model/project/project";
 import type { Prompt } from "@/model/project/prompt";
 import { createClient } from "../supabase/server";
 import { cookies } from "next/headers";
+import { getOrganizationBalance } from "@/lib/redis/metrics";
 
 const PENDING_PROMPT_COOKIE = "pendingPrompt";
 
@@ -79,7 +80,9 @@ export async function createProject(
     .insert({
       prompt_id: crypto.randomUUID(),
       project_id: project.project_id,
+      organization_id: organizationId,
       content: promptContent,
+      created_by_user_id: user_id,
     })
     .select()
     .single();
@@ -100,6 +103,19 @@ export async function getProject(projectId: string): Promise<Project | null> {
     .eq("project_id", projectId)
     .single();
   return (data as Project) ?? null;
+}
+
+/**
+ * Check whether a project's organization has exhausted its token balance.
+ * Used by the client to verify balance after a streaming error/abort.
+ */
+export async function checkProjectBalance(
+  projectId: string,
+): Promise<{ exhausted: boolean }> {
+  const project = await getProject(projectId);
+  if (!project) return { exhausted: false };
+  const balance = await getOrganizationBalance(project.organization_id);
+  return { exhausted: balance <= 0 };
 }
 
 export async function getProjectPrompts(projectId: string): Promise<Prompt[]> {

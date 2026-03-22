@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { StridifyLogo } from "@/components/ui/logo";
 import { useAccount } from "@/provider/account-provider";
-import { signOutUser } from "@/components/auth/action";
+import { createClient } from "@/lib/supabase/client";
 import {
   HiOutlineFolder,
   HiOutlineRocketLaunch,
@@ -38,7 +38,6 @@ export function Sidebar({
   const router = useRouter();
   const { user, account, organization } = useAccount();
   const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
 
   const avatarUrl = user?.user_metadata?.avatar_url;
   const fullName =
@@ -56,7 +55,7 @@ export function Sidebar({
   useEffect(() => {
     if (!menuOpen) return;
     const handleClick = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      if (!(e.target as HTMLElement).closest("[data-user-menu]")) {
         setMenuOpen(false);
       }
     };
@@ -122,7 +121,7 @@ export function Sidebar({
 
       {/* User */}
       <div
-        ref={menuRef}
+        data-user-menu
         className="relative mt-auto border-t border-border p-4"
       >
         {menuOpen && (
@@ -174,21 +173,18 @@ export function Sidebar({
             </div>
 
             <div className="border-t border-border p-1.5">
-              <form
-                action={async () => {
-                  await signOutUser();
-                  setMenuOpen(false);
-                  window.location.href = "/";
+              <button
+                type="button"
+                onClick={async () => {
+                  const supabase = createClient();
+                  await supabase.auth.signOut();
+                  router.push("/");
                 }}
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-danger transition-colors hover:bg-danger/10"
               >
-                <button
-                  type="submit"
-                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-danger transition-colors hover:bg-danger/10"
-                >
-                  <HiOutlineArrowRightOnRectangle className="h-4 w-4" />
-                  Sign Out
-                </button>
-              </form>
+                <HiOutlineArrowRightOnRectangle className="h-4 w-4" />
+                Sign Out
+              </button>
             </div>
           </div>
         )}

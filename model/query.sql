@@ -62,15 +62,3 @@ CREATE TABLE public.snapshots (
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT snapshot_pkey PRIMARY KEY (id)
 );
--- Table to store metrics
-CREATE TABLE public.metrics (
-  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
-  metric_id character varying,
-  project_id character varying,
-  organization_id character varying,
-  type character varying,
-  input_token_count integer,
-  output_token_count integer,
-  created_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT metric_pkey PRIMARY KEY (id)
-);

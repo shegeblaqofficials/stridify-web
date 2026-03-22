@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { signOutUser } from "@/components/auth/action";
+import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import {
   HiOutlineUser,
@@ -109,21 +109,18 @@ export function UserDropdown({ user }: { user: User }) {
 
           {/* Sign out */}
           <div className="border-t border-border p-1.5">
-            <form
-              action={async () => {
-                await signOutUser();
-                setOpen(false);
-                window.location.href = "/";
+            <button
+              type="button"
+              onClick={async () => {
+                const supabase = createClient();
+                await supabase.auth.signOut();
+                router.push("/");
               }}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-danger transition-colors hover:bg-danger/10"
             >
-              <button
-                type="submit"
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-danger transition-colors hover:bg-danger/10"
-              >
-                <HiOutlineArrowRightOnRectangle className="h-4 w-4" />
-                Sign Out
-              </button>
-            </form>
+              <HiOutlineArrowRightOnRectangle className="h-4 w-4" />
+              Sign Out
+            </button>
           </div>
         </div>
       )}

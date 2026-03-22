@@ -8,6 +8,9 @@ import {
   HiOutlineComputerDesktop,
   HiOutlineArrowTopRightOnSquare,
   HiOutlineArrowPath,
+  HiOutlineEyeSlash,
+  HiOutlineBolt,
+  HiOutlineSparkles,
 } from "react-icons/hi2";
 import type { ProjectStatus } from "@/model/project/project";
 
@@ -23,12 +26,18 @@ interface PreviewPanelProps {
   previewUrl?: string;
   projectStatus?: ProjectStatus;
   refreshKey?: number;
+  balanceExhausted?: boolean;
+  sandboxLoading?: boolean;
+  onUpgrade?: () => void;
 }
 
 export function PreviewPanel({
   previewUrl,
   projectStatus,
   refreshKey,
+  balanceExhausted,
+  sandboxLoading,
+  onUpgrade,
 }: PreviewPanelProps) {
   const browserRef = useRef<BrowserFrameHandle>(null);
   const [device, setDevice] = useState<DeviceMode>("desktop");
@@ -106,20 +115,44 @@ export function PreviewPanel({
       <div
         className={`flex-1 overflow-hidden bg-background ${device !== "desktop" ? "p-8" : ""}`}
       >
-        <div
-          className={`transition-all duration-300 ease-in-out h-full ${deviceStyles[device]} ${
-            device !== "desktop"
-              ? "border border-border shadow-lg rounded-xl overflow-hidden"
-              : ""
-          }`}
-        >
-          <BrowserFrame
-            ref={browserRef}
-            previewUrl={previewUrl}
-            projectStatus={projectStatus}
-            refreshKey={refreshKey}
-          />
-        </div>
+        {balanceExhausted ? (
+          <div className="flex flex-col items-center justify-center h-full text-center px-8">
+            <div className="size-14 rounded-2xl bg-amber-500/10 flex items-center justify-center mb-4">
+              <HiOutlineBolt className="size-7 text-amber-500" />
+            </div>
+            <h3 className="text-base font-semibold text-foreground mb-1.5">
+              Preview unavailable
+            </h3>
+            <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
+              Your credits have been exhausted. Upgrade your plan to resume
+              building and previewing your agent.
+            </p>
+            <button
+              type="button"
+              onClick={onUpgrade}
+              className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.97]"
+            >
+              <HiOutlineSparkles className="size-4" />
+              Buy Credits
+            </button>
+          </div>
+        ) : (
+          <div
+            className={`transition-all duration-300 ease-in-out h-full ${deviceStyles[device]} ${
+              device !== "desktop"
+                ? "border border-border shadow-lg rounded-xl overflow-hidden"
+                : ""
+            }`}
+          >
+            <BrowserFrame
+              ref={browserRef}
+              previewUrl={previewUrl}
+              projectStatus={projectStatus}
+              refreshKey={refreshKey}
+              sandboxLoading={sandboxLoading}
+            />
+          </div>
+        )}
       </div>
     </section>
   );

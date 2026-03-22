@@ -1,5 +1,5 @@
 import { NextRequest, after } from "next/server";
-import { createAgentUIStreamResponse } from "ai";
+import { createAgentUIStreamResponse, createIdGenerator } from "ai";
 import {
   createCodingAgent,
   type AgentMessageMetadata,
@@ -9,25 +9,27 @@ import {
   createSandboxFromSnapshot,
   getExistingSandbox,
   takeSandboxSnapshot,
+  extendSandboxTimeout,
 } from "@/lib/sandbox/manager";
 import { getLatestSnapshot, createSnapshot } from "@/lib/snapshot/actions";
 import { getProject, updateProjectSandbox } from "@/lib/project/actions";
 import {
-  createMetric,
   deductOrganizationTokens,
   getOrganizationBalance,
-} from "@/lib/metric/actions";
+  recordSessionMetric,
+} from "@/lib/redis/metrics";
+import { loadChatMessages, saveChatMessages } from "@/lib/redis/chat";
 
 export async function POST(req: NextRequest) {
-  const { messages, projectId } = await req.json();
+  const { message, id: chatId, projectId } = await req.json();
   console.log(
-    `[route] POST /api/agent — projectId=${projectId}, messages=${messages?.length}`,
+    `[route] POST /api/agent — projectId=${projectId}, chatId=${chatId}`,
   );
 
-  if (!projectId || !messages) {
-    console.log("[route] missing projectId or messages");
+  if (!projectId || !message) {
+    console.log("[route] missing projectId or message");
     return Response.json(
-      { error: "Missing projectId or messages" },
+      { error: "Missing projectId or message" },
       { status: 400 },
     );
   }
@@ -46,6 +48,13 @@ export async function POST(req: NextRequest) {
     );
     return Response.json({ error: "insufficient_balance" }, { status: 402 });
   }
+
+  // Load previous messages from Redis, append the new one
+  const previousMessages = await loadChatMessages(projectId);
+  const messages = [...previousMessages, message];
+  console.log(
+    `[route] loaded ${previousMessages.length} previous messages, total=${messages.length}`,
+  );
 
   const latestSnapshot = await getLatestSnapshot(projectId);
   console.log(
@@ -67,7 +76,25 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // If no running sandbox, create from snapshot or template
+  // Re-fetch project in case warmup just created a sandbox while we were loading
+  if (!sandbox) {
+    const freshProject = await getProject(projectId);
+    if (
+      freshProject?.sandbox_id &&
+      freshProject.sandbox_id !== project.sandbox_id
+    ) {
+      console.log(
+        `[route] warmup created sandbox ${freshProject.sandbox_id}, trying to connect...`,
+      );
+      const existing = await getExistingSandbox(freshProject.sandbox_id);
+      if (existing) {
+        sandbox = existing.sandbox;
+        previewUrl = existing.previewUrl;
+      }
+    }
+  }
+
+  // If still no running sandbox, create from snapshot or template
   if (!sandbox) {
     console.log("[route] creating new sandbox...");
     const created = latestSnapshot
@@ -82,6 +109,9 @@ export async function POST(req: NextRequest) {
   // Update project with sandbox info
   await updateProjectSandbox(projectId, sandbox.sandboxId, previewUrl);
 
+  // Extend timeout before the agent starts working
+  await extendSandboxTimeout(sandbox);
+
   // Create the agent bound to this sandbox
   const agent = createCodingAgent(sandbox);
   console.log("[route] agent created, starting stream...");
@@ -93,39 +123,49 @@ export async function POST(req: NextRequest) {
   let balanceExhausted = false;
   const abortController = new AbortController();
 
-  // After the response is sent, take a snapshot and log token metrics
+  // After the response is sent, snapshot (only if exhausted) and log token metrics
   after(async () => {
-    try {
-      const snapshotId = await takeSandboxSnapshot(sandbox);
-      await createSnapshot(
-        projectId,
-        project.organization_id,
-        snapshotId,
-        `v${(latestSnapshot?.version_number ?? 0) + 1}`,
-      );
-      console.log(`[agent] snapshot ${snapshotId} saved for ${projectId}`);
-    } catch (err) {
-      console.error("[agent] snapshot failed:", err);
+    // Only snapshot when balance is exhausted — this stops the sandbox
+    // and preserves the state for next session. When the agent finishes
+    // normally, we leave the sandbox running so the preview stays alive.
+    if (balanceExhausted) {
+      try {
+        const snapshotId = await takeSandboxSnapshot(sandbox);
+        await createSnapshot(
+          projectId,
+          project.organization_id,
+          snapshotId,
+          `v${(latestSnapshot?.version_number ?? 0) + 1}`,
+        );
+        console.log(
+          `[agent] snapshot ${snapshotId} saved for ${projectId} (balance exhausted)`,
+        );
+      } catch (err) {
+        console.error("[agent] snapshot failed:", err);
+      }
     }
 
-    // Log token usage metrics
+    // Record session metrics and deduct tokens — all via Redis
     try {
+      const totalTokensUsed = totalInputTokens + totalOutputTokens;
       console.log(
         `[metric] logging tokens — input=${totalInputTokens} output=${totalOutputTokens} steps=${stepCount}`,
       );
-      await createMetric({
-        metric_id: crypto.randomUUID(),
-        project_id: projectId,
-        organization_id: project.organization_id,
-        type: "coding-agent-session",
-        input_token_count: totalInputTokens,
-        output_token_count: totalOutputTokens,
-      });
-      console.log(`[metric] token metrics saved for ${projectId}`);
 
-      // Deduct total tokens used from the organization balance
-      const totalTokensUsed = totalInputTokens + totalOutputTokens;
-      await deductOrganizationTokens(project.organization_id, totalTokensUsed);
+      await Promise.all([
+        recordSessionMetric({
+          organizationId: project.organization_id,
+          projectId,
+          projectTitle: project.title,
+          inputTokens: totalInputTokens,
+          outputTokens: totalOutputTokens,
+        }),
+        deductOrganizationTokens(project.organization_id, totalTokensUsed),
+      ]);
+
+      console.log(
+        `[metric] session recorded & tokens deducted for ${projectId}`,
+      );
     } catch (err) {
       console.error("[metric] failed to save metrics:", err);
     }
@@ -134,23 +174,17 @@ export async function POST(req: NextRequest) {
   return createAgentUIStreamResponse({
     agent,
     uiMessages: messages,
+    // Generate consistent server-side IDs for persistence
+    generateMessageId: createIdGenerator({ prefix: "msg", size: 16 }),
     messageMetadata({ part }): AgentMessageMetadata | undefined {
-      if (part.type === "finish-step") {
+      if (part.type === "finish-step" || part.type === "finish") {
         return {
           tokenUsage: {
             inputTokens: totalInputTokens,
             outputTokens: totalOutputTokens,
             totalTokens: totalInputTokens + totalOutputTokens,
           },
-        };
-      }
-      if (part.type === "finish") {
-        return {
-          tokenUsage: {
-            inputTokens: totalInputTokens,
-            outputTokens: totalOutputTokens,
-            totalTokens: totalInputTokens + totalOutputTokens,
-          },
+          ...(balanceExhausted && { balanceExhausted: true }),
         };
       }
       return undefined;
@@ -168,6 +202,9 @@ export async function POST(req: NextRequest) {
         toolsUsed: toolCalls?.map((tc) => tc.toolName),
       });
 
+      // Keep sandbox alive while the agent is still working
+      extendSandboxTimeout(sandbox);
+
       // Check if balance is exhausted after this step
       const tokensUsedSoFar = totalInputTokens + totalOutputTokens;
       if (tokensUsedSoFar >= balance && !balanceExhausted) {
@@ -177,6 +214,12 @@ export async function POST(req: NextRequest) {
         );
         abortController.abort();
       }
+    },
+    onFinish({ messages: finalMessages }) {
+      // Persist complete chat history to Redis
+      saveChatMessages(projectId, finalMessages).catch((err) =>
+        console.error("[chat] failed to save messages:", err),
+      );
     },
     abortSignal: abortController.signal,
   });

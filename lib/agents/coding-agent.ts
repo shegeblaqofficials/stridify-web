@@ -32,6 +32,7 @@ export interface AgentMessageMetadata {
     outputTokens: number;
     totalTokens: number;
   };
+  balanceExhausted?: boolean;
 }
 
 export function createCodingAgent(sandbox: Sandbox) {

@@ -10,7 +10,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background">
       <DashboardHeader onMenuToggle={() => setSidebarOpen((v) => !v)} />
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 min-h-0">
         <Sidebar
           mobileOpen={sidebarOpen}
           onMobileClose={() => setSidebarOpen(false)}

@@ -31,6 +31,7 @@ export const signOutUser = async () => {
   } catch (error) {
     console.error("Error signing out:", error);
   }
+  redirect("/");
 };
 
 export const getUser = async () => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAccount } from "@/provider/account-provider";
 import { WorkspaceHeader } from "@/components/workspace/workspace-header";
 import { ChatPanel, type TokenUsage } from "@/components/workspace/chat-panel";
@@ -9,9 +9,11 @@ import { UpgradeModal } from "@/components/workspace/upgrade-modal";
 import { PageLoader } from "@/components/ui/page-loader";
 import { getProject, getProjectPrompts } from "@/lib/project/actions";
 import { getProjectSnapshots } from "@/lib/snapshot/actions";
+import { getChatMessages } from "@/lib/redis/actions";
 import type { Project } from "@/model/project/project";
 import type { Prompt } from "@/model/project/prompt";
 import type { Snapshot } from "@/model/project/snapshot";
+import type { UIMessage } from "ai";
 import type { ProjectVersion } from "@/components/workspace/workspace-header";
 import {
   HiOutlineChatBubbleLeftRight,
@@ -29,12 +31,14 @@ interface WorkspaceProps {
 export default function Workspace({ projectId }: WorkspaceProps) {
   const [project, setProject] = useState<Project | null>(null);
   const [initialPrompt, setInitialPrompt] = useState<Prompt | null>(null);
+  const [initialMessages, setInitialMessages] = useState<UIMessage[]>([]);
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [sandboxReady, setSandboxReady] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
   const [tokenUsage, setTokenUsage] = useState<TokenUsage | null>(null);
   const [previewRefreshKey, setPreviewRefreshKey] = useState(0);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [balanceExhausted, setBalanceExhausted] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>("chat");
   const [showMobileBanner, setShowMobileBanner] = useState(true);
   const { user, account, loading } = useAccount();
@@ -53,24 +57,29 @@ export default function Workspace({ projectId }: WorkspaceProps) {
       getProject(projectId),
       getProjectPrompts(projectId),
       getProjectSnapshots(projectId),
-    ]).then(([proj, prompts, snaps]) => {
+      getChatMessages(projectId),
+    ]).then(([proj, prompts, snaps, chatMessages]) => {
       setProject(proj);
       if (prompts.length > 0) setInitialPrompt(prompts[0]);
       setSnapshots(snaps);
+      setInitialMessages(chatMessages);
       setDataLoading(false);
     });
   }, [projectId]);
 
-  // Warm up sandbox on load for existing projects with snapshots
+  // Warm up sandbox on load for existing projects with snapshots.
+  // Ref guard prevents React Strict Mode from firing two warmup requests.
+  const warmupStarted = useRef(false);
   useEffect(() => {
     if (dataLoading || !project || sandboxReady) return;
+    if (warmupStarted.current) return;
 
     // Only warm up if there are snapshots (i.e. this project has been used before)
     // For brand-new projects, the sandbox will start on first chat message
     const hasSnapshots = snapshots.length > 0;
     if (!hasSnapshots) return;
 
-    let cancelled = false;
+    warmupStarted.current = true;
     console.log(`[workspace] warming up sandbox for project ${projectId}...`);
 
     fetch("/api/sandbox/warmup", {
@@ -80,26 +89,21 @@ export default function Workspace({ projectId }: WorkspaceProps) {
     })
       .then((res) => {
         if (res.status === 402) {
-          setShowUpgradeModal(true);
+          setBalanceExhausted(true);
           return null;
         }
         return res.json();
       })
       .then((data) => {
-        if (cancelled || !data) return;
+        if (!data) return;
         console.log(`[workspace] sandbox warm — previewUrl=${data.previewUrl}`);
         setSandboxReady(true);
         // Refresh project to pick up new preview_url
         refreshProject();
       })
       .catch((err) => {
-        if (cancelled) return;
         console.error("[workspace] sandbox warmup failed:", err);
       });
-
-    return () => {
-      cancelled = true;
-    };
   }, [
     dataLoading,
     project,
@@ -109,11 +113,17 @@ export default function Workspace({ projectId }: WorkspaceProps) {
     refreshProject,
   ]);
 
-  const handleStreamingComplete = useCallback(() => {
-    console.log("[workspace] agent streaming complete, refreshing project...");
-    refreshProject();
+  const handleStreamingComplete = useCallback(async () => {
+    console.log("[workspace] agent streaming complete");
+    // Refresh project and snapshots to pick up any changes
+    const [proj, snaps] = await Promise.all([
+      getProject(projectId),
+      getProjectSnapshots(projectId),
+    ]);
+    if (proj) setProject(proj);
+    setSnapshots(snaps);
     setPreviewRefreshKey((k) => k + 1);
-  }, [refreshProject]);
+  }, [projectId]);
 
   if (loading || !user || !account || dataLoading) {
     return <PageLoader />;
@@ -197,10 +207,14 @@ export default function Workspace({ projectId }: WorkspaceProps) {
           <ChatPanel
             projectId={projectId}
             initialPrompt={initialPrompt}
+            initialMessages={initialMessages}
             isNewProject={snapshots.length === 0}
             onTokenUpdate={setTokenUsage}
             onStreamingComplete={handleStreamingComplete}
-            onInsufficientBalance={() => setShowUpgradeModal(true)}
+            onInsufficientBalance={() => {
+              setBalanceExhausted(true);
+            }}
+            onBuyCredits={() => setShowUpgradeModal(true)}
           />
         </div>
 
@@ -216,6 +230,9 @@ export default function Workspace({ projectId }: WorkspaceProps) {
             previewUrl={project?.preview_url ?? undefined}
             projectStatus={project?.status}
             refreshKey={previewRefreshKey}
+            balanceExhausted={balanceExhausted}
+            sandboxLoading={snapshots.length > 0 && !sandboxReady}
+            onUpgrade={() => setShowUpgradeModal(true)}
           />
         </div>
       </main>

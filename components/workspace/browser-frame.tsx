@@ -25,10 +25,14 @@ interface BrowserFrameProps {
   previewUrl?: string;
   projectStatus?: ProjectStatus;
   refreshKey?: number;
+  sandboxLoading?: boolean;
 }
 
 export const BrowserFrame = forwardRef<BrowserFrameHandle, BrowserFrameProps>(
-  function BrowserFrame({ url, previewUrl, projectStatus, refreshKey }, ref) {
+  function BrowserFrame(
+    { url, previewUrl, projectStatus, refreshKey, sandboxLoading },
+    ref,
+  ) {
     const iframeRef = useRef<HTMLIFrameElement>(null);
     // lockedUrl holds the URL currently loaded in the iframe — it never changes
     // unless the user clicks refresh or a genuinely new URL arrives.
@@ -109,6 +113,34 @@ export const BrowserFrame = forwardRef<BrowserFrameHandle, BrowserFrameProps>(
                 </div>
                 <span className="text-[10px] text-muted-foreground">
                   Processing
+                </span>
+              </div>
+            </div>
+          ) : sandboxLoading ? (
+            /* Sandbox warming up — restoring from snapshot */
+            <div className="flex flex-col items-center justify-center h-full gap-5 text-muted-foreground px-8">
+              <div className="relative">
+                <div className="size-20 rounded-2xl bg-primary/5 border border-primary/10 flex items-center justify-center">
+                  <HiOutlineArrowPath
+                    className="size-8 text-primary/60 animate-spin"
+                    style={{ animationDuration: "2s" }}
+                  />
+                </div>
+              </div>
+              <div className="text-center space-y-1.5">
+                <p className="text-sm font-semibold text-foreground">
+                  Starting sandbox...
+                </p>
+                <p className="text-xs text-muted-foreground max-w-65 leading-relaxed">
+                  Restoring your workspace. The preview will appear in a moment.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 mt-1">
+                <div className="h-1 w-24 rounded-full bg-border overflow-hidden">
+                  <div className="h-full w-1/2 rounded-full bg-primary/60 animate-pulse" />
+                </div>
+                <span className="text-[10px] text-muted-foreground">
+                  Warming up
                 </span>
               </div>
             </div>
