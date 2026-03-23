@@ -3,6 +3,7 @@
 import type { Account } from "@/model/account/account";
 import { createClient } from "../supabase/server";
 import { Organization } from "@/model/account/organization";
+import { fa } from "zod/locales";
 
 export async function upsertAccount(): Promise<Account | null> {
   const supabase = await createClient();
@@ -38,7 +39,7 @@ export async function upsertAccount(): Promise<Account | null> {
       last_name: nameParts.slice(1).join(" ") || null,
       photo_url: (user.user_metadata?.avatar_url as string) || null,
       organization_id: company.organization_id,
-      is_active: true,
+      is_active: false,
     })
     .select()
     .single();
@@ -70,7 +71,7 @@ export async function createOrganization(
     .insert({
       name,
       organization_id: crypto.randomUUID(),
-      token_balance: 200000,
+      token_balance: 100000,
     })
     .select()
     .single();
