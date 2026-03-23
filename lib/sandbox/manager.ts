@@ -1,7 +1,7 @@
 import { Sandbox } from "@vercel/sandbox";
 
 const GIT_TEMPLATE = "https://github.com/vercel/sandbox-example-next.git";
-const SANDBOX_TIMEOUT = 240_000; // 4 minutes idle timeout
+const SANDBOX_TIMEOUT = 600_000; // 10 minutes idle timeout
 
 /**
  * Create a new sandbox from a git template, install deps, and start dev server.

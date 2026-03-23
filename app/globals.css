@@ -169,3 +169,13 @@ body {
 .workspace-scrollbar::-webkit-scrollbar-thumb:hover {
   background: var(--muted-foreground);
 }
+
+/* Hide iframe scrollbar on mobile & tablet while keeping scroll functional */
+@media (max-width: 1024px) {
+  .iframe-hide-scrollbar {
+    scrollbar-width: none; /* Firefox */
+  }
+  .iframe-hide-scrollbar::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Edge */
+  }
+}

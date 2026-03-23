@@ -80,7 +80,7 @@ export const BrowserFrame = forwardRef<BrowserFrameHandle, BrowserFrameProps>(
             <iframe
               ref={iframeRef}
               src={lockedUrl}
-              className="w-full h-full border-0"
+              className="w-full h-full border-0 iframe-hide-scrollbar"
               title="Agent Preview"
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
             />

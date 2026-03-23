@@ -177,7 +177,22 @@ export async function POST(req: NextRequest) {
     // Generate consistent server-side IDs for persistence
     generateMessageId: createIdGenerator({ prefix: "msg", size: 16 }),
     messageMetadata({ part }): AgentMessageMetadata | undefined {
-      if (part.type === "finish-step" || part.type === "finish") {
+      // Accumulate tokens here because messageMetadata fires BEFORE
+      // onStepFinish in the SDK stream pipeline (the eventProcessor
+      // enqueues the chunk downstream before awaiting onStepFinish).
+      if (part.type === "finish-step") {
+        totalInputTokens += part.usage.inputTokens ?? 0;
+        totalOutputTokens += part.usage.outputTokens ?? 0;
+        return {
+          tokenUsage: {
+            inputTokens: totalInputTokens,
+            outputTokens: totalOutputTokens,
+            totalTokens: totalInputTokens + totalOutputTokens,
+          },
+          ...(balanceExhausted && { balanceExhausted: true }),
+        };
+      }
+      if (part.type === "finish") {
         return {
           tokenUsage: {
             inputTokens: totalInputTokens,
@@ -190,8 +205,7 @@ export async function POST(req: NextRequest) {
       return undefined;
     },
     onStepFinish({ stepNumber, usage, finishReason, toolCalls }) {
-      totalInputTokens += usage.inputTokens ?? 0;
-      totalOutputTokens += usage.outputTokens ?? 0;
+      // Tokens are already accumulated in messageMetadata (fires first)
       stepCount = stepNumber;
       console.log(`[agent] step ${stepNumber} finished:`, {
         inputTokens: usage.inputTokens,
