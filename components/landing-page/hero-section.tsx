@@ -11,7 +11,6 @@ import {
   HiOutlineGlobeAlt,
   HiOutlinePhone,
   HiOutlineCodeBracketSquare,
-  HiOutlineDevicePhoneMobile,
   HiOutlineChevronDown,
 } from "react-icons/hi2";
 import { useRouter } from "next/navigation";
@@ -21,7 +20,6 @@ const agentTypes = [
   { id: "web", label: "Web", icon: HiOutlineGlobeAlt },
   { id: "telephony", label: "Telephony", icon: HiOutlinePhone },
   { id: "widget", label: "Widget", icon: HiOutlineCodeBracketSquare },
-  { id: "mobile", label: "Mobile", icon: HiOutlineDevicePhoneMobile },
 ] as const;
 
 type AgentType = (typeof agentTypes)[number]["id"];
@@ -41,6 +39,11 @@ const examplePrompts = [
     label: "AI therapy companion",
     value:
       "Design a compassionate AI therapy companion voice agent that actively listens, asks open-ended reflective questions, offers evidence-based coping strategies, tracks mood over sessions, and knows when to recommend professional help.",
+  },
+  {
+    label: "Sales Closer",
+    value:
+      "Build a persuasive sales voice agent that qualifies inbound leads by asking about their needs and budget, presents relevant product options, handles common objections, and guides the prospect toward booking a demo or completing a purchase.",
   },
 ];
 
@@ -204,7 +207,7 @@ export function HeroSection() {
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                className="h-24 w-full resize-none bg-transparent text-xl font-medium text-foreground placeholder:text-muted-foreground focus:outline-none"
+                className="h-20 w-full resize-none bg-transparent text-xl font-medium text-foreground placeholder:text-muted-foreground focus:outline-none sm:h-28"
                 placeholder={placeholder + "│"}
                 onKeyDown={handleKeyDown}
               />
@@ -287,18 +290,17 @@ export function HeroSection() {
         <div
           data-aos="fade-up"
           data-aos-delay="650"
-          className="flex flex-wrap justify-center gap-3"
+          className="flex flex-wrap justify-center gap-2 sm:gap-3"
         >
           {examplePrompts.map((p) => (
-            <Button
+            <button
               key={p.label}
-              variant="outline"
-              size="sm"
-              className="rounded-full uppercase tracking-tight"
+              type="button"
               onClick={() => setPrompt(p.value)}
+              className="rounded-full border border-primary/20 bg-surface px-3 py-1.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground transition-all hover:border-primary hover:text-foreground sm:px-5 sm:py-2 sm:text-[10px] sm:font-bold sm:tracking-widest"
             >
               {p.label}
-            </Button>
+            </button>
           ))}
         </div>
       </section>

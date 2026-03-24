@@ -77,7 +77,10 @@ export async function createOrganization(
     .insert({
       name,
       organization_id: crypto.randomUUID(),
-      token_balance: 100000,
+      token_balance: 10000,
+      is_subscribed: false,
+      is_free_plan: true,
+      plan: "Starter",
     })
     .select()
     .single();

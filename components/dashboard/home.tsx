@@ -10,7 +10,6 @@ import {
   HiOutlineGlobeAlt,
   HiOutlinePhone,
   HiOutlineCodeBracketSquare,
-  HiOutlineDevicePhoneMobile,
   HiOutlineChevronDown,
   HiOutlineBolt,
   HiOutlineArrowRight,
@@ -22,7 +21,6 @@ const agentTypes = [
   { id: "web", label: "Web", icon: HiOutlineGlobeAlt },
   { id: "telephony", label: "Telephony", icon: HiOutlinePhone },
   { id: "widget", label: "Widget", icon: HiOutlineCodeBracketSquare },
-  { id: "mobile", label: "Mobile", icon: HiOutlineDevicePhoneMobile },
 ] as const;
 
 type AgentType = (typeof agentTypes)[number]["id"];
