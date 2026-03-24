@@ -3,6 +3,9 @@ export interface Organization {
   organization_id: string;
   name: string;
   token_balance: number;
+  is_subscribed: boolean;
+  is_free_plan: boolean;
+  plan: string | null;
   created_at: string;
   updated_at: string;
 }

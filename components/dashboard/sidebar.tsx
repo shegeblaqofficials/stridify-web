@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { StridifyLogo } from "@/components/ui/logo";
 import { useAccount } from "@/provider/account-provider";
 import { createClient } from "@/lib/supabase/client";
+import { useTheme } from "@/components/ui/theme-provider";
 import {
   HiOutlineFolder,
   HiOutlineRocketLaunch,
@@ -17,6 +18,9 @@ import {
   HiOutlineBolt,
   HiOutlineXMark,
   HiHome,
+  HiOutlineSun,
+  HiOutlineMoon,
+  HiOutlineComputerDesktop,
 } from "react-icons/hi2";
 
 const navItems = [
@@ -38,6 +42,7 @@ export function Sidebar({
   const router = useRouter();
   const { user, account, organization } = useAccount();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { theme, setTheme } = useTheme();
 
   const avatarUrl = user?.user_metadata?.avatar_url;
   const fullName =
@@ -125,7 +130,7 @@ export function Sidebar({
         className="relative mt-auto border-t border-border p-4"
       >
         {menuOpen && (
-          <div className="absolute bottom-full left-3 right-3 mb-2 overflow-hidden rounded-xl border border-border bg-surface shadow-xl">
+          <div className="absolute bottom-full left-3 z-50 mb-2 w-72 overflow-hidden rounded-xl border border-border bg-surface shadow-xl">
             <div className="border-b border-border px-4 py-3">
               <p className="truncate text-sm font-semibold">{fullName}</p>
               <p className="truncate text-xs text-muted-foreground">{email}</p>
@@ -170,6 +175,49 @@ export function Sidebar({
                 <HiOutlineCog6Tooth className="h-4 w-4" />
                 Settings
               </Link>
+            </div>
+
+            {/* Theme */}
+            <div className="border-t border-border px-4 py-3">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Theme
+              </p>
+              <div className="flex items-center gap-1">
+                {(
+                  [
+                    {
+                      value: "light" as const,
+                      icon: HiOutlineSun,
+                      label: "Light",
+                    },
+                    {
+                      value: "dark" as const,
+                      icon: HiOutlineMoon,
+                      label: "Dark",
+                    },
+                    {
+                      value: "system" as const,
+                      icon: HiOutlineComputerDesktop,
+                      label: "System",
+                    },
+                  ] as const
+                ).map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setTheme(opt.value)}
+                    className={[
+                      "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs transition-colors",
+                      theme === opt.value
+                        ? "bg-surface-elevated text-foreground font-medium"
+                        : "text-muted-foreground hover:bg-surface-elevated hover:text-foreground",
+                    ].join(" ")}
+                  >
+                    <opt.icon className="h-3.5 w-3.5" />
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="border-t border-border p-1.5">
@@ -228,7 +276,7 @@ export function Sidebar({
   return (
     <>
       {/* Desktop sidebar — always visible */}
-      <aside className="hidden w-60 flex-col border-r border-border bg-surface md:flex">
+      <aside className="hidden w-60 flex-col overflow-visible border-r border-border bg-surface md:flex">
         {sidebarContent}
       </aside>
 

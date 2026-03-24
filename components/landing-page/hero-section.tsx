@@ -27,9 +27,21 @@ const agentTypes = [
 type AgentType = (typeof agentTypes)[number]["id"];
 
 const examplePrompts = [
-  "Customer support voice agent",
-  "Restaurant booking agent",
-  "AI therapy companion",
+  {
+    label: "Customer support voice agent",
+    value:
+      "Build a friendly customer support voice agent that greets callers, answers FAQs about orders, shipping, and returns, escalates complex issues to a human, and confirms resolution before ending the call.",
+  },
+  {
+    label: "Restaurant booking agent",
+    value:
+      "Create a restaurant booking voice assistant that checks table availability, takes reservation details like party size and preferred time, handles dietary restrictions, sends a confirmation, and answers questions about the menu.",
+  },
+  {
+    label: "AI therapy companion",
+    value:
+      "Design a compassionate AI therapy companion voice agent that actively listens, asks open-ended reflective questions, offers evidence-based coping strategies, tracks mood over sessions, and knows when to recommend professional help.",
+  },
 ];
 
 const placeholderPhrases = [
@@ -279,13 +291,13 @@ export function HeroSection() {
         >
           {examplePrompts.map((p) => (
             <Button
-              key={p}
+              key={p.label}
               variant="outline"
               size="sm"
               className="rounded-full uppercase tracking-tight"
-              onClick={() => setPrompt(p)}
+              onClick={() => setPrompt(p.value)}
             >
-              {p}
+              {p.label}
             </Button>
           ))}
         </div>

@@ -34,6 +34,9 @@ CREATE TABLE public.organizations (
   organization_id character varying,
   name character varying,
   token_balance  integer,
+  is_subscribed boolean DEFAULT false,
+  is_free_plan boolean DEFAULT true,
+  plan character varying,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT organization_pkey PRIMARY KEY (id)
@@ -61,4 +64,15 @@ CREATE TABLE public.snapshots (
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT snapshot_pkey PRIMARY KEY (id)
+);
+
+--- Table organization members
+CREATE TABLE public.organization_members (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  organization_id character varying,
+  user_id character varying,
+  role character varying,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT organization_members_pkey PRIMARY KEY (id)
 );

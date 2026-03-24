@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { ThemeSwitcher } from "@/components/ui/theme-switcher";
 import { StridifyLogo } from "@/components/ui/logo";
+import { useAccount } from "@/provider/account-provider";
 import {
   HiOutlineMagnifyingGlass,
   HiOutlineBolt,
@@ -14,6 +14,8 @@ export function DashboardHeader({
 }: {
   onMenuToggle: () => void;
 }) {
+  const { organization } = useAccount();
+  const isFree = organization?.is_free_plan ?? true;
   return (
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-surface/80 px-4 backdrop-blur-md md:px-6">
       {/* Left: menu + logo */}
@@ -56,16 +58,16 @@ export function DashboardHeader({
 
       {/* Right actions */}
       <div className="flex items-center gap-3">
-        {/* Upgrade — hidden on mobile */}
-        <Link
-          href="/pricing"
-          className="hidden items-center gap-1.5 rounded-lg bg-linear-to-r from-primary to-primary/80 px-3.5 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition-all hover:shadow-md hover:shadow-primary/20 active:scale-[0.98] md:inline-flex"
-        >
-          <HiOutlineBolt className="h-3.5 w-3.5" />
-          Upgrade
-        </Link>
-        <div className="mx-1 hidden h-6 w-px bg-border md:block" />
-        <ThemeSwitcher />
+        {/* Upgrade — only on free plan, hidden on mobile */}
+        {isFree && (
+          <Link
+            href="/pricing"
+            className="hidden items-center gap-1.5 rounded-lg bg-linear-to-r from-primary to-primary/80 px-3.5 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition-all hover:shadow-md hover:shadow-primary/20 active:scale-[0.98] md:inline-flex"
+          >
+            <HiOutlineBolt className="h-3.5 w-3.5" />
+            Upgrade
+          </Link>
+        )}
       </div>
     </header>
   );

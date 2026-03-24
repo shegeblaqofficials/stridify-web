@@ -11,6 +11,8 @@ import {
   HiOutlineEyeSlash,
   HiOutlineBolt,
   HiOutlineSparkles,
+  HiOutlineChatBubbleLeftRight,
+  HiOutlineArrowsPointingOut,
 } from "react-icons/hi2";
 import type { ProjectStatus } from "@/model/project/project";
 
@@ -29,6 +31,8 @@ interface PreviewPanelProps {
   balanceExhausted?: boolean;
   sandboxLoading?: boolean;
   onUpgrade?: () => void;
+  chatCollapsed?: boolean;
+  onToggleChat?: () => void;
 }
 
 export function PreviewPanel({
@@ -38,6 +42,8 @@ export function PreviewPanel({
   balanceExhausted,
   sandboxLoading,
   onUpgrade,
+  chatCollapsed,
+  onToggleChat,
 }: PreviewPanelProps) {
   const browserRef = useRef<BrowserFrameHandle>(null);
   const [device, setDevice] = useState<DeviceMode>("desktop");
@@ -74,6 +80,25 @@ export function PreviewPanel({
     <section className="flex-1 flex flex-col relative">
       {/* Toolbar */}
       <div className="flex items-center gap-3 px-4 h-11 bg-surface border-b border-border shrink-0">
+        {/* Toggle chat */}
+        <button
+          onClick={onToggleChat}
+          className="hidden md:flex items-center gap-1.5 px-2 py-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-elevated transition-colors"
+          title={chatCollapsed ? "Show chat" : "Expand preview"}
+        >
+          {chatCollapsed ? (
+            <HiOutlineChatBubbleLeftRight className="size-3.5" />
+          ) : (
+            <HiOutlineArrowsPointingOut className="size-3.5" />
+          )}
+          <span className="text-[11px] font-medium">
+            {chatCollapsed ? "Chat" : "Expand"}
+          </span>
+        </button>
+
+        {/* Divider */}
+        <div className="hidden md:block h-4 w-px bg-border" />
+
         {/* Device buttons */}
         <div className="flex items-center gap-0.5 rounded-lg border border-border p-0.5">
           {deviceBtn("phone", HiOutlineDevicePhoneMobile, "Phone")}

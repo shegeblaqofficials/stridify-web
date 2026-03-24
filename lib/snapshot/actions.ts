@@ -64,6 +64,7 @@ export async function getProjectSnapshots(
     .from("snapshots")
     .select("*")
     .eq("project_id", projectId)
-    .order("version_number", { ascending: false });
+    .order("version_number", { ascending: false })
+    .limit(5);
   return (data as Snapshot[]) ?? [];
 }

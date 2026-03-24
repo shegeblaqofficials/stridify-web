@@ -4,60 +4,29 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useAccount } from "@/provider/account-provider";
 import { Button } from "@/components/ui/button";
 import { getRedisOrganizationMetrics } from "@/lib/redis/actions";
+import { getOrganizationMembers, type OrgMember } from "@/lib/account/actions";
 import {
-  HiOutlinePlus,
-  HiOutlineTrash,
-  HiOutlineEllipsisVertical,
   HiOutlineUserPlus,
   HiOutlinePencil,
-  HiOutlineBolt,
   HiOutlineChartBar,
   HiOutlineArrowDown,
   HiOutlineArrowUp,
+  HiOutlineCreditCard,
 } from "react-icons/hi2";
 
 /* ------------------------------------------------------------------ */
 /*  Data                                                               */
 /* ------------------------------------------------------------------ */
 
-const tabs = ["Profile", "API Keys", "Team", "Billing", "Usage"] as const;
+const tabs = ["Profile", "Team", "Billing", "Usage"] as const;
 type Tab = (typeof tabs)[number];
 
 const sectionIds: Record<Tab, string> = {
   Profile: "profile",
-  "API Keys": "api-keys",
   Team: "team",
   Billing: "billing",
   Usage: "usage",
 };
-
-const apiKeys = [
-  {
-    name: "Production Main",
-    key: "str_live_••••••••••••••••4f2a",
-    created: "Oct 12, 2023",
-  },
-  {
-    name: "Development",
-    key: "str_test_••••••••••••••••9e11",
-    created: "Jan 05, 2024",
-  },
-];
-
-const teamMembers = [
-  {
-    name: "Alex Rivera",
-    email: "alex.rivera@stridify.ai",
-    role: "Owner",
-    avatar: null,
-  },
-  {
-    name: "Sarah Chen",
-    email: "s.chen@stridify.ai",
-    role: "Developer",
-    avatar: null,
-  },
-];
 
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
@@ -81,6 +50,9 @@ export function Settings() {
   const [usageLoading, setUsageLoading] = useState(false);
   const [usageLoaded, setUsageLoaded] = useState(false);
 
+  const [members, setMembers] = useState<OrgMember[]>([]);
+  const [membersLoaded, setMembersLoaded] = useState(false);
+
   const avatarUrl = user?.user_metadata?.avatar_url;
   const fullName =
     user?.user_metadata?.full_name || user?.user_metadata?.name || "User";
@@ -91,7 +63,9 @@ export function Settings() {
     .join("")
     .slice(0, 2)
     .toUpperCase();
-  const planLabel = account?.is_active ? "Pro" : "Free";
+
+  const planName = organization?.plan ?? "Free";
+  const isFree = organization?.is_free_plan ?? true;
 
   const fetchUsage = useCallback(async () => {
     if (!account?.organization_id || usageLoaded) return;
@@ -101,6 +75,18 @@ export function Settings() {
     setUsageLoading(false);
     setUsageLoaded(true);
   }, [account?.organization_id, usageLoaded]);
+
+  const fetchMembers = useCallback(async () => {
+    if (!account?.organization_id || membersLoaded) return;
+    const data = await getOrganizationMembers(account.organization_id);
+    setMembers(data);
+    setMembersLoaded(true);
+  }, [account?.organization_id, membersLoaded]);
+
+  // Fetch members on mount
+  useEffect(() => {
+    fetchMembers();
+  }, [fetchMembers]);
 
   // Fetch usage when tab becomes active
   useEffect(() => {
@@ -165,7 +151,6 @@ export function Settings() {
         </div>
       </div>
       <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
-        {/* Content */}
         <div className="mx-auto max-w-4xl space-y-12 px-2 py-4 md:px-8 md:py-8">
           {/* ── Profile ─────────────────────────────────── */}
           <section id="profile">
@@ -223,82 +208,12 @@ export function Settings() {
                     <input
                       type="email"
                       defaultValue={email}
-                      className="w-full rounded-lg border border-border bg-surface-elevated/30 px-3 py-2.5 text-sm text-foreground outline-none transition-all focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
+                      disabled
+                      className="w-full rounded-lg border border-border bg-surface-elevated/30 px-3 py-2.5 text-sm text-muted-foreground outline-none"
                     />
                   </div>
                 </div>
-
-                <div className="flex items-center justify-between border-t border-border pt-6">
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">
-                      Password
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Last changed 3 months ago
-                    </p>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    Change Password
-                  </Button>
-                </div>
               </div>
-            </div>
-          </section>
-
-          {/* ── API Keys ────────────────────────────────── */}
-          <section id="api-keys">
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-foreground">API Keys</h2>
-              <Button size="sm">
-                <HiOutlinePlus className="h-4 w-4" />
-                Create New Key
-              </Button>
-            </div>
-            <div className="overflow-hidden rounded-xl border border-border">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-surface-elevated/50">
-                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                      Name
-                    </th>
-                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                      Key
-                    </th>
-                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                      Created
-                    </th>
-                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {apiKeys.map((k) => (
-                    <tr
-                      key={k.name}
-                      className="border-b border-border last:border-b-0 transition-colors hover:bg-surface-elevated/30"
-                    >
-                      <td className="px-6 py-4 text-sm font-medium text-foreground">
-                        {k.name}
-                      </td>
-                      <td className="px-6 py-4 font-mono text-xs text-muted-foreground">
-                        {k.key}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-muted-foreground">
-                        {k.created}
-                      </td>
-                      <td className="px-6 py-4">
-                        <button
-                          type="button"
-                          className="text-muted-foreground transition-colors hover:text-danger"
-                        >
-                          <HiOutlineTrash className="h-4.5 w-4.5" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             </div>
           </section>
 
@@ -312,48 +227,70 @@ export function Settings() {
               </Button>
             </div>
             <div className="overflow-hidden rounded-xl border border-border bg-surface divide-y divide-border">
-              {teamMembers.map((m) => (
-                <div
-                  key={m.email}
-                  className="flex items-center justify-between p-4"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border bg-surface-elevated">
-                      <span className="text-xs font-bold text-muted-foreground">
-                        {m.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
+              {members.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <p className="text-sm text-muted-foreground">
+                    No team members yet.
+                  </p>
+                </div>
+              ) : (
+                members.map((m) => {
+                  const memberName =
+                    [m.first_name, m.last_name].filter(Boolean).join(" ") ||
+                    m.email;
+                  const memberInitials = memberName
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase();
+                  return (
+                    <div
+                      key={m.user_id}
+                      className="flex items-center justify-between p-4"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border bg-surface-elevated">
+                          {m.photo_url ? (
+                            <img
+                              src={m.photo_url}
+                              alt=""
+                              className="h-full w-full object-cover"
+                              referrerPolicy="no-referrer"
+                            />
+                          ) : (
+                            <span className="text-xs font-bold text-muted-foreground">
+                              {memberInitials}
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-foreground">
+                            {memberName}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {m.email}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="rounded-full bg-surface-elevated px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        {m.role}
                       </span>
                     </div>
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">
-                        {m.name}
-                      </p>
-                      <p className="text-xs text-muted-foreground">{m.email}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="rounded-full bg-surface-elevated px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                      {m.role}
-                    </span>
-                    {m.role !== "Owner" && (
-                      <button
-                        type="button"
-                        className="text-muted-foreground transition-colors hover:text-foreground"
-                      >
-                        <HiOutlineEllipsisVertical className="h-5 w-5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
+                  );
+                })
+              )}
             </div>
           </section>
 
           {/* ── Billing ─────────────────────────────────── */}
           <section id="billing">
-            <h2 className="mb-6 text-xl font-bold text-foreground">Billing</h2>
+            <h2 className="mb-6 flex items-center gap-3 text-xl font-bold text-foreground">
+              Billing
+              <span className="rounded-full bg-surface-elevated px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
+                {planName}
+              </span>
+            </h2>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               {/* Plan */}
               <div className="flex flex-col justify-between rounded-xl border border-border bg-surface p-6">
@@ -363,54 +300,61 @@ export function Settings() {
                       Current Plan
                     </span>
                     <span className="rounded bg-foreground px-2 py-0.5 text-[10px] font-bold text-background">
-                      {planLabel.toUpperCase()}
+                      {planName.toUpperCase()}
                     </span>
                   </div>
-                  <h3 className="text-2xl font-bold text-foreground">
-                    $49
-                    <span className="text-sm font-normal text-muted-foreground">
-                      /mo
-                    </span>
-                  </h3>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Next billing date: Feb 12, 2024
-                  </p>
+                  {isFree ? (
+                    <>
+                      <h3 className="text-2xl font-bold text-foreground">
+                        Free
+                      </h3>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {organization?.token_balance?.toLocaleString() ?? 0}{" "}
+                        credits remaining
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="text-2xl font-bold text-foreground">
+                        {planName}
+                      </h3>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {organization?.token_balance?.toLocaleString() ?? 0}{" "}
+                        credits remaining
+                      </p>
+                    </>
+                  )}
                 </div>
-                <button
-                  type="button"
-                  className="mt-8 text-left text-sm font-semibold text-foreground underline underline-offset-4 transition-colors hover:text-muted-foreground"
-                >
-                  Manage Subscription
-                </button>
+                {isFree && (
+                  <button
+                    type="button"
+                    className="mt-8 text-left text-sm font-semibold text-foreground underline underline-offset-4 transition-colors hover:text-muted-foreground"
+                  >
+                    Upgrade Plan
+                  </button>
+                )}
               </div>
 
-              {/* Payment */}
+              {/* Payment Method */}
               <div className="flex flex-col justify-between rounded-xl border border-border bg-surface p-6">
                 <div>
                   <span className="mb-4 block text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                     Payment Method
                   </span>
-                  <div className="flex items-center gap-4 rounded-lg border border-border bg-surface-elevated/30 p-3">
-                    <div className="flex h-6 w-10 items-center justify-center rounded bg-surface-elevated">
-                      <span className="text-[8px] font-bold italic text-muted-foreground">
-                        VISA
-                      </span>
+                  <div className="flex flex-col items-center justify-center py-6">
+                    <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-surface-elevated">
+                      <HiOutlineCreditCard className="h-5 w-5 text-muted-foreground" />
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">
-                        Visa ending in 4242
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Expires 12/26
-                      </p>
-                    </div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      No payment method added
+                    </p>
                   </div>
                 </div>
                 <button
                   type="button"
-                  className="mt-8 text-left text-sm font-semibold text-foreground underline underline-offset-4 transition-colors hover:text-muted-foreground"
+                  className="mt-4 text-left text-sm font-semibold text-foreground underline underline-offset-4 transition-colors hover:text-muted-foreground"
                 >
-                  Update Method
+                  Add Payment Method
                 </button>
               </div>
             </div>
@@ -540,16 +484,6 @@ export function Settings() {
               )}
             </div>
           </section>
-
-          {/* ── Actions ─────────────────────────────────── */}
-          <div className="flex justify-end gap-3 border-t border-border pt-8">
-            <Button variant="outline" size="md">
-              Discard Changes
-            </Button>
-            <Button variant="primary" size="md">
-              Save Settings
-            </Button>
-          </div>
         </div>
       </div>
     </div>

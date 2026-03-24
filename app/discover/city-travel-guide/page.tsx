@@ -17,6 +17,7 @@ import {
   HiOutlineShieldCheck,
   HiOutlineWifi,
   HiOutlineInformationCircle,
+  HiOutlineXMark,
 } from "react-icons/hi2";
 import {
   MdOutlinePark,
@@ -35,9 +36,16 @@ import {
   HiOutlineMoon,
   HiOutlineComputerDesktop,
 } from "react-icons/hi2";
-import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { useTheme } from "@/components/ui/theme-provider";
+import {
+  useSession,
+  SessionProvider,
+  useAgent,
+  RoomAudioRenderer,
+  BarVisualizer,
+} from "@livekit/components-react";
+import { TokenSource } from "livekit-client";
 
 /* ------------------------------------------------------------------ */
 /*  Color tokens — hardcoded per-template, NOT using app theme vars   */
@@ -146,7 +154,7 @@ export default function CityTravelGuidePage() {
               className="text-2xl font-bold tracking-tight"
               style={{ color: "var(--ctg-primary)" }}
             >
-              CityGuide
+              Nova Haven
             </span>
             <div className="hidden lg:flex items-center gap-6">
               {[
@@ -191,7 +199,7 @@ export default function CityTravelGuidePage() {
         <div className="absolute inset-0 z-0">
           <Image
             src="/assets/images/city-travel-guide/hero.png"
-            alt="Panoramic city skyline"
+            alt="Panoramic Nova Haven skyline"
             fill
             className="object-cover brightness-[0.7]"
             priority
@@ -204,7 +212,7 @@ export default function CityTravelGuidePage() {
         <div className="relative z-10 max-w-7xl mx-auto px-6 w-full">
           <div className="max-w-2xl text-white">
             <h1 className="text-4xl sm:text-5xl lg:text-7xl font-extrabold leading-[1.08] mb-6 tracking-tight">
-              Explore the City
+              Explore Nova Haven
               <br />
               With Your Personal
               <br />
@@ -232,92 +240,8 @@ export default function CityTravelGuidePage() {
       {/* ---- AI Assistant + Explore Grid ---- */}
       <section className="relative z-20 -mt-24 px-4 sm:px-6 mb-20 sm:mb-32">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
-          {/* AI Card */}
-          <div
-            className="lg:col-span-5 ctg-ambient rounded-2xl p-6 sm:p-8 flex flex-col justify-between border"
-            style={{
-              background: "var(--ctg-surface)",
-              borderColor: "var(--ctg-border)",
-            }}
-          >
-            <div>
-              <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-3">
-                  <span
-                    className="w-3 h-3 rounded-full animate-pulse"
-                    style={{ background: "var(--ctg-primary)" }}
-                  />
-                  <span
-                    className="text-sm font-semibold tracking-wide uppercase"
-                    style={{ color: "var(--ctg-primary)" }}
-                  >
-                    AI Assistant Active
-                  </span>
-                </div>
-                <HiOutlineSparkles
-                  className="w-5 h-5"
-                  style={{ color: "var(--ctg-primary)" }}
-                />
-              </div>
-              <div className="space-y-5 mb-10">
-                <div
-                  className="p-4 sm:p-5 rounded-xl rounded-tl-none max-w-[85%] border"
-                  style={{
-                    background: "var(--ctg-surface-high)",
-                    borderColor: "var(--ctg-border)",
-                  }}
-                >
-                  <p
-                    className="italic text-sm"
-                    style={{ color: "var(--ctg-text-secondary)" }}
-                  >
-                    &ldquo;Where can I find the best museums?&rdquo;
-                  </p>
-                </div>
-                <div
-                  className="p-4 sm:p-5 rounded-xl rounded-tr-none ml-auto max-w-[85%] text-right border"
-                  style={{
-                    background: "var(--ctg-primary-muted)",
-                    borderColor:
-                      "color-mix(in srgb, var(--ctg-primary) 20%, transparent)",
-                  }}
-                >
-                  <p
-                    className="font-medium text-sm"
-                    style={{ color: "var(--ctg-text)" }}
-                  >
-                    I&rsquo;d recommend the Metropolitan Art Center. It&rsquo;s
-                    open until 8 PM tonight!
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-col items-center gap-5">
-              <button
-                className="w-20 h-20 rounded-full flex items-center justify-center text-white ctg-voice-pulse"
-                style={{
-                  background: "var(--ctg-primary)",
-                  boxShadow: "0 0 0 8px var(--ctg-primary-muted)",
-                }}
-              >
-                <HiOutlineMicrophone className="w-8 h-8" />
-              </button>
-              <div className="text-center">
-                <h3
-                  className="text-lg sm:text-xl font-bold mb-1"
-                  style={{ color: "var(--ctg-text)" }}
-                >
-                  Ask the AI City Guide
-                </h3>
-                <p
-                  className="text-sm"
-                  style={{ color: "var(--ctg-text-secondary)" }}
-                >
-                  Listening for your questions...
-                </p>
-              </div>
-            </div>
-          </div>
+          {/* AI Card — LiveKit voice agent */}
+          <CityGuideVoiceCard />
 
           {/* Bento Grid */}
           <div className="lg:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -408,8 +332,8 @@ export default function CityTravelGuidePage() {
                 img: "/assets/images/city-travel-guide/attraction1.png",
                 tag: "OPEN NOW",
                 tagType: "green" as const,
-                title: "The Grand Plaza",
-                desc: "A historic square featuring colonial architecture and the city's famous clock tower.",
+                title: "Nova Haven Lighthouse",
+                desc: "The iconic 1852 lighthouse — climb 237 spiral steps for a 360° panoramic view of the coastline.",
                 hours: "09:00 - 21:00",
                 price: "Free Entry",
               },
@@ -417,8 +341,8 @@ export default function CityTravelGuidePage() {
                 img: "/assets/images/city-travel-guide/attraction2.png",
                 tag: "MUST VISIT",
                 tagType: "blue" as const,
-                title: "Modern Art Gallery",
-                desc: "Housing the largest collection of contemporary works in the region with rotating exhibits.",
+                title: "Metropolitan Art Center",
+                desc: "Over 15,000 contemporary works in a stunning deconstructivist building by architect Lena Zhao.",
                 hours: "10:00 - 18:00",
                 price: "$15 / Ticket",
               },
@@ -426,8 +350,8 @@ export default function CityTravelGuidePage() {
                 img: "/assets/images/city-travel-guide/attraction3.png",
                 tag: "ECO-CERTIFIED",
                 tagType: "green" as const,
-                title: "Skyline Gardens",
-                desc: "Elevated urban park offering breathtaking views and over 200 species of native plants.",
+                title: "Castellana Gardens",
+                desc: "200-acre botanical paradise in Crestline Hills with themed gardens and a butterfly conservatory.",
                 hours: "06:00 - 00:00",
                 price: "Free Entry",
               },
@@ -516,25 +440,25 @@ export default function CityTravelGuidePage() {
               {
                 icon: <MdOutlineFlight className="w-8 h-8" />,
                 title: "Airports",
-                desc: "International Hub (30m drive). Shuttle buses run every 15 mins from terminal 1 & 2.",
+                desc: "Nova Haven International (NHI), 14 miles south. Red Metro Line connects in 35 minutes.",
                 link: "View Flight Status",
               },
               {
                 icon: <MdOutlineDirectionsBus className="w-8 h-8" />,
                 title: "Local Buses",
-                desc: "24/7 coverage. Use the 'CityPass' card for contactless payment across all lines.",
+                desc: "Electric buses with free WiFi. Bus 42 scenic loop hits all five districts in 90 minutes.",
                 link: "Live Map",
               },
               {
                 icon: <MdOutlineTrain className="w-8 h-8" />,
-                title: "Train Stations",
-                desc: "Central Station connects to all major surrounding cities. High-speed rail available.",
+                title: "NovaTrain Metro",
+                desc: "4 lines covering all major districts. Runs every 3-8 minutes. Day pass just $7.",
                 link: "Schedules",
               },
               {
                 icon: <MdOutlineLocalTaxi className="w-8 h-8" />,
                 title: "Taxis",
-                desc: "Hailing apps are widely supported. Official city taxis are silver with blue decals.",
+                desc: "NovaCab and major ride-hailing apps available 24/7. Water taxis along the waterfront too.",
                 link: "Booking Apps",
               },
             ].map((t) => (
@@ -574,7 +498,7 @@ export default function CityTravelGuidePage() {
         </div>
       </section>
 
-      {/* ---- Taste the City ---- */}
+      {/* ---- Taste Nova Haven ---- */}
       <section
         className="py-20 sm:py-32 border-y"
         style={{
@@ -588,7 +512,7 @@ export default function CityTravelGuidePage() {
               className="text-3xl sm:text-4xl font-extrabold"
               style={{ color: "var(--ctg-text)" }}
             >
-              Taste the City
+              Taste Nova Haven
             </h2>
             <div className="flex gap-2">
               <button
@@ -617,34 +541,34 @@ export default function CityTravelGuidePage() {
             {[
               {
                 img: "/assets/images/city-travel-guide/food1.png",
-                cat: "Fine Dining",
-                title: "Azure Heights",
-                desc: "Fusion cuisine with a panoramic 360° view of the urban landscape.",
-                location: "Sky Tower, Floor 42",
+                cat: "Asian Fusion",
+                title: "Nimbus Rooftop",
+                desc: "Michelin-starred Asian fusion with jaw-dropping city and ocean views.",
+                location: "Apex Tower, Floor 52",
                 rating: "4.9",
               },
               {
                 img: "/assets/images/city-travel-guide/food2.png",
-                cat: "Cafe & Bakery",
-                title: "The Roasted Bean",
-                desc: "Artisanal coffee and pastries made fresh every morning by local chefs.",
-                location: "15 Baker St",
+                cat: "Specialty Coffee",
+                title: "Dawn Patrol Coffee",
+                desc: "The city's best specialty roaster in a sun-drenched converted boathouse.",
+                location: "Harbor District",
                 rating: "4.8",
               },
               {
                 img: "/assets/images/city-travel-guide/food3.png",
-                cat: "Japanese",
-                title: "Sakura Soul",
-                desc: "Traditional sushi and ramen in an authentic, tranquil atmosphere.",
-                location: "Downtown East",
+                cat: "Seafood",
+                title: "The Salt House",
+                desc: "Farm-to-table seafood in a restored 1890s salt warehouse on the waterfront.",
+                location: "Harbor District",
                 rating: "4.6",
               },
               {
                 img: "/assets/images/city-travel-guide/food4.png",
-                cat: "Quick Bites",
-                title: "Urban Grill",
-                desc: "Gourmet burgers and street food classics for travelers on the go.",
-                location: "Market Square",
+                cat: "Latin American",
+                title: "Señora Alma's",
+                desc: "Three generations of handmade empanadas and Latin classics. A beloved institution.",
+                location: "Old Town (Viejo Centro)",
                 rating: "4.5",
               },
             ].map((f) => (
@@ -727,33 +651,33 @@ export default function CityTravelGuidePage() {
             className="text-sm sm:text-base mb-10 sm:mb-16 max-w-2xl mx-auto"
             style={{ color: "var(--ctg-text-secondary)" }}
           >
-            From a small trading outpost to a bustling metropolis—discover the
-            stories that shaped us.
+            From Captain Vargas&rsquo;s 1847 settlement to a thriving coastal
+            metropolis—discover the stories that shaped Nova Haven.
           </p>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {[
               {
-                year: "1748",
+                year: "1847",
                 title: "Founding",
-                desc: "Powered by maritime explorers on the banks of the Silver River as a seasonal trading hub.",
+                desc: "Captain Elena Vargas establishes the first settlement at Harbor District, drawn by the deep-water port.",
                 highlight: false,
               },
               {
-                year: "1892",
-                title: "The Great Expansion",
-                desc: "Arrival of the first locomotive line transformed the city into an industrial powerhouse.",
+                year: "1889",
+                title: "The Great Railroad",
+                desc: "The railroad connects Nova Haven to major inland cities, sparking rapid growth and immigration.",
                 highlight: false,
               },
               {
-                year: "1955",
-                title: "Cultural Renaissance",
-                desc: "Modernist architecture swept the downtown area, giving rise to its iconic skylines.",
+                year: "1998",
+                title: "Innovation Quarter",
+                desc: "Former industrial land transforms into a tech and research hub with the famous Skybridge.",
                 highlight: true,
               },
               {
-                year: "2024",
-                title: "Digital Era",
-                desc: "Today, we lead in smart city innovation while preserving our deep historical roots.",
+                year: "2023",
+                title: "World-Class City",
+                desc: "Nova Haven named one of the world's top 10 cities for quality of life and cultural vibrancy.",
                 highlight: false,
               },
             ].map((t) => (
@@ -813,25 +737,25 @@ export default function CityTravelGuidePage() {
               {
                 icon: <HiOutlineShieldCheck className="w-6 h-6" />,
                 title: "Police",
-                desc: "Dial 911 for emergencies, downtown.",
+                desc: "Dial 911 or non-emergency (555) 234-5678.",
                 color: "#ef4444",
               },
               {
                 icon: <MdOutlineLocalHospital className="w-6 h-6" />,
                 title: "Hospitals",
-                desc: "General Medical, 24h ER.",
+                desc: "Nova Haven General Hospital, 24/7 ER.",
                 color: "#ef4444",
               },
               {
                 icon: <HiOutlineInformationCircle className="w-6 h-6" />,
                 title: "Tourist Info",
-                desc: "Visitor Center at Central Mall.",
+                desc: "Harbor Station Visitor Center, open 8 AM–8 PM.",
                 color: "#22c55e",
               },
               {
                 icon: <HiOutlineWifi className="w-6 h-6" />,
-                title: "City Wi-Fi",
-                desc: "Free public access in hotspots.",
+                title: "Nova Wi-Fi",
+                desc: "Free 'NovaHaven-Free' WiFi in parks & districts.",
                 color: "var(--ctg-primary)",
               },
             ].map((s) => (
@@ -887,14 +811,14 @@ export default function CityTravelGuidePage() {
                 className="text-xl font-bold block mb-3"
                 style={{ color: "var(--ctg-primary)" }}
               >
-                CityGuide
+                Nova Haven
               </span>
               <p
                 className="text-sm leading-relaxed"
                 style={{ color: "var(--ctg-text-secondary)" }}
               >
-                Your ultimate companion for navigating the city&rsquo;s pulse.
-                From hidden alleys to skyscraper summits.
+                Your ultimate companion for exploring Nova Haven&rsquo;s pulse.
+                From the Harbor District to Crestline Hills.
               </p>
             </div>
             <div>
@@ -987,7 +911,7 @@ export default function CityTravelGuidePage() {
               className="text-xs"
               style={{ color: "var(--ctg-text-secondary)" }}
             >
-              &copy; 2026 City Tourism Portal. All rights reserved.
+              &copy; 2026 Nova Haven Tourism Portal. All rights reserved.
             </p>
             <div className="flex gap-6">
               <a
@@ -995,7 +919,7 @@ export default function CityTravelGuidePage() {
                 className="text-xs hover:opacity-80"
                 style={{ color: "var(--ctg-text-secondary)" }}
               >
-                Contact Us: support@cityguide.com
+                Contact Us: support@novahaven.com
               </a>
               <a
                 href="#"
@@ -1008,6 +932,270 @@ export default function CityTravelGuidePage() {
           </div>
         </div>
       </footer>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  LiveKit City Guide Voice Card                                      */
+/* ------------------------------------------------------------------ */
+
+const tokenSource = TokenSource.endpoint(
+  "/api/livekit/token?template=city-travel-guide",
+);
+
+function CityGuideVoiceCard() {
+  const [isActive, setIsActive] = useState(false);
+
+  // When inactive, render the static idle card — no LiveKit hooks mounted
+  if (!isActive) {
+    return <IdleVoiceCard onStart={() => setIsActive(true)} />;
+  }
+
+  // When active, mount the session + provider (useSession only runs here)
+  return <ActiveVoiceSession onEnd={() => setIsActive(false)} />;
+}
+
+/* ---------- Idle card (no LiveKit) ---------- */
+
+function IdleVoiceCard({ onStart }: { onStart: () => void }) {
+  return (
+    <div
+      className="lg:col-span-5 ctg-ambient rounded-2xl p-6 sm:p-8 flex flex-col justify-between border"
+      style={{
+        background: "var(--ctg-surface)",
+        borderColor: "var(--ctg-border)",
+        minHeight: 340,
+      }}
+    >
+      <div>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <span
+              className="w-3 h-3 rounded-full animate-pulse"
+              style={{ background: "var(--ctg-primary)" }}
+            />
+            <span
+              className="text-sm font-semibold tracking-wide uppercase"
+              style={{ color: "var(--ctg-primary)" }}
+            >
+              AI Assistant
+            </span>
+          </div>
+          <HiOutlineSparkles
+            className="w-5 h-5"
+            style={{ color: "var(--ctg-primary)" }}
+          />
+        </div>
+        <div className="space-y-5 mb-10">
+          <div
+            className="p-4 sm:p-5 rounded-xl rounded-tl-none max-w-[85%] border"
+            style={{
+              background: "var(--ctg-surface-high)",
+              borderColor: "var(--ctg-border)",
+            }}
+          >
+            <p
+              className="italic text-sm"
+              style={{ color: "var(--ctg-text-secondary)" }}
+            >
+              &ldquo;Where can I find the best museums?&rdquo;
+            </p>
+          </div>
+          <div
+            className="p-4 sm:p-5 rounded-xl rounded-tr-none ml-auto max-w-[85%] text-right border"
+            style={{
+              background: "var(--ctg-primary-muted)",
+              borderColor:
+                "color-mix(in srgb, var(--ctg-primary) 20%, transparent)",
+            }}
+          >
+            <p
+              className="font-medium text-sm"
+              style={{ color: "var(--ctg-text)" }}
+            >
+              I&rsquo;d recommend the Metropolitan Art Center. It&rsquo;s open
+              until 8 PM tonight!
+            </p>
+          </div>
+        </div>
+      </div>
+      <div className="flex flex-col items-center gap-5">
+        <button
+          onClick={onStart}
+          className="w-20 h-20 rounded-full flex items-center justify-center text-white ctg-voice-pulse"
+          style={{
+            background: "var(--ctg-primary)",
+            boxShadow: "0 0 0 8px var(--ctg-primary-muted)",
+          }}
+        >
+          <HiOutlineMicrophone className="w-8 h-8" />
+        </button>
+        <div className="text-center">
+          <h3
+            className="text-lg sm:text-xl font-bold mb-1"
+            style={{ color: "var(--ctg-text)" }}
+          >
+            Ask Nova, Your City Guide
+          </h3>
+          <p className="text-sm" style={{ color: "var(--ctg-text-secondary)" }}>
+            Tap to start your conversation
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Active session (LiveKit mounted) ---------- */
+
+function ActiveVoiceSession({ onEnd }: { onEnd: () => void }) {
+  const session = useSession(tokenSource);
+  const started = useRef(false);
+  const [secondsLeft, setSecondsLeft] = useState(60);
+
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    session.start();
+    return () => {
+      session.end();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSecondsLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          onEnd();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <SessionProvider session={session}>
+      <ActiveVoiceCardInner onEnd={onEnd} secondsLeft={secondsLeft} />
+      <RoomAudioRenderer />
+    </SessionProvider>
+  );
+}
+
+function ActiveVoiceCardInner({ onEnd, secondsLeft }: { onEnd: () => void; secondsLeft: number }) {
+  const agent = useAgent();
+
+  const statusText =
+    agent.state === "listening"
+      ? "Listening for your questions..."
+      : agent.state === "thinking"
+        ? "Thinking..."
+        : agent.state === "speaking"
+          ? "Nova is speaking..."
+          : "Connecting to your guide...";
+
+  return (
+    <div
+      className="lg:col-span-5 ctg-ambient rounded-2xl p-6 sm:p-8 flex flex-col justify-between border"
+      style={{
+        background: "var(--ctg-surface)",
+        borderColor: "var(--ctg-border)",
+        minHeight: 340,
+      }}
+    >
+      <div>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <span
+              className="w-3 h-3 rounded-full"
+              style={{
+                background: "#22c55e",
+                animation: "ctg-pulse 2s ease-in-out infinite",
+              }}
+            />
+            <span
+              className="text-sm font-semibold tracking-wide uppercase"
+              style={{ color: "var(--ctg-primary)" }}
+            >
+              AI Guide Connected
+            </span>
+          </div>
+          <HiOutlineSparkles
+            className="w-5 h-5"
+            style={{ color: "var(--ctg-primary)" }}
+          />
+        </div>
+
+        <div
+          className="flex items-center justify-center mb-10"
+          style={{ minHeight: 130 }}
+        >
+          {agent.microphoneTrack ? (
+            <BarVisualizer
+              track={agent.microphoneTrack}
+              state={agent.state}
+              barCount={5}
+              style={{ height: 120, width: "100%" }}
+            />
+          ) : (
+            <div className="flex flex-col items-center gap-3">
+              <div className="flex gap-1.5">
+                {[0, 1, 2].map((i) => (
+                  <span
+                    key={i}
+                    className="w-2.5 h-2.5 rounded-full animate-bounce"
+                    style={{
+                      background: "var(--ctg-primary)",
+                      animationDelay: `${i * 0.15}s`,
+                    }}
+                  />
+                ))}
+              </div>
+              <span
+                className="text-sm"
+                style={{ color: "var(--ctg-text-secondary)" }}
+              >
+                Waiting for Nova to join...
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="flex flex-col items-center gap-5">
+        <button
+          onClick={onEnd}
+          className="w-20 h-20 rounded-full flex items-center justify-center text-white transition-all duration-300"
+          style={{
+            background: "#ef4444",
+            boxShadow: "0 0 0 8px rgba(239,68,68,0.15)",
+          }}
+        >
+          <HiOutlineXMark className="w-8 h-8" />
+        </button>
+        <div className="text-center">
+          <h3
+            className="text-lg sm:text-xl font-bold mb-1"
+            style={{ color: "var(--ctg-text)" }}
+          >
+            End Conversation
+          </h3>
+          <p className="text-sm" style={{ color: "var(--ctg-text-secondary)" }}>
+            {statusText}
+          </p>
+          <p
+            className="text-xs mt-1 font-mono"
+            style={{ color: secondsLeft <= 10 ? "#ef4444" : "var(--ctg-text-secondary)" }}
+          >
+            {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")} remaining
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

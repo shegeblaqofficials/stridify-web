@@ -4,7 +4,6 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { StridifyLogo } from "@/components/ui/logo";
 import { useAccount } from "@/provider/account-provider";
-import { ThemeSwitcher } from "@/components/ui/theme-switcher";
 import { UserDropdown } from "@/components/auth/user-dropdown";
 import { DeployModal } from "@/components/workspace/deploy-modal";
 import {
@@ -16,11 +15,7 @@ import {
   HiOutlineCheck,
   HiOutlineBolt,
 } from "react-icons/hi2";
-
-export interface ProjectVersion {
-  id: string;
-  label: string;
-}
+import type { Snapshot } from "@/model/project/snapshot";
 
 export interface TokenUsageDisplay {
   inputTokens: number;
@@ -31,24 +26,25 @@ export interface TokenUsageDisplay {
 interface WorkspaceHeaderProps {
   projectName?: string;
   onProjectNameChange?: (name: string) => void;
-  versions?: ProjectVersion[];
-  activeVersionId?: string;
-  onVersionChange?: (versionId: string) => void;
+  snapshots?: Snapshot[];
+  activeSnapshotId?: string;
+  onSnapshotChange?: (snapshotId: string) => void;
   tokenUsage?: TokenUsageDisplay | null;
 }
 
-const defaultVersions: ProjectVersion[] = [
-  { id: "v1.0", label: "v1.0 — Initial" },
-  { id: "v1.1", label: "v1.1 — Voice Flow" },
-  { id: "v1.2", label: "v1.2 — Latest" },
-];
+function formatSnapshotDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+}
 
 export function WorkspaceHeader({
   projectName = "Untitled Project",
   onProjectNameChange,
-  versions = defaultVersions,
-  activeVersionId,
-  onVersionChange,
+  snapshots = [],
+  activeSnapshotId,
+  onSnapshotChange,
   tokenUsage,
 }: WorkspaceHeaderProps) {
   const { user } = useAccount();
@@ -56,8 +52,11 @@ export function WorkspaceHeader({
   const [name, setName] = useState(projectName);
   const [showVersions, setShowVersions] = useState(false);
   const [showDeploy, setShowDeploy] = useState(false);
-  const [currentVersionId, setCurrentVersionId] = useState(
-    activeVersionId ?? versions[versions.length - 1]?.id,
+  const [currentSnapshotId, setCurrentSnapshotId] = useState(
+    activeSnapshotId ?? snapshots[0]?.snapshot_id,
+  );
+  const activeSnapshot = snapshots.find(
+    (s) => s.snapshot_id === currentSnapshotId,
   );
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -98,13 +97,13 @@ export function WorkspaceHeader({
     onProjectNameChange?.(trimmed);
   };
 
-  const selectVersion = useCallback(
+  const selectSnapshot = useCallback(
     (id: string) => {
-      setCurrentVersionId(id);
+      setCurrentSnapshotId(id);
       setShowVersions(false);
-      onVersionChange?.(id);
+      onSnapshotChange?.(id);
     },
-    [onVersionChange],
+    [onSnapshotChange],
   );
 
   return (
@@ -152,46 +151,71 @@ export function WorkspaceHeader({
             </button>
           )}
 
-          {/* Version dropdown */}
+          {/* Snapshot version dropdown */}
           <div ref={dropdownRef} className="relative">
             <button
-              onClick={() => setShowVersions((v) => !v)}
-              className="flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-surface-elevated transition-colors"
+              onClick={() => snapshots.length > 0 && setShowVersions((v) => !v)}
+              className={`flex items-center gap-1 px-1.5 py-0.5 rounded transition-colors ${
+                snapshots.length > 0
+                  ? "hover:bg-surface-elevated cursor-pointer"
+                  : "opacity-50 cursor-default"
+              }`}
             >
-              <span className="text-xs text-muted-foreground">
-                {versions.find((v) => v.id === currentVersionId)?.label ??
-                  "version"}
-              </span>
-              <HiOutlineChevronDown
-                className={`size-3 transition-transform ${showVersions ? "rotate-180" : ""}`}
-              />
+              {activeSnapshot ? (
+                <>
+                  <span className="text-xs text-muted-foreground">
+                    v{activeSnapshot.version_number}
+                  </span>
+                  <span className="hidden sm:inline text-xs text-muted-foreground/60">
+                    — {formatSnapshotDate(activeSnapshot.created_at)}
+                  </span>
+                </>
+              ) : (
+                <span className="text-xs text-muted-foreground">v0</span>
+              )}
+              {snapshots.length > 0 && (
+                <HiOutlineChevronDown
+                  className={`size-3 transition-transform ${showVersions ? "rotate-180" : ""}`}
+                />
+              )}
             </button>
 
-            {showVersions && (
-              <div className="absolute top-full left-0 mt-1.5 w-52 rounded-xl border border-border bg-surface shadow-lg py-1 z-50">
+            {showVersions && snapshots.length > 0 && (
+              <div className="absolute top-full left-0 mt-1.5 w-56 rounded-xl border border-border bg-surface shadow-lg py-1 z-50">
                 <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Versions
+                  Snapshots
                 </div>
-                {versions.map((v) => (
-                  <button
-                    key={v.id}
-                    onClick={() => selectVersion(v.id)}
-                    className="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-surface-elevated transition-colors"
-                  >
-                    <span
-                      className={
-                        v.id === currentVersionId
-                          ? "text-foreground font-medium"
-                          : "text-muted-foreground"
-                      }
+                {snapshots.map((s) => {
+                  const isActive = s.snapshot_id === currentSnapshotId;
+                  return (
+                    <button
+                      key={s.snapshot_id}
+                      onClick={() => selectSnapshot(s.snapshot_id)}
+                      className="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-surface-elevated transition-colors"
                     >
-                      {v.label}
-                    </span>
-                    {v.id === currentVersionId && (
-                      <HiOutlineCheck className="size-4 text-primary" />
-                    )}
-                  </button>
-                ))}
+                      <div className="flex flex-col items-start">
+                        <span
+                          className={
+                            isActive
+                              ? "text-foreground font-medium"
+                              : "text-muted-foreground"
+                          }
+                        >
+                          v{s.version_number}
+                          <span className="ml-1.5 text-xs text-muted-foreground/60">
+                            {s.version_name}
+                          </span>
+                        </span>
+                        <span className="text-[10px] text-muted-foreground/50">
+                          {new Date(s.created_at).toLocaleString()}
+                        </span>
+                      </div>
+                      {isActive && (
+                        <HiOutlineCheck className="size-4 text-primary shrink-0" />
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -225,7 +249,6 @@ export function WorkspaceHeader({
         </button>
 
         {user && <UserDropdown user={user} />}
-        <ThemeSwitcher />
       </div>
 
       <DeployModal open={showDeploy} onClose={() => setShowDeploy(false)} />

@@ -14,7 +14,6 @@ import type { Project } from "@/model/project/project";
 import type { Prompt } from "@/model/project/prompt";
 import type { Snapshot } from "@/model/project/snapshot";
 import type { UIMessage } from "ai";
-import type { ProjectVersion } from "@/components/workspace/workspace-header";
 import {
   HiOutlineChatBubbleLeftRight,
   HiOutlineEye,
@@ -41,6 +40,7 @@ export default function Workspace({ projectId }: WorkspaceProps) {
   const [balanceExhausted, setBalanceExhausted] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>("chat");
   const [showMobileBanner, setShowMobileBanner] = useState(true);
+  const [chatCollapsed, setChatCollapsed] = useState(false);
   const { user, account, loading } = useAccount();
 
   const refreshProject = useCallback(async () => {
@@ -129,17 +129,12 @@ export default function Workspace({ projectId }: WorkspaceProps) {
     return <PageLoader />;
   }
 
-  const versions: ProjectVersion[] = snapshots.map((s) => ({
-    id: s.snapshot_id,
-    label: `v${s.version_number} — ${new Date(s.created_at).toLocaleDateString()}`,
-  }));
-
   return (
     <div className="h-screen flex flex-col bg-background text-foreground">
       <WorkspaceHeader
         projectName={project?.title}
-        versions={versions.length > 0 ? versions : undefined}
-        activeVersionId={snapshots[0]?.snapshot_id}
+        snapshots={snapshots}
+        activeSnapshotId={snapshots[0]?.snapshot_id}
         tokenUsage={tokenUsage}
       />
 
@@ -199,9 +194,12 @@ export default function Workspace({ projectId }: WorkspaceProps) {
         {/* Chat — full width on mobile when active, fixed width on desktop */}
         <div
           className={[
-            "flex flex-col md:flex h-full",
+            "flex flex-col md:flex h-full transition-all duration-300 ease-in-out",
             mobileTab === "chat" ? "flex w-full" : "hidden",
-            "md:w-auto md:flex!",
+            chatCollapsed
+              ? "md:w-0 md:min-w-0 md:overflow-hidden md:opacity-0"
+              : "md:w-auto md:opacity-100",
+            "md:flex!",
           ].join(" ")}
         >
           <ChatPanel
@@ -233,6 +231,8 @@ export default function Workspace({ projectId }: WorkspaceProps) {
             balanceExhausted={balanceExhausted}
             sandboxLoading={snapshots.length > 0 && !sandboxReady}
             onUpgrade={() => setShowUpgradeModal(true)}
+            chatCollapsed={chatCollapsed}
+            onToggleChat={() => setChatCollapsed((c) => !c)}
           />
         </div>
       </main>

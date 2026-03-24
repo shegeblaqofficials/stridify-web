@@ -3,7 +3,6 @@
 import type { Account } from "@/model/account/account";
 import { createClient } from "../supabase/server";
 import { Organization } from "@/model/account/organization";
-import { fa } from "zod/locales";
 
 export async function upsertAccount(): Promise<Account | null> {
   const supabase = await createClient();
@@ -48,6 +47,13 @@ export async function upsertAccount(): Promise<Account | null> {
     console.error("Error creating account:", error.message);
     return null;
   }
+
+  // Add the user as an admin member of their new organization
+  await supabase.from("organization_members").insert({
+    organization_id: company.organization_id,
+    user_id: user.id,
+    role: "admin",
+  });
 
   return created as Account;
 }
@@ -104,13 +110,45 @@ export async function getUserOrganization(userId: string) {
   return data as Organization;
 }
 
+export interface OrgMember {
+  user_id: string;
+  role: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  photo_url: string | null;
+}
+
 export async function getOrganizationMembers(
   organizationId: string,
-): Promise<Account[]> {
+): Promise<OrgMember[]> {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("accounts")
-    .select("*")
+
+  // Get members from organization_members, then enrich with account info
+  const { data: members } = await supabase
+    .from("organization_members")
+    .select("user_id, role")
     .eq("organization_id", organizationId);
-  return (data as Account[]) ?? [];
+
+  if (!members || members.length === 0) return [];
+
+  const userIds = members.map((m) => m.user_id);
+  const { data: accounts } = await supabase
+    .from("accounts")
+    .select("user_id, email, first_name, last_name, photo_url")
+    .in("user_id", userIds);
+
+  const accountMap = new Map((accounts ?? []).map((a) => [a.user_id, a]));
+
+  return members.map((m) => {
+    const acc = accountMap.get(m.user_id);
+    return {
+      user_id: m.user_id,
+      role: m.role,
+      email: acc?.email ?? "",
+      first_name: acc?.first_name ?? null,
+      last_name: acc?.last_name ?? null,
+      photo_url: acc?.photo_url ?? null,
+    };
+  });
 }

@@ -28,10 +28,26 @@ const agentTypes = [
 type AgentType = (typeof agentTypes)[number]["id"];
 
 const quickPrompts = [
-  "Customer Support Bot",
-  "Restaurant Assistant",
-  "AI Concierge",
-  "Sales Closer",
+  {
+    label: "Customer Support Bot",
+    value:
+      "Build a friendly customer support voice agent that greets callers, answers FAQs about orders, shipping, and returns, escalates complex issues to a human, and confirms resolution before ending the call.",
+  },
+  {
+    label: "Restaurant Assistant",
+    value:
+      "Create a restaurant booking voice assistant that checks table availability, takes reservation details like party size and preferred time, handles dietary restrictions, sends a confirmation, and answers questions about the menu.",
+  },
+  {
+    label: "AI Concierge",
+    value:
+      "Design a hotel concierge voice agent that recommends local attractions, books restaurant reservations, arranges transportation, answers questions about hotel amenities, and handles room service requests in a warm, professional tone.",
+  },
+  {
+    label: "Sales Closer",
+    value:
+      "Build a persuasive sales voice agent that qualifies inbound leads by asking about their needs and budget, presents relevant product options, handles common objections, and guides the prospect toward booking a demo or completing a purchase.",
+  },
 ];
 
 const placeholderPhrases = [
@@ -245,14 +261,14 @@ export default function DashboardHome() {
 
           {/* Quick prompts */}
           <div className="mb-8 flex flex-wrap justify-center gap-2 sm:mb-12 sm:gap-3">
-            {quickPrompts.map((label) => (
+            {quickPrompts.map((item) => (
               <button
-                key={label}
+                key={item.label}
                 type="button"
-                onClick={() => setPrompt(label)}
+                onClick={() => setPrompt(item.value)}
                 className="rounded-full border border-border bg-surface px-3 py-1.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground transition-all hover:border-foreground hover:text-foreground sm:px-5 sm:py-2 sm:text-[10px] sm:font-bold sm:tracking-widest"
               >
-                {label}
+                {item.label}
               </button>
             ))}
           </div>

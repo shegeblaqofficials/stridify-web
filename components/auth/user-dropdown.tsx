@@ -10,15 +10,20 @@ import {
   HiOutlineFolder,
   HiOutlineArrowRightOnRectangle,
   HiOutlineBolt,
+  HiOutlineSun,
+  HiOutlineMoon,
+  HiOutlineComputerDesktop,
 } from "react-icons/hi2";
 import { useRouter } from "next/navigation";
 import { useAccount } from "@/provider/account-provider";
+import { useTheme } from "@/components/ui/theme-provider";
 
 export function UserDropdown({ user }: { user: User }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { organization } = useAccount();
+  const { theme, setTheme } = useTheme();
 
   const name =
     user.user_metadata?.full_name || user.user_metadata?.name || "User";
@@ -65,7 +70,7 @@ export function UserDropdown({ user }: { user: User }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-xl border border-border bg-background shadow-xl">
+        <div className="absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-xl border border-border bg-background shadow-xl">
           {/* User info */}
           <div className="border-b border-border px-4 py-3.5">
             <p className="truncate text-sm font-semibold">{name}</p>
@@ -105,6 +110,39 @@ export function UserDropdown({ user }: { user: User }) {
               <HiOutlineFolder className="h-4 w-4" />
               Projects
             </Link>
+          </div>
+
+          {/* Theme */}
+          <div className="border-t border-border px-4 py-3">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Theme
+            </p>
+            <div className="flex items-center gap-1">
+              {[
+                { value: "light" as const, icon: HiOutlineSun, label: "Light" },
+                { value: "dark" as const, icon: HiOutlineMoon, label: "Dark" },
+                {
+                  value: "system" as const,
+                  icon: HiOutlineComputerDesktop,
+                  label: "System",
+                },
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setTheme(opt.value)}
+                  className={[
+                    "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs transition-colors",
+                    theme === opt.value
+                      ? "bg-surface-elevated text-foreground font-medium"
+                      : "text-muted-foreground hover:bg-surface-elevated hover:text-foreground",
+                  ].join(" ")}
+                >
+                  <opt.icon className="h-3.5 w-3.5" />
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Sign out */}
