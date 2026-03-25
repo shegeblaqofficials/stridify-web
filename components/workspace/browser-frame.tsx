@@ -21,16 +21,15 @@ export interface BrowserFrameHandle {
 }
 
 interface BrowserFrameProps {
-  url?: string;
   previewUrl?: string;
   projectStatus?: ProjectStatus;
-  refreshKey?: number;
-  sandboxLoading?: boolean;
+  refreshKey: number;
+  sandboxLoading: boolean;
 }
 
 export const BrowserFrame = forwardRef<BrowserFrameHandle, BrowserFrameProps>(
   function BrowserFrame(
-    { url, previewUrl, projectStatus, refreshKey, sandboxLoading },
+    { previewUrl, projectStatus, refreshKey, sandboxLoading },
     ref,
   ) {
     const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -100,11 +99,11 @@ export const BrowserFrame = forwardRef<BrowserFrameHandle, BrowserFrameProps>(
               </div>
               <div className="text-center space-y-1.5">
                 <p className="text-sm font-semibold text-foreground">
-                  Building your agent...
+                  Building your app...
                 </p>
                 <p className="text-xs text-muted-foreground max-w-65 leading-relaxed">
-                  We&apos;re generating your voice agent. The preview will
-                  appear here once it&apos;s ready.
+                  We&apos;re generating your app. The preview will appear here
+                  once it&apos;s ready.
                 </p>
               </div>
               <div className="flex items-center gap-2 mt-1">

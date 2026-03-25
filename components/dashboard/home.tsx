@@ -27,31 +27,31 @@ type AgentType = (typeof agentTypes)[number]["id"];
 
 const quickPrompts = [
   {
-    label: "Customer Support Bot",
+    label: "Customer Support Website",
     value:
-      "Build a friendly customer support voice agent that greets callers, answers FAQs about orders, shipping, and returns, escalates complex issues to a human, and confirms resolution before ending the call.",
+      "Build a website with an embedded voice assistant that greets visitors, answers FAQs about orders, shipping, and returns, escalates complex issues to a human, and confirms resolution before ending the call.",
   },
   {
-    label: "Restaurant Assistant",
+    label: "Restaurant Landing Page",
     value:
-      "Create a restaurant booking voice assistant that checks table availability, takes reservation details like party size and preferred time, handles dietary restrictions, sends a confirmation, and answers questions about the menu.",
+      "Create a landing page for a restaurant with a voice assistant that checks table availability, takes reservation details like party size and preferred time, handles dietary restrictions, and answers questions about the menu.",
   },
   {
-    label: "AI Concierge",
+    label: "Hotel Concierge Site",
     value:
-      "Design a hotel concierge voice agent that recommends local attractions, books restaurant reservations, arranges transportation, answers questions about hotel amenities, and handles room service requests in a warm, professional tone.",
+      "Build a hotel website with a voice concierge that recommends local attractions, books restaurant reservations, arranges transportation, answers questions about amenities, and handles room service requests.",
   },
   {
-    label: "Sales Closer",
+    label: "SaaS Product Page",
     value:
-      "Build a persuasive sales voice agent that qualifies inbound leads by asking about their needs and budget, presents relevant product options, handles common objections, and guides the prospect toward booking a demo or completing a purchase.",
+      "Build a product landing page with a voice assistant that walks visitors through features, answers pricing questions, compares plans, and helps them sign up or book a demo.",
   },
 ];
 
 const placeholderPhrases = [
-  "Create a voice assistant that books restaurant reservations...",
-  "Build a customer support agent that handles returns...",
-  "Design a scheduling assistant for appointments...",
+  "Build a website with a voice assistant that books appointments...",
+  "Create a landing page with a voice agent for customer support...",
+  "Build a product page with a voice assistant that answers FAQs...",
 ];
 
 function useTypingPlaceholder(
@@ -130,8 +130,8 @@ export default function DashboardHome() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleGenerate = useCallback(async () => {
-    if (!prompt.trim() || !account || isCreating) return;
+  const handleGenerate = async () => {
+    if (!account || isCreating) return;
     setIsCreating(true);
     try {
       const result = await createProject(
@@ -147,7 +147,7 @@ export default function DashboardHome() {
     } finally {
       setIsCreating(false);
     }
-  }, [account, router, prompt, agentType, isCreating]);
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {

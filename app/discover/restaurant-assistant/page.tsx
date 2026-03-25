@@ -2,12 +2,11 @@
 
 import {
   HiOutlinePhone,
-  HiOutlineSparkles,
   HiOutlineCalendarDays,
   HiOutlineChatBubbleLeftRight,
   HiOutlineClock,
-  HiOutlineMapPin,
-  HiOutlineGlobeAlt,
+  HiOutlineMicrophone,
+  HiOutlineXMark,
 } from "react-icons/hi2";
 import {
   HiOutlineSun,
@@ -16,6 +15,14 @@ import {
 } from "react-icons/hi2";
 import { useState, useEffect, useRef } from "react";
 import { useTheme } from "@/components/ui/theme-provider";
+import {
+  useSession,
+  SessionProvider,
+  useAgent,
+  RoomAudioRenderer,
+  BarVisualizer,
+} from "@livekit/components-react";
+import { TokenSource } from "livekit-client";
 
 /* ------------------------------------------------------------------ */
 /*  Color tokens — hardcoded per-template, NOT using app theme vars   */
@@ -222,6 +229,9 @@ export default function RestaurantAssistantPage() {
             </a>
           </div>
 
+          {/* Voice Agent */}
+          <RaVoiceCard />
+
           {/* Feature cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 ra-fade-up ra-fade-up-delay-3">
             {[
@@ -301,6 +311,197 @@ export default function RestaurantAssistantPage() {
           </div>
         </div>
       </footer>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  LiveKit Voice Card                                                 */
+/* ------------------------------------------------------------------ */
+
+const raTokenSource = TokenSource.endpoint(
+  "/api/livekit/token?template=restaurant-assistant",
+);
+
+function RaVoiceCard() {
+  const [isActive, setIsActive] = useState(false);
+
+  if (!isActive) {
+    return <RaIdleVoiceCard onStart={() => setIsActive(true)} />;
+  }
+
+  return <RaActiveVoiceSession onEnd={() => setIsActive(false)} />;
+}
+
+function RaIdleVoiceCard({ onStart }: { onStart: () => void }) {
+  return (
+    <div className="pt-4 ra-fade-up ra-fade-up-delay-2">
+      <button
+        onClick={onStart}
+        className="inline-flex flex-col items-center justify-center gap-3 px-10 sm:px-14 py-6 sm:py-7 rounded-2xl border transition-all duration-300 hover:scale-[1.02]"
+        style={{
+          background: "var(--ra-surface)",
+          borderColor: "var(--ra-border)",
+          boxShadow: "var(--ra-card-shadow)",
+        }}
+      >
+        <div className="flex items-center gap-3">
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center"
+            style={{
+              background: "var(--ra-primary-muted)",
+              color: "var(--ra-primary)",
+            }}
+          >
+            <HiOutlineMicrophone className="w-5 h-5" />
+          </div>
+          <span
+            className="text-base sm:text-lg font-bold tracking-wide"
+            style={{ color: "var(--ra-text)" }}
+          >
+            Talk to AI Assistant
+          </span>
+        </div>
+        <span className="text-sm" style={{ color: "var(--ra-text-tertiary)" }}>
+          Tap to start a voice conversation with Sofia
+        </span>
+      </button>
+    </div>
+  );
+}
+
+function RaActiveVoiceSession({ onEnd }: { onEnd: () => void }) {
+  const session = useSession(raTokenSource);
+  const started = useRef(false);
+  const [secondsLeft, setSecondsLeft] = useState(60);
+
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    session.start();
+    return () => {
+      session.end();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSecondsLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          onEnd();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <SessionProvider session={session}>
+      <RaActiveVoiceInner onEnd={onEnd} secondsLeft={secondsLeft} />
+      <RoomAudioRenderer />
+    </SessionProvider>
+  );
+}
+
+function RaActiveVoiceInner({
+  onEnd,
+  secondsLeft,
+}: {
+  onEnd: () => void;
+  secondsLeft: number;
+}) {
+  const agent = useAgent();
+
+  const statusText =
+    agent.state === "listening"
+      ? "Listening..."
+      : agent.state === "thinking"
+        ? "Thinking..."
+        : agent.state === "speaking"
+          ? "Sofia is speaking..."
+          : "Connecting to Sofia...";
+
+  return (
+    <div className="pt-4 ra-fade-up">
+      <div
+        className="inline-flex flex-col items-center gap-4 px-10 sm:px-14 py-6 sm:py-7 rounded-2xl border"
+        style={{
+          background: "var(--ra-surface)",
+          borderColor: "var(--ra-border)",
+          boxShadow: "var(--ra-card-shadow)",
+        }}
+      >
+        <div className="flex items-center gap-2">
+          <span
+            className="w-2.5 h-2.5 rounded-full"
+            style={{
+              background: "#22c55e",
+              animation: "ra-glow 2s ease-in-out infinite",
+            }}
+          />
+          <span
+            className="text-xs font-semibold uppercase tracking-wide"
+            style={{ color: "var(--ra-primary)" }}
+          >
+            Sofia Connected
+          </span>
+        </div>
+
+        <div
+          className="flex items-center justify-center w-full"
+          style={{ minHeight: 80 }}
+        >
+          {agent.microphoneTrack ? (
+            <BarVisualizer
+              track={agent.microphoneTrack}
+              state={agent.state}
+              barCount={5}
+              style={{ height: 80, width: "100%" }}
+            />
+          ) : (
+            <div className="flex gap-1.5">
+              {[0, 1, 2].map((i) => (
+                <span
+                  key={i}
+                  className="w-2 h-2 rounded-full animate-bounce"
+                  style={{
+                    background: "var(--ra-primary)",
+                    animationDelay: `${i * 0.15}s`,
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        <button
+          onClick={onEnd}
+          className="w-14 h-14 rounded-full flex items-center justify-center text-white transition-all duration-300"
+          style={{
+            background: "#ef4444",
+            boxShadow: "0 0 0 6px rgba(239,68,68,0.15)",
+          }}
+        >
+          <HiOutlineXMark className="w-6 h-6" />
+        </button>
+        <p className="text-sm" style={{ color: "var(--ra-text-secondary)" }}>
+          {statusText}
+        </p>
+        <p
+          className="text-xs font-mono"
+          style={{
+            color: secondsLeft <= 10 ? "#ef4444" : "var(--ra-text-tertiary)",
+          }}
+        >
+          {Math.floor(secondsLeft / 60)}:
+          {String(secondsLeft % 60).padStart(2, "0")} remaining
+        </p>
+      </div>
     </div>
   );
 }

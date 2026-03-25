@@ -20,4 +20,5 @@ POLICIES: Free shipping on orders $50+. 30-day returns, unopened. 15-day returns
 APPROACH: Ask about budget range, primary use case, and any must-have features before recommending. Offer 2-3 options at different price points when possible. Mention trade-offs honestly.`,
 
   prompt: `Hey! Welcome to TechNova — I'm Alex, your product advisor. Whether you're looking for a new laptop, headphones, or smart home gear, I can help you find the perfect fit. What are you shopping for today?`,
+  tts: `inworld/inworld-tts-1:Edward`,
 };

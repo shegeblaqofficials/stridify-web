@@ -33,12 +33,26 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const supabase = createClient();
+    let cancelled = false;
+
+    async function loadAccount(u: User) {
+      // Try fetching first; if missing, upsert to create the row
+      let acc = await getAccount(u.id);
+      if (!acc) acc = await upsertAccount();
+      if (cancelled) return;
+      setAccount(acc);
+      if (acc) {
+        const org = await getOrganization(acc.organization_id);
+        if (!cancelled) setOrganization(org);
+      }
+    }
+
     supabase.auth.getUser().then(({ data }) => {
+      if (cancelled) return;
       setUser(data.user);
       if (data.user) {
-        getAccount(data.user.id).then((acc) => {
-          setAccount(acc);
-          setLoading(false);
+        loadAccount(data.user).finally(() => {
+          if (!cancelled) setLoading(false);
         });
       } else {
         setLoading(false);
@@ -47,33 +61,22 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
 
       if (currentUser) {
-        if (event === "SIGNED_IN") {
-          const acc = await upsertAccount();
-          setAccount(acc);
-          if (acc) {
-            const org = await getOrganization(acc.organization_id);
-            setOrganization(org);
-          }
-        } else {
-          const acc = await getAccount(currentUser.id);
-          setAccount(acc);
-          if (acc) {
-            const org = await getOrganization(acc.organization_id);
-            setOrganization(org);
-          }
-        }
+        await loadAccount(currentUser);
       } else {
         setAccount(null);
         setOrganization(null);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   return (

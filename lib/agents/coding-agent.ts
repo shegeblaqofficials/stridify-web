@@ -111,7 +111,7 @@ export interface AgentMessageMetadata {
 
 export function createCodingAgent(sandbox: Sandbox) {
   return new ToolLoopAgent({
-    model: openai("gpt-4.1-mini"),
+    model: openai("gpt-5.4-mini"),
     instructions: SYSTEM_INSTRUCTIONS,
     tools: {
       listFiles: createListFilesTool(sandbox),

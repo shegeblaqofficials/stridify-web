@@ -1,0 +1,387 @@
+"use client";
+
+import { useState, useMemo, useCallback } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAccount } from "@/provider/account-provider";
+import { AuthModal } from "@/components/auth/auth-modal";
+import { StridifyLogo } from "@/components/ui/logo";
+import {
+  HiOutlineBuildingOffice2,
+  HiOutlineShoppingBag,
+  HiOutlineAcademicCap,
+  HiOutlineSpeakerWave,
+  HiOutlineChartBarSquare,
+  HiOutlineCpuChip,
+  HiOutlineBookOpen,
+  HiOutlineDocumentText,
+  HiOutlineMagnifyingGlass,
+  HiOutlineArrowPathRoundedSquare,
+  HiOutlinePlay,
+  HiOutlineArrowLeft,
+} from "react-icons/hi2";
+import type { ComponentType } from "react";
+
+/* ------------------------------------------------------------------ */
+/*  Data                                                               */
+/* ------------------------------------------------------------------ */
+
+type Template = {
+  id: string;
+  name: string;
+  slug: string;
+  category: string;
+  description: string;
+  icon: ComponentType<{ className?: string }>;
+  active: boolean;
+};
+
+const categories = [
+  "All",
+  "Customer Support",
+  "Hospitality",
+  "Telephony",
+  "Creative",
+  "Enterprise",
+  "Utilities",
+] as const;
+
+const allTemplates: Template[] = [
+  {
+    id: "1a43ds8pqw",
+    name: "City Travel Guide",
+    slug: "city-travel-guide",
+    category: "Hospitality",
+    icon: HiOutlineBuildingOffice2,
+    description:
+      "A conversational voice tour guide for a city. Provides information on landmarks, directions, and local tips to tourists.",
+    active: true,
+  },
+  {
+    id: "2b34ds9qwe",
+    name: "Restaurant Assistant",
+    slug: "restaurant-assistant",
+    category: "Telephony",
+    icon: HiOutlineCpuChip,
+    description:
+      "An agent that answers the phone to help customers check reservations and bookings. It can handle inquiries about menu, hours, and location.",
+    active: true,
+  },
+  {
+    id: "3c56df7asd",
+    name: "Language Practice Coach",
+    slug: "language-practice-coach",
+    category: "Creative",
+    icon: HiOutlineBookOpen,
+    description:
+      "A voice AI agent that helps users practice speaking a new language through live and interactive conversation.",
+    active: true,
+  },
+  {
+    id: "4d78gh6fgh",
+    name: "Product Advisor",
+    slug: "product-advisor",
+    category: "Customer Support",
+    icon: HiOutlineShoppingBag,
+    description:
+      "An assistant that helps users choose the right product, provide recommendations, and guide users through the buying process.",
+    active: true,
+  },
+  {
+    id: "5e89jk7hij",
+    name: "Business FAQ Phone Agent",
+    slug: "business-faq-phone-agent",
+    category: "Customer Support",
+    icon: HiOutlineChartBarSquare,
+    description:
+      "Handles common business inquiries, answers FAQs, and provides instant voice support to callers 24/7.",
+    active: false,
+  },
+  {
+    id: "6f90lm8nop",
+    name: "Knowledge Voice Hub",
+    slug: "knowledge-voice-hub",
+    category: "Enterprise",
+    icon: HiOutlineCpuChip,
+    description:
+      "Answers employee calls, indexes workspace info, and provides live voice support instantly.",
+    active: false,
+  },
+  {
+    id: "7g01no9pqr",
+    name: "Report Voice Generator",
+    slug: "report-voice-generator",
+    category: "Utilities",
+    icon: HiOutlineDocumentText,
+    description:
+      "Calls managers, delivers weekly reports, and summarizes performance via live voice.",
+    active: false,
+  },
+  {
+    id: "8h12op0stu",
+    name: "Course Voice Advisor",
+    slug: "course-voice-advisor",
+    category: "Creative",
+    icon: HiOutlineAcademicCap,
+    description:
+      "Advises students by phone, checks prerequisites, and plans academic paths in real time.",
+    active: false,
+  },
+  {
+    id: "9i23pq1vwx",
+    name: "Voice Coaching Agent",
+    slug: "voice-coaching-agent",
+    category: "Customer Support",
+    icon: HiOutlineSpeakerWave,
+    description:
+      "Coaches users live, gives feedback on calls, and improves speaking skills in real time.",
+    active: false,
+  },
+  {
+    id: "0j34qr2xyz",
+    name: "Event Voice Coordinator",
+    slug: "event-voice-coordinator",
+    category: "Hospitality",
+    icon: HiOutlineBuildingOffice2,
+    description:
+      "Manages event logistics, RSVPs, and vendor calls, updating schedules by voice instantly.",
+    active: false,
+  },
+  {
+    id: "1k45rs3abc",
+    name: "Voice Survey Conductor",
+    slug: "voice-survey-conductor",
+    category: "Enterprise",
+    icon: HiOutlineChartBarSquare,
+    description:
+      "Conducts live voice surveys, collects feedback, and provides real-time insights to businesses.",
+    active: false,
+  },
+  {
+    id: "2l56st4def",
+    name: "Personal Finance Assistant",
+    slug: "personal-finance-voice-assistant",
+    category: "Utilities",
+    icon: HiOutlineDocumentText,
+    description:
+      "Provides financial advice, tracks expenses, and answers money-related questions via live voice.",
+    active: false,
+  },
+];
+
+/* ------------------------------------------------------------------ */
+/*  Page                                                               */
+/* ------------------------------------------------------------------ */
+
+export default function DiscoverPage() {
+  const { user } = useAccount();
+  const router = useRouter();
+  const [activeCategory, setActiveCategory] = useState<string>("All");
+  const [search, setSearch] = useState("");
+  const [authOpen, setAuthOpen] = useState(false);
+  const closeAuth = useCallback(() => setAuthOpen(false), []);
+
+  const handleRemix = (templateId: string) => {
+    if (!user) {
+      setAuthOpen(true);
+      return;
+    }
+    router.push(`/project/${templateId}?remix=true`);
+  };
+
+  const filtered = useMemo(() => {
+    return allTemplates.filter((t) => {
+      const matchesCategory =
+        activeCategory === "All" || t.category === activeCategory;
+      const matchesSearch =
+        !search ||
+        t.name.toLowerCase().includes(search.toLowerCase()) ||
+        t.description.toLowerCase().includes(search.toLowerCase()) ||
+        t.category.toLowerCase().includes(search.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+  }, [activeCategory, search]);
+
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Minimal header */}
+      <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
+        <div className="mx-auto flex h-14 max-w-7xl items-center gap-4 px-6">
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <HiOutlineArrowLeft className="h-4 w-4" />
+          </Link>
+          <Link href="/" className="flex items-center gap-2">
+            <StridifyLogo className="h-5 w-5 text-foreground" />
+            <span className="text-base font-bold uppercase tracking-widest">
+              Stridify
+            </span>
+          </Link>
+          <span className="text-sm text-muted-foreground">/</span>
+          <span className="text-sm font-semibold">Discover</span>
+        </div>
+      </header>
+
+      <div className="mx-auto max-w-7xl px-6 py-10">
+        {/* Header */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Discover Templates</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Explore curated AI voice agent templates. Try live demos or remix
+              to make them your own.
+            </p>
+          </div>
+
+          {/* Search */}
+          <div className="relative w-full sm:w-72">
+            <HiOutlineMagnifyingGlass className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search templates..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full rounded-xl border border-border bg-surface-elevated/50 py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground/60 outline-none transition-colors focus:border-primary/40 focus:ring-1 focus:ring-primary/20"
+            />
+          </div>
+        </div>
+
+        {/* Category pills */}
+        <div className="mt-6 flex flex-wrap gap-2">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              onClick={() => setActiveCategory(cat)}
+              className={[
+                "rounded-full border px-4 py-1.5 text-xs font-medium transition-all",
+                activeCategory === cat
+                  ? "border-foreground bg-foreground text-background"
+                  : "border-border text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground",
+              ].join(" ")}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {/* Template grid */}
+        <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {filtered.map((template) => (
+            <TemplateCard
+              key={template.id}
+              template={template}
+              onRemix={handleRemix}
+            />
+          ))}
+        </div>
+
+        {/* Empty state */}
+        {filtered.length === 0 && (
+          <div className="py-24 text-center">
+            <p className="text-sm text-muted-foreground">
+              No templates found. Try a different search or category.
+            </p>
+          </div>
+        )}
+      </div>
+
+      <AuthModal open={authOpen} onClose={closeAuth} />
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Template Card                                                      */
+/* ------------------------------------------------------------------ */
+
+function TemplateCard({
+  template,
+  onRemix,
+}: {
+  template: Template;
+  onRemix: (id: string) => void;
+}) {
+  const Icon = template.icon;
+
+  return (
+    <article className="group flex flex-col rounded-2xl border border-border bg-surface/40 transition-all hover:border-primary/50 hover:bg-surface/60 hover:shadow-[0_0_30px_rgba(17,82,212,0.10)] hover:ring-1 hover:ring-primary/20">
+      {/* Visual header */}
+      <div className="relative flex h-32 items-center justify-center overflow-hidden rounded-t-2xl bg-surface-elevated/50">
+        <Icon className="h-10 w-10 text-muted-foreground/20 transition-transform group-hover:scale-110" />
+        <Waveform
+          active={template.active}
+          className="absolute bottom-3 right-3"
+        />
+      </div>
+
+      {/* Content */}
+      <div className="flex flex-1 flex-col p-5">
+        <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+          {template.category}
+        </p>
+        <h3 className="mb-1.5 text-base font-bold text-foreground">
+          {template.name}
+        </h3>
+        <p className="mb-4 flex-1 text-sm leading-relaxed text-muted-foreground">
+          {template.description}
+        </p>
+
+        {/* Actions */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onRemix(template.id)}
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-surface-elevated/30 px-5 py-2 text-xs font-bold whitespace-nowrap transition-all hover:bg-foreground hover:text-background active:scale-[0.98]"
+          >
+            <HiOutlineArrowPathRoundedSquare className="h-3.5 w-3.5" />
+            Remix
+          </button>
+          {template.active ? (
+            <Link
+              href={`/discover/${template.slug}`}
+              target="_blank"
+              className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface-elevated/30 px-5 py-2 text-xs font-bold whitespace-nowrap transition-all hover:bg-foreground hover:text-background active:scale-[0.98]"
+            >
+              <HiOutlinePlay className="h-3.5 w-3.5" />
+              Try Live
+            </Link>
+          ) : (
+            <span className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface-elevated/30 px-5 py-2 text-xs font-bold whitespace-nowrap text-muted-foreground/40 cursor-not-allowed">
+              <HiOutlinePlay className="h-3.5 w-3.5" />
+              Try Live
+            </span>
+          )}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Waveform                                                           */
+/* ------------------------------------------------------------------ */
+
+function Waveform({
+  active,
+  className = "",
+}: {
+  active: boolean;
+  className?: string;
+}) {
+  const heights = active
+    ? ["h-2", "h-5", "h-3", "h-4", "h-2"]
+    : ["h-3", "h-3", "h-3", "h-3", "h-3"];
+  return (
+    <div className={`waveform text-primary ${className}`} aria-hidden>
+      {heights.map((h, i) => (
+        <span
+          key={i}
+          className={`bar ${h} ${active ? "animate-pulse" : "opacity-40"}`}
+        />
+      ))}
+    </div>
+  );
+}

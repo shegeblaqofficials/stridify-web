@@ -20,6 +20,7 @@ import {
   HiOutlineComputerDesktop,
   HiOutlineXMark,
 } from "react-icons/hi2";
+import { s } from "@upstash/redis";
 
 type MobileTab = "chat" | "preview";
 
@@ -32,7 +33,7 @@ export default function Workspace({ projectId }: WorkspaceProps) {
   const [initialPrompt, setInitialPrompt] = useState<Prompt | null>(null);
   const [initialMessages, setInitialMessages] = useState<UIMessage[]>([]);
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
-  const [sandboxReady, setSandboxReady] = useState(false);
+  const [sandboxLoading, setSandboxLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(true);
   const [tokenUsage, setTokenUsage] = useState<TokenUsage | null>(null);
   const [previewRefreshKey, setPreviewRefreshKey] = useState(0);
@@ -70,14 +71,10 @@ export default function Workspace({ projectId }: WorkspaceProps) {
   // Warm up sandbox on load for existing projects with snapshots.
   // Ref guard prevents React Strict Mode from firing two warmup requests.
   const warmupStarted = useRef(false);
-  useEffect(() => {
-    if (dataLoading || !project || sandboxReady) return;
+  const handleInitializeSandbox = useCallback(() => {
+    console.log("[workspace] initializing sandbox...");
+    if (dataLoading || !project) return;
     if (warmupStarted.current) return;
-
-    // Only warm up if there are snapshots (i.e. this project has been used before)
-    // For brand-new projects, the sandbox will start on first chat message
-    const hasSnapshots = snapshots.length > 0;
-    if (!hasSnapshots) return;
 
     warmupStarted.current = true;
     console.log(`[workspace] warming up sandbox for project ${projectId}...`);
@@ -97,21 +94,19 @@ export default function Workspace({ projectId }: WorkspaceProps) {
       .then((data) => {
         if (!data) return;
         console.log(`[workspace] sandbox warm — previewUrl=${data.previewUrl}`);
-        setSandboxReady(true);
         // Refresh project to pick up new preview_url
-        refreshProject();
+        setProject((p) => (p ? { ...p, preview_url: data.previewUrl } : p));
+        setSandboxLoading(false);
       })
       .catch((err) => {
+        setSandboxLoading(false);
         console.error("[workspace] sandbox warmup failed:", err);
       });
-  }, [
-    dataLoading,
-    project,
-    snapshots,
-    sandboxReady,
-    projectId,
-    refreshProject,
-  ]);
+  }, [project, dataLoading, projectId, refreshProject]);
+
+  useEffect(() => {
+    handleInitializeSandbox();
+  }, [handleInitializeSandbox]);
 
   const handleStreamingComplete = useCallback(async () => {
     console.log("[workspace] agent streaming complete");
@@ -225,11 +220,11 @@ export default function Workspace({ projectId }: WorkspaceProps) {
           ].join(" ")}
         >
           <PreviewPanel
-            previewUrl={project?.preview_url ?? undefined}
-            projectStatus={project?.status}
+            previewUrl={project?.preview_url}
+            projectStatus={project?.status ?? "draft"}
             refreshKey={previewRefreshKey}
             balanceExhausted={balanceExhausted}
-            sandboxLoading={snapshots.length > 0 && !sandboxReady}
+            sandboxLoading={sandboxLoading}
             onUpgrade={() => setShowUpgradeModal(true)}
             chatCollapsed={chatCollapsed}
             onToggleChat={() => setChatCollapsed((c) => !c)}

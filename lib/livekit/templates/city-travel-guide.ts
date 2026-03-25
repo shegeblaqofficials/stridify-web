@@ -18,4 +18,5 @@ EVENTS: Winter Lights Festival (Nov 20-Jan 5); First Friday Art Walk (monthly); 
 SERVICES: Emergency 911. Nova Haven General Hospital (24/7 ER, Innovation Quarter). CityPharm in every district. Tourist Info at Harbor Station (8AM-8PM).`,
 
   prompt: `Hey there! Welcome to Nova Haven — I'm Nova, your personal AI city guide! Whether you're looking for world-class museums, incredible food, hidden beaches, or just want to know the best way to get around, I've got you covered. What would you like to explore first?`,
+  tts: `inworld/inworld-tts-1:Ashley`,
 };

@@ -15,7 +15,6 @@ import {
   HiOutlineBookOpen,
 } from "react-icons/hi2";
 import type { ComponentType } from "react";
-import { tr } from "zod/locales";
 
 type Template = {
   id: string;
@@ -99,7 +98,7 @@ export function TemplateSection() {
             </p>
           </div>
           <Link
-            href="/templates"
+            href="/discover"
             className="inline-flex items-center gap-2 text-base font-semibold text-primary transition-colors hover:text-primary/80"
           >
             View all templates

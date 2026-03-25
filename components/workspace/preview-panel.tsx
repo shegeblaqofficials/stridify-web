@@ -26,10 +26,10 @@ const deviceStyles: Record<DeviceMode, string> = {
 
 interface PreviewPanelProps {
   previewUrl?: string;
-  projectStatus?: ProjectStatus;
-  refreshKey?: number;
-  balanceExhausted?: boolean;
-  sandboxLoading?: boolean;
+  projectStatus: ProjectStatus;
+  refreshKey: number;
+  balanceExhausted: boolean;
+  sandboxLoading: boolean;
   onUpgrade?: () => void;
   chatCollapsed?: boolean;
   onToggleChat?: () => void;

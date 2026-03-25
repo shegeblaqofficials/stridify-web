@@ -26,31 +26,36 @@ type AgentType = (typeof agentTypes)[number]["id"];
 
 const examplePrompts = [
   {
-    label: "Customer support voice agent",
+    label: "Customer Support Website",
     value:
-      "Build a friendly customer support voice agent that greets callers, answers FAQs about orders, shipping, and returns, escalates complex issues to a human, and confirms resolution before ending the call.",
+      "Build a website with an embedded voice assistant that greets visitors, answers FAQs about orders, shipping, and returns, escalates complex issues to a human, and confirms resolution before ending the call.",
   },
   {
-    label: "Restaurant booking agent",
+    label: "Restaurant Landing Page",
     value:
-      "Create a restaurant booking voice assistant that checks table availability, takes reservation details like party size and preferred time, handles dietary restrictions, sends a confirmation, and answers questions about the menu.",
+      "Create a landing page for a restaurant with a voice assistant that checks table availability, takes reservation details like party size and preferred time, handles dietary restrictions, and answers questions about the menu.",
   },
   {
-    label: "AI therapy companion",
+    label: "Hotel Concierge Site",
     value:
-      "Design a compassionate AI therapy companion voice agent that actively listens, asks open-ended reflective questions, offers evidence-based coping strategies, tracks mood over sessions, and knows when to recommend professional help.",
+      "Build a hotel website with a voice concierge that recommends local attractions, books restaurant reservations, arranges transportation, answers questions about amenities, and handles room service requests.",
   },
   {
-    label: "Sales Closer",
+    label: "SaaS Product Page",
     value:
-      "Build a persuasive sales voice agent that qualifies inbound leads by asking about their needs and budget, presents relevant product options, handles common objections, and guides the prospect toward booking a demo or completing a purchase.",
+      "Build a product landing page with a voice assistant that walks visitors through features, answers pricing questions, compares plans, and helps them sign up or book a demo.",
+  },
+  {
+    label: "Real Estate Listing Site",
+    value:
+      "Create a real estate website with a voice assistant that helps visitors browse listings, filter by location and budget, schedule property tours, and answers questions about neighborhoods.",
   },
 ];
 
 const placeholderPhrases = [
-  "Build a voice assistant that answers phone calls and schedules appointments",
-  "Design an AI tutor that teaches languages and answers student questions",
-  "Build a customer support voice agent that handles common inquiries",
+  "Build a website with a voice assistant that books appointments...",
+  "Create a landing page with a voice agent for customer support...",
+  "Build a product page with a voice assistant that answers FAQs...",
 ];
 
 function useTypingPlaceholder(
@@ -290,7 +295,7 @@ export function HeroSection() {
         <div
           data-aos="fade-up"
           data-aos-delay="650"
-          className="flex flex-wrap justify-center gap-2 sm:gap-3"
+          className="mx-auto flex max-w-xl flex-wrap justify-center gap-2 sm:gap-3"
         >
           {examplePrompts.map((p) => (
             <button

@@ -14,6 +14,7 @@ import {
   HiOutlineSun,
   HiOutlineMoon,
   HiOutlineComputerDesktop,
+  HiOutlineXMark,
 } from "react-icons/hi2";
 import {
   MdOutlineRestaurant,
@@ -24,6 +25,14 @@ import {
 } from "react-icons/md";
 import { useState, useEffect, useRef } from "react";
 import { useTheme } from "@/components/ui/theme-provider";
+import {
+  useSession,
+  SessionProvider,
+  useAgent,
+  RoomAudioRenderer,
+  BarVisualizer,
+} from "@livekit/components-react";
+import { TokenSource } from "livekit-client";
 
 /* ------------------------------------------------------------------ */
 /*  Hardcoded color tokens for this template                           */
@@ -216,66 +225,7 @@ export default function LanguagePracticeCoachPage() {
           </p>
 
           {/* Voice Interface Card */}
-          <div
-            className="w-full max-w-2xl lpc-ambient rounded-xl p-6 sm:p-8 md:p-12 border relative overflow-hidden"
-            style={{
-              background:
-                "color-mix(in srgb, var(--lpc-surface) 50%, transparent)",
-              borderColor: "var(--lpc-border)",
-            }}
-          >
-            <div className="flex flex-col items-center">
-              {/* Waveform bars */}
-              <div className="mb-6 sm:mb-8 flex items-end gap-1 h-12">
-                {[4, 8, 12, 6, 10, 4, 9].map((h, i) => (
-                  <div
-                    key={i}
-                    className="w-1 rounded-full animate-pulse"
-                    style={{
-                      height: `${h * 4}px`,
-                      background: "var(--lpc-primary)",
-                      animationDelay: `${i * 0.1}s`,
-                    }}
-                  />
-                ))}
-              </div>
-              <button
-                className="w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center text-white mb-5 sm:mb-6 lpc-voice-pulse transition-transform hover:scale-110"
-                style={{
-                  background: "var(--lpc-primary-gradient)",
-                  boxShadow:
-                    "0 0 30px color-mix(in srgb, var(--lpc-primary) 40%, transparent)",
-                }}
-              >
-                <HiOutlineMicrophone className="w-8 h-8 sm:w-10 sm:h-10" />
-              </button>
-              <p
-                className="font-bold text-base sm:text-lg mb-6 sm:mb-8 tracking-wide"
-                style={{ color: "var(--lpc-primary)" }}
-              >
-                TAP TO START SPEAKING
-              </p>
-              <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-3 text-left">
-                {[
-                  '"I want to practice Spanish for travel"',
-                  '"Help me practice ordering food in French"',
-                  '"I want to learn basic Japanese conversation"',
-                ].map((prompt, i) => (
-                  <div
-                    key={i}
-                    className={`p-4 rounded-lg text-sm cursor-pointer border transition-colors ${i === 2 ? "md:col-span-2" : ""}`}
-                    style={{
-                      background: "var(--lpc-surface-high)",
-                      color: "var(--lpc-text-secondary)",
-                      borderColor: "var(--lpc-border)",
-                    }}
-                  >
-                    {prompt}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          <LpcVoiceCard />
         </div>
       </header>
 
@@ -731,6 +681,240 @@ export default function LanguagePracticeCoachPage() {
           </div>
         </div>
       </footer>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  LiveKit Voice Card                                                 */
+/* ------------------------------------------------------------------ */
+
+const lpcTokenSource = TokenSource.endpoint(
+  "/api/livekit/token?template=language-practice-coach",
+);
+
+function LpcVoiceCard() {
+  const [isActive, setIsActive] = useState(false);
+
+  if (!isActive) {
+    return <LpcIdleVoiceCard onStart={() => setIsActive(true)} />;
+  }
+
+  return <LpcActiveVoiceSession onEnd={() => setIsActive(false)} />;
+}
+
+function LpcIdleVoiceCard({ onStart }: { onStart: () => void }) {
+  return (
+    <div
+      className="w-full max-w-2xl lpc-ambient rounded-xl p-6 sm:p-8 md:p-12 border relative overflow-hidden"
+      style={{
+        background: "color-mix(in srgb, var(--lpc-surface) 50%, transparent)",
+        borderColor: "var(--lpc-border)",
+      }}
+    >
+      <div className="flex flex-col items-center">
+        <div className="mb-6 sm:mb-8 flex items-end gap-1 h-12">
+          {[4, 8, 12, 6, 10, 4, 9].map((h, i) => (
+            <div
+              key={i}
+              className="w-1 rounded-full animate-pulse"
+              style={{
+                height: `${h * 4}px`,
+                background: "var(--lpc-primary)",
+                animationDelay: `${i * 0.1}s`,
+              }}
+            />
+          ))}
+        </div>
+        <button
+          onClick={onStart}
+          className="w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center text-white mb-5 sm:mb-6 lpc-voice-pulse transition-transform hover:scale-110"
+          style={{
+            background: "var(--lpc-primary-gradient)",
+            boxShadow:
+              "0 0 30px color-mix(in srgb, var(--lpc-primary) 40%, transparent)",
+          }}
+        >
+          <HiOutlineMicrophone className="w-8 h-8 sm:w-10 sm:h-10" />
+        </button>
+        <p
+          className="font-bold text-base sm:text-lg mb-6 sm:mb-8 tracking-wide"
+          style={{ color: "var(--lpc-primary)" }}
+        >
+          TAP TO START SPEAKING
+        </p>
+        <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-3 text-left">
+          {[
+            '"I want to practice Spanish for travel"',
+            '"Help me practice ordering food in French"',
+            '"I want to learn basic Japanese conversation"',
+          ].map((prompt, i) => (
+            <div
+              key={i}
+              className={`p-4 rounded-lg text-sm cursor-pointer border transition-colors ${i === 2 ? "md:col-span-2" : ""}`}
+              style={{
+                background: "var(--lpc-surface-high)",
+                color: "var(--lpc-text-secondary)",
+                borderColor: "var(--lpc-border)",
+              }}
+            >
+              {prompt}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LpcActiveVoiceSession({ onEnd }: { onEnd: () => void }) {
+  const session = useSession(lpcTokenSource);
+  const started = useRef(false);
+  const [secondsLeft, setSecondsLeft] = useState(60);
+
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    session.start();
+    return () => {
+      session.end();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSecondsLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          onEnd();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <SessionProvider session={session}>
+      <LpcActiveVoiceCardInner onEnd={onEnd} secondsLeft={secondsLeft} />
+      <RoomAudioRenderer />
+    </SessionProvider>
+  );
+}
+
+function LpcActiveVoiceCardInner({
+  onEnd,
+  secondsLeft,
+}: {
+  onEnd: () => void;
+  secondsLeft: number;
+}) {
+  const agent = useAgent();
+
+  const statusText =
+    agent.state === "listening"
+      ? "Listening..."
+      : agent.state === "thinking"
+        ? "Thinking..."
+        : agent.state === "speaking"
+          ? "Luca is speaking..."
+          : "Connecting to your coach...";
+
+  return (
+    <div
+      className="w-full max-w-2xl lpc-ambient rounded-xl p-6 sm:p-8 md:p-12 border relative overflow-hidden"
+      style={{
+        background: "color-mix(in srgb, var(--lpc-surface) 50%, transparent)",
+        borderColor: "var(--lpc-border)",
+      }}
+    >
+      <div className="flex flex-col items-center">
+        <div className="flex items-center gap-3 mb-8">
+          <span
+            className="w-3 h-3 rounded-full"
+            style={{
+              background: "#22c55e",
+              animation: "lpc-pulse 2s ease-in-out infinite",
+            }}
+          />
+          <span
+            className="text-sm font-semibold tracking-wide uppercase"
+            style={{ color: "var(--lpc-primary)" }}
+          >
+            Coach Connected
+          </span>
+        </div>
+
+        <div
+          className="flex items-center justify-center mb-10"
+          style={{ minHeight: 120 }}
+        >
+          {agent.microphoneTrack ? (
+            <BarVisualizer
+              track={agent.microphoneTrack}
+              state={agent.state}
+              barCount={7}
+              style={{ height: 120, width: "100%" }}
+            />
+          ) : (
+            <div className="flex flex-col items-center gap-3">
+              <div className="flex gap-1.5">
+                {[0, 1, 2].map((i) => (
+                  <span
+                    key={i}
+                    className="w-2.5 h-2.5 rounded-full animate-bounce"
+                    style={{
+                      background: "var(--lpc-primary)",
+                      animationDelay: `${i * 0.15}s`,
+                    }}
+                  />
+                ))}
+              </div>
+              <span
+                className="text-sm"
+                style={{ color: "var(--lpc-text-secondary)" }}
+              >
+                Waiting for Luca to join...
+              </span>
+            </div>
+          )}
+        </div>
+
+        <button
+          onClick={onEnd}
+          className="w-20 h-20 rounded-full flex items-center justify-center text-white transition-all duration-300 mb-5"
+          style={{
+            background: "#ef4444",
+            boxShadow: "0 0 0 8px rgba(239,68,68,0.15)",
+          }}
+        >
+          <HiOutlineXMark className="w-8 h-8" />
+        </button>
+        <p
+          className="font-bold text-base sm:text-lg mb-1"
+          style={{ color: "var(--lpc-text)" }}
+        >
+          End Session
+        </p>
+        <p
+          className="text-sm mb-1"
+          style={{ color: "var(--lpc-text-secondary)" }}
+        >
+          {statusText}
+        </p>
+        <p
+          className="text-xs font-mono"
+          style={{
+            color: secondsLeft <= 10 ? "#ef4444" : "var(--lpc-text-secondary)",
+          }}
+        >
+          {Math.floor(secondsLeft / 60)}:
+          {String(secondsLeft % 60).padStart(2, "0")} remaining
+        </p>
+      </div>
     </div>
   );
 }

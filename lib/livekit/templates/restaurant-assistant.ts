@@ -18,4 +18,5 @@ LOCATION: 247 Main Street, Downtown. Valet parking Fri-Sat ($10). Street parking
 SPECIALS: Tue — Half-price bottles of wine. Wed — Pasta night ($20 any pasta + glass of house wine). Thu — Live jazz 7-9PM. Sun brunch — Bottomless mimosas $25.`,
 
   prompt: `Hi, thanks for calling Bella Notte! I'm Sofia. I can help with reservations, menu questions, hours, or anything else. How can I help you today?`,
+  tts: `inworld/inworld-tts-1:Olivia`,
 };

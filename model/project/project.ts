@@ -8,7 +8,7 @@ export interface Project {
   organization_id: string;
   title: string;
   agent_type: AgentType;
-  preview_url: string | null;
+  preview_url?: string;
   sandbox_id: string | null;
   status: ProjectStatus;
   created_by_user_id: string;

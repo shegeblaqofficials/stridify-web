@@ -11,8 +11,6 @@ import {
   HiOutlineUser,
   HiOutlineXMark,
   HiOutlineStar,
-  HiOutlineDocumentText,
-  HiOutlineLightBulb,
 } from "react-icons/hi2";
 import {
   HiOutlineSun,
@@ -21,6 +19,14 @@ import {
 } from "react-icons/hi2";
 import { useState, useEffect, useRef } from "react";
 import { useTheme } from "@/components/ui/theme-provider";
+import {
+  useSession,
+  SessionProvider,
+  useAgent,
+  RoomAudioRenderer,
+  BarVisualizer,
+} from "@livekit/components-react";
+import { TokenSource } from "livekit-client";
 
 /* ------------------------------------------------------------------ */
 /*  Color tokens — hardcoded per-template, NOT using app theme vars   */
@@ -260,121 +266,8 @@ export default function ProductAdvisorPage() {
           </div>
         </div>
 
-        {/* ---- Floating AI Chat Widget (absolute bottom-right of hero, overlapping next section) ---- */}
-        {chatOpen && (
-          <div className="pa-chat-enter pa-glass-widget fixed bottom-4 right-4 sm:bottom-6 sm:right-6 xl:right-10 z-40 w-[calc(100%-2rem)] sm:w-80 lg:w-[368px] rounded-2xl overflow-hidden">
-            {/* Chat header */}
-            <div
-              className="px-6 py-5 flex items-center justify-between border-b"
-              style={{
-                borderColor:
-                  "color-mix(in srgb, var(--pa-border) 60%, transparent)",
-              }}
-            >
-              <div className="flex items-center gap-3.5">
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center"
-                  style={{
-                    background: "var(--pa-primary)",
-                    color: "white",
-                  }}
-                >
-                  <HiOutlineSparkles className="w-5 h-5" />
-                </div>
-                <div>
-                  <p
-                    className="text-base font-bold leading-tight"
-                    style={{ color: "var(--pa-text)" }}
-                  >
-                    Digital Curator
-                  </p>
-                  <p
-                    className="text-xs uppercase tracking-wider font-medium"
-                    style={{ color: "var(--pa-text-secondary)" }}
-                  >
-                    Your Personal Stylist
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setChatOpen(false)}
-                className="p-2 rounded-lg transition-colors hover:opacity-70"
-                style={{ color: "var(--pa-text-secondary)" }}
-                aria-label="Close chat"
-              >
-                <HiOutlineXMark className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Chat body */}
-            <div className="px-6 py-5">
-              <div
-                className="p-4 rounded-xl rounded-tl-sm mb-5"
-                style={{
-                  background:
-                    "color-mix(in srgb, var(--pa-surface-high) 70%, transparent)",
-                }}
-              >
-                <p
-                  className="text-sm leading-relaxed"
-                  style={{ color: "var(--pa-text-secondary)" }}
-                >
-                  &ldquo;Hello! I&rsquo;m your Digital Curator. Looking for
-                  something specific in our new arrivals?&rdquo;
-                </p>
-              </div>
-
-              {/* Action buttons */}
-              <div className="space-y-2.5">
-                <button
-                  className="w-full flex items-center gap-3 px-5 py-3.5 rounded-xl text-left transition-all hover:opacity-80"
-                  style={{
-                    background: "var(--pa-primary)",
-                    color: "white",
-                  }}
-                >
-                  <HiOutlineMicrophone className="w-5 h-5 shrink-0" />
-                  <span className="text-sm font-semibold tracking-wide uppercase">
-                    Ask AI
-                  </span>
-                </button>
-                <button
-                  className="w-full flex items-center gap-3 px-5 py-3.5 rounded-xl text-left transition-all hover:opacity-80"
-                  style={{
-                    background:
-                      "color-mix(in srgb, var(--pa-surface-high) 50%, transparent)",
-                    color: "var(--pa-text-secondary)",
-                  }}
-                >
-                  <HiOutlineDocumentText className="w-5 h-5 shrink-0" />
-                  <span className="text-sm font-medium tracking-wide uppercase">
-                    Transcript
-                  </span>
-                </button>
-                <button
-                  className="w-full flex items-center gap-3 px-5 py-3.5 rounded-xl text-left transition-all hover:opacity-80"
-                  style={{
-                    background:
-                      "color-mix(in srgb, var(--pa-surface-high) 50%, transparent)",
-                    color: "var(--pa-text-secondary)",
-                  }}
-                >
-                  <HiOutlineLightBulb className="w-5 h-5 shrink-0" />
-                  <span className="text-sm font-medium tracking-wide uppercase">
-                    Prompts
-                  </span>
-                </button>
-              </div>
-            </div>
-
-            {/* Listen button */}
-            <div className="px-6 pb-6">
-              <button className="pa-listen-btn w-full py-4 rounded-full font-bold text-base text-white transition-all hover:opacity-90 flex items-center justify-center gap-2">
-                Start Listening
-              </button>
-            </div>
-          </div>
-        )}
+        {/* ---- Floating AI Voice Widget ---- */}
+        {chatOpen && <PaVoiceWidget onClose={() => setChatOpen(false)} />}
       </header>
 
       {/* ---- Category Showcase ---- */}
@@ -826,6 +719,236 @@ export default function ProductAdvisorPage() {
           <HiOutlineSparkles className="w-6 h-6" />
         </button>
       )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  LiveKit Floating Voice Widget                                      */
+/* ------------------------------------------------------------------ */
+
+const paTokenSource = TokenSource.endpoint(
+  "/api/livekit/token?template=product-advisor",
+);
+
+function PaVoiceWidget({ onClose }: { onClose: () => void }) {
+  const [isActive, setIsActive] = useState(false);
+
+  return (
+    <div className="pa-chat-enter pa-glass-widget fixed bottom-4 right-4 sm:bottom-6 sm:right-6 xl:right-10 z-40 w-[calc(100%-2rem)] sm:w-80 lg:w-[368px] rounded-2xl overflow-hidden">
+      {/* Header */}
+      <div
+        className="px-6 py-5 flex items-center justify-between border-b"
+        style={{
+          borderColor: "color-mix(in srgb, var(--pa-border) 60%, transparent)",
+        }}
+      >
+        <div className="flex items-center gap-3.5">
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center"
+            style={{ background: "var(--pa-primary)", color: "white" }}
+          >
+            <HiOutlineSparkles className="w-5 h-5" />
+          </div>
+          <div>
+            <p
+              className="text-base font-bold leading-tight"
+              style={{ color: "var(--pa-text)" }}
+            >
+              Digital Curator
+            </p>
+            <p
+              className="text-xs uppercase tracking-wider font-medium"
+              style={{ color: "var(--pa-text-secondary)" }}
+            >
+              AI Product Advisor
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => {
+            setIsActive(false);
+            onClose();
+          }}
+          className="p-2 rounded-lg transition-colors hover:opacity-70"
+          style={{ color: "var(--pa-text-secondary)" }}
+          aria-label="Close"
+        >
+          <HiOutlineXMark className="w-5 h-5" />
+        </button>
+      </div>
+
+      {isActive ? (
+        <PaActiveVoiceSession onEnd={() => setIsActive(false)} />
+      ) : (
+        <PaIdleVoiceBody onStart={() => setIsActive(true)} />
+      )}
+    </div>
+  );
+}
+
+function PaIdleVoiceBody({ onStart }: { onStart: () => void }) {
+  return (
+    <div className="px-6 py-6 flex flex-col items-center gap-5">
+      <div
+        className="p-4 rounded-xl rounded-tl-sm self-start"
+        style={{
+          background:
+            "color-mix(in srgb, var(--pa-surface-high) 70%, transparent)",
+        }}
+      >
+        <p
+          className="text-sm leading-relaxed"
+          style={{ color: "var(--pa-text-secondary)" }}
+        >
+          &ldquo;Hey! I&rsquo;m Alex, your product advisor. Tap the mic and tell
+          me what you&rsquo;re looking for!&rdquo;
+        </p>
+      </div>
+      <button
+        onClick={onStart}
+        className="w-16 h-16 rounded-full flex items-center justify-center text-white transition-all hover:scale-105"
+        style={{
+          background: "var(--pa-primary)",
+          boxShadow:
+            "0 0 0 6px var(--pa-primary-muted), 0 4px 20px rgba(26,86,219,0.25)",
+        }}
+      >
+        <HiOutlineMicrophone className="w-7 h-7" />
+      </button>
+      <p
+        className="text-sm font-semibold"
+        style={{ color: "var(--pa-text-secondary)" }}
+      >
+        Tap to ask Alex
+      </p>
+    </div>
+  );
+}
+
+function PaActiveVoiceSession({ onEnd }: { onEnd: () => void }) {
+  const session = useSession(paTokenSource);
+  const started = useRef(false);
+  const [secondsLeft, setSecondsLeft] = useState(60);
+
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    session.start();
+    return () => {
+      session.end();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSecondsLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          onEnd();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <SessionProvider session={session}>
+      <PaActiveVoiceInner onEnd={onEnd} secondsLeft={secondsLeft} />
+      <RoomAudioRenderer />
+    </SessionProvider>
+  );
+}
+
+function PaActiveVoiceInner({
+  onEnd,
+  secondsLeft,
+}: {
+  onEnd: () => void;
+  secondsLeft: number;
+}) {
+  const agent = useAgent();
+
+  const statusText =
+    agent.state === "listening"
+      ? "Listening..."
+      : agent.state === "thinking"
+        ? "Thinking..."
+        : agent.state === "speaking"
+          ? "Alex is speaking..."
+          : "Connecting...";
+
+  return (
+    <div className="px-6 py-6 flex flex-col items-center gap-4">
+      <div className="flex items-center gap-2">
+        <span
+          className="w-2.5 h-2.5 rounded-full"
+          style={{
+            background: "#22c55e",
+            animation: "pa-pulse 2s ease-in-out infinite",
+          }}
+        />
+        <span
+          className="text-xs font-semibold uppercase tracking-wide"
+          style={{ color: "var(--pa-primary)" }}
+        >
+          Connected
+        </span>
+      </div>
+
+      <div
+        className="flex items-center justify-center w-full"
+        style={{ minHeight: 80 }}
+      >
+        {agent.microphoneTrack ? (
+          <BarVisualizer
+            track={agent.microphoneTrack}
+            state={agent.state}
+            barCount={5}
+            style={{ height: 80, width: "100%" }}
+          />
+        ) : (
+          <div className="flex gap-1.5">
+            {[0, 1, 2].map((i) => (
+              <span
+                key={i}
+                className="w-2 h-2 rounded-full animate-bounce"
+                style={{
+                  background: "var(--pa-primary)",
+                  animationDelay: `${i * 0.15}s`,
+                }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      <button
+        onClick={onEnd}
+        className="w-14 h-14 rounded-full flex items-center justify-center text-white transition-all duration-300"
+        style={{
+          background: "#ef4444",
+          boxShadow: "0 0 0 6px rgba(239,68,68,0.15)",
+        }}
+      >
+        <HiOutlineXMark className="w-6 h-6" />
+      </button>
+      <p className="text-sm" style={{ color: "var(--pa-text-secondary)" }}>
+        {statusText}
+      </p>
+      <p
+        className="text-xs font-mono"
+        style={{
+          color: secondsLeft <= 10 ? "#ef4444" : "var(--pa-text-secondary)",
+        }}
+      >
+        {Math.floor(secondsLeft / 60)}:
+        {String(secondsLeft % 60).padStart(2, "0")} remaining
+      </p>
     </div>
   );
 }

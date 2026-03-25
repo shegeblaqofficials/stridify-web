@@ -1,5 +1,5 @@
 import { NextRequest, after } from "next/server";
-import { createAgentUIStreamResponse, createIdGenerator } from "ai";
+import { createAgentUIStreamResponse, createIdGenerator, UIMessage } from "ai";
 import {
   createCodingAgent,
   type AgentMessageMetadata,
@@ -49,9 +49,12 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "insufficient_balance" }, { status: 402 });
   }
 
-  // Load previous messages from Redis, append the new one
+  // Load previous messages from Redis, append the new one.
+  // Filter out any messages with empty parts — the SDK requires at least one.
   const previousMessages = await loadChatMessages(projectId);
-  const messages = [...previousMessages, message];
+  const messages = [...previousMessages, message].filter(
+    (m: UIMessage) => m.parts && m.parts.length > 0,
+  );
   console.log(
     `[route] loaded ${previousMessages.length} previous messages, total=${messages.length}`,
   );
