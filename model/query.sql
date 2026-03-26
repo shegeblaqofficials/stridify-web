@@ -76,3 +76,35 @@ CREATE TABLE public.organization_members (
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT organization_members_pkey PRIMARY KEY (id)
 );
+
+-- Table to store Vercel project mappings
+CREATE TABLE public.vercel_projects (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  vercel_project_id character varying NOT NULL,
+  project_id character varying NOT NULL,
+  organization_id character varying NOT NULL,
+  vercel_project_name character varying NOT NULL,
+  framework character varying,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT vercel_project_pkey PRIMARY KEY (id)
+);
+
+-- Table to store deployments
+CREATE TABLE public.deployments (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  deployment_id character varying NOT NULL,
+  project_id character varying NOT NULL,
+  organization_id character varying NOT NULL,
+  vercel_project_id character varying NOT NULL,
+  vercel_deployment_id character varying NOT NULL,
+  environment character varying NOT NULL DEFAULT 'preview',
+  status character varying NOT NULL DEFAULT 'queued',
+  url text,
+  inspector_url text,
+  deployment_name character varying,
+  created_by_user_id character varying,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT deployment_pkey PRIMARY KEY (id)
+);

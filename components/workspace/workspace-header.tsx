@@ -14,6 +14,7 @@ import {
   HiOutlineRocketLaunch,
   HiOutlineCheck,
   HiOutlineBolt,
+  HiOutlineArrowDownTray,
 } from "react-icons/hi2";
 import type { Snapshot } from "@/model/project/snapshot";
 
@@ -24,6 +25,7 @@ export interface TokenUsageDisplay {
 }
 
 interface WorkspaceHeaderProps {
+  projectId?: string;
   projectName?: string;
   onProjectNameChange?: (name: string) => void;
   snapshots?: Snapshot[];
@@ -40,6 +42,7 @@ function formatSnapshotDate(dateStr: string) {
 }
 
 export function WorkspaceHeader({
+  projectId,
   projectName = "Untitled Project",
   onProjectNameChange,
   snapshots = [],
@@ -47,11 +50,12 @@ export function WorkspaceHeader({
   onSnapshotChange,
   tokenUsage,
 }: WorkspaceHeaderProps) {
-  const { user } = useAccount();
+  const { user, organization } = useAccount();
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(projectName);
   const [showVersions, setShowVersions] = useState(false);
   const [showDeploy, setShowDeploy] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [currentSnapshotId, setCurrentSnapshotId] = useState(
     activeSnapshotId ?? snapshots[0]?.snapshot_id,
   );
@@ -236,6 +240,44 @@ export function WorkspaceHeader({
           <HiOutlineShare className="size-4" />
           <span>Share</span>
         </button>
+        <button
+          disabled={!projectId || downloading}
+          onClick={async () => {
+            if (!projectId) return;
+            setDownloading(true);
+            try {
+              const res = await fetch(
+                `/api/sandbox/download?projectId=${encodeURIComponent(projectId)}`,
+              );
+              if (!res.ok) {
+                console.error("[download] failed:", res.status);
+                return;
+              }
+              const blob = await res.blob();
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download =
+                res.headers
+                  .get("Content-Disposition")
+                  ?.match(/filename="(.+)"/)?.[1] ?? "project.tar.gz";
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+              URL.revokeObjectURL(url);
+            } catch (err) {
+              console.error("[download] error:", err);
+            } finally {
+              setDownloading(false);
+            }
+          }}
+          className="hidden md:flex items-center gap-2 px-3 py-1.5 text-sm font-semibold rounded-lg bg-surface-elevated hover:opacity-80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <HiOutlineArrowDownTray
+            className={`size-4 ${downloading ? "animate-bounce" : ""}`}
+          />
+          <span>{downloading ? "Downloading..." : "Download"}</span>
+        </button>
         <button className="hidden md:flex items-center gap-2 px-3 py-1.5 text-sm font-semibold rounded-lg bg-surface-elevated hover:opacity-80 transition-colors">
           <HiOutlineCog6Tooth className="size-4" />
           <span>Settings</span>
@@ -251,7 +293,13 @@ export function WorkspaceHeader({
         {user && <UserDropdown user={user} />}
       </div>
 
-      <DeployModal open={showDeploy} onClose={() => setShowDeploy(false)} />
+      <DeployModal
+        open={showDeploy}
+        onClose={() => setShowDeploy(false)}
+        projectId={projectId}
+        organizationId={organization?.organization_id}
+        userId={user?.id}
+      />
     </header>
   );
 }

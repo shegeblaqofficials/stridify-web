@@ -128,6 +128,7 @@ export default function Workspace({ projectId }: WorkspaceProps) {
   return (
     <div className="h-screen flex flex-col bg-background text-foreground">
       <WorkspaceHeader
+        projectId={projectId}
         projectName={project?.title}
         snapshots={snapshots}
         activeSnapshotId={snapshots[0]?.snapshot_id}
