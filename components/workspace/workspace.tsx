@@ -10,6 +10,7 @@ import { PageLoader } from "@/components/ui/page-loader";
 import { getProject, getProjectPrompts } from "@/lib/project/actions";
 import { getProjectSnapshots } from "@/lib/snapshot/actions";
 import { getChatMessages } from "@/lib/redis/actions";
+import { checkProjectBalance } from "@/lib/project/actions";
 import type { Project } from "@/model/project/project";
 import type { Prompt } from "@/model/project/prompt";
 import type { Snapshot } from "@/model/project/snapshot";
@@ -202,6 +203,8 @@ export default function Workspace({ projectId }: WorkspaceProps) {
             initialPrompt={initialPrompt}
             initialMessages={initialMessages}
             isNewProject={snapshots.length === 0}
+            sandboxReady={!sandboxLoading}
+            balanceExhausted={balanceExhausted}
             onTokenUpdate={setTokenUsage}
             onStreamingComplete={handleStreamingComplete}
             onInsufficientBalance={() => {
@@ -233,7 +236,12 @@ export default function Workspace({ projectId }: WorkspaceProps) {
       </main>
       <UpgradeModal
         open={showUpgradeModal}
-        onClose={() => setShowUpgradeModal(false)}
+        onClose={async () => {
+          setShowUpgradeModal(false);
+          // Re-check balance — user may have purchased credits
+          const { exhausted } = await checkProjectBalance(projectId);
+          if (!exhausted) setBalanceExhausted(false);
+        }}
       />
     </div>
   );

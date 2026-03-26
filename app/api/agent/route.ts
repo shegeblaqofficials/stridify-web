@@ -4,21 +4,18 @@ import {
   createCodingAgent,
   type AgentMessageMetadata,
 } from "@/lib/agents/coding-agent";
-import {
-  createSandboxFromTemplate,
-  createSandboxFromSnapshot,
-  getExistingSandbox,
-  takeSandboxSnapshot,
-  extendSandboxTimeout,
-} from "@/lib/sandbox/manager";
-import { getLatestSnapshot, createSnapshot } from "@/lib/snapshot/actions";
+import { createSubagentUsageTracker } from "@/lib/agents/subagent-tools";
+import { extendSandboxTimeout } from "@/lib/sandbox/manager";
+import { getLatestSnapshot } from "@/lib/snapshot/actions";
 import { getProject, updateProjectSandbox } from "@/lib/project/actions";
-import {
-  deductOrganizationTokens,
-  getOrganizationBalance,
-  recordSessionMetric,
-} from "@/lib/redis/metrics";
+import { getOrganizationBalance } from "@/lib/redis/metrics";
 import { loadChatMessages, saveChatMessages } from "@/lib/redis/chat";
+import {
+  resolveSandbox,
+  snapshotAndProvision,
+  logTokenMetrics,
+  deductTokensIncremental,
+} from "./actions";
 
 export async function POST(req: NextRequest) {
   const { message, id: chatId, projectId } = await req.json();
@@ -40,12 +37,14 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Project not found" }, { status: 404 });
   }
 
+  // Capture validated values for use in closures (where TS narrowing doesn't apply)
+  const organizationId = project.organization_id;
+  const projectTitle = project.title;
+
   // Check organization token balance before proceeding
-  const balance = await getOrganizationBalance(project.organization_id);
+  const balance = await getOrganizationBalance(organizationId);
   if (balance <= 0) {
-    console.log(
-      `[route] insufficient balance for org ${project.organization_id}`,
-    );
+    console.log(`[route] insufficient balance for org ${organizationId}`);
     return Response.json({ error: "insufficient_balance" }, { status: 402 });
   }
 
@@ -64,49 +63,12 @@ export async function POST(req: NextRequest) {
     `[route] latestSnapshot=${latestSnapshot?.snapshot_id ?? "none"}`,
   );
 
-  // Try to reconnect to existing sandbox first
-  let sandbox;
-  let previewUrl: string = "";
-
-  if (project.sandbox_id) {
-    const existing = await getExistingSandbox(project.sandbox_id);
-    if (existing) {
-      console.log(
-        `[route] reusing existing sandbox ${existing.sandbox.sandboxId}`,
-      );
-      sandbox = existing.sandbox;
-      previewUrl = existing.previewUrl;
-    }
-  }
-
-  // Re-fetch project in case warmup just created a sandbox while we were loading
-  if (!sandbox) {
-    const freshProject = await getProject(projectId);
-    if (
-      freshProject?.sandbox_id &&
-      freshProject.sandbox_id !== project.sandbox_id
-    ) {
-      console.log(
-        `[route] warmup created sandbox ${freshProject.sandbox_id}, trying to connect...`,
-      );
-      const existing = await getExistingSandbox(freshProject.sandbox_id);
-      if (existing) {
-        sandbox = existing.sandbox;
-        previewUrl = existing.previewUrl;
-      }
-    }
-  }
-
-  // If still no running sandbox, create from snapshot or template
-  if (!sandbox) {
-    console.log("[route] creating new sandbox...");
-    const created = latestSnapshot
-      ? await createSandboxFromSnapshot(latestSnapshot.snapshot_id)
-      : await createSandboxFromTemplate();
-    sandbox = created.sandbox;
-    previewUrl = created.previewUrl;
-  }
-
+  // Resolve a running sandbox (reconnect, warmup, or create new)
+  const { sandbox, previewUrl } = await resolveSandbox(
+    projectId,
+    project.sandbox_id,
+    latestSnapshot,
+  );
   console.log(`[route] sandbox=${sandbox.sandboxId} previewUrl=${previewUrl}`);
 
   // Update project with sandbox info
@@ -115,63 +77,55 @@ export async function POST(req: NextRequest) {
   // Extend timeout before the agent starts working
   await extendSandboxTimeout(sandbox);
 
+  // Keep the sandbox alive while the agent is working.
+  // onStepFinish only fires between orchestrator steps — a single subagent
+  // can run for many minutes, so we need a periodic heartbeat.
+  const keepalive = setInterval(() => {
+    extendSandboxTimeout(sandbox).catch(() => {});
+  }, 60_000);
+
   // Create the agent bound to this sandbox
-  const agent = createCodingAgent(sandbox);
+  const subagentUsageTracker = createSubagentUsageTracker();
+  const agent = createCodingAgent(sandbox, subagentUsageTracker);
   console.log("[route] agent created, starting stream...");
 
-  // Accumulate token usage across all steps
-  let totalInputTokens = 0;
-  let totalOutputTokens = 0;
+  // Accumulate token usage across all steps.
+  // `orchestratorInput/OutputTokens` track the orchestrator's own LLM calls.
+  // `subagentUsageTracker` accumulates subagent LLM usage separately
+  // (updated by each subagent tool after its stream completes).
+  let orchestratorInputTokens = 0;
+  let orchestratorOutputTokens = 0;
   let stepCount = 0;
   let balanceExhausted = false;
+  let tokensDeductedSoFar = 0;
+  let liveBalance = balance;
   const abortController = new AbortController();
 
-  // After the response is sent, snapshot (only if exhausted) and log token metrics
+  /** Combined total across orchestrator + all subagents. */
+  const getTotalUsage = () => ({
+    inputTokens: orchestratorInputTokens + subagentUsageTracker.inputTokens,
+    outputTokens: orchestratorOutputTokens + subagentUsageTracker.outputTokens,
+    get totalTokens() {
+      return this.inputTokens + this.outputTokens;
+    },
+  });
+
+  const nextVersion = (latestSnapshot?.version_number ?? 0) + 1;
+
+  // After the response is sent, log token metrics (fire-and-forget).
+  // Only deducts the remainder not already covered by incremental deductions.
   after(async () => {
-    // Only snapshot when balance is exhausted — this stops the sandbox
-    // and preserves the state for next session. When the agent finishes
-    // normally, we leave the sandbox running so the preview stays alive.
-    if (balanceExhausted) {
-      try {
-        const snapshotId = await takeSandboxSnapshot(sandbox);
-        await createSnapshot(
-          projectId,
-          project.organization_id,
-          snapshotId,
-          `v${(latestSnapshot?.version_number ?? 0) + 1}`,
-        );
-        console.log(
-          `[agent] snapshot ${snapshotId} saved for ${projectId} (balance exhausted)`,
-        );
-      } catch (err) {
-        console.error("[agent] snapshot failed:", err);
-      }
-    }
-
-    // Record session metrics and deduct tokens — all via Redis
-    try {
-      const totalTokensUsed = totalInputTokens + totalOutputTokens;
-      console.log(
-        `[metric] logging tokens — input=${totalInputTokens} output=${totalOutputTokens} steps=${stepCount}`,
-      );
-
-      await Promise.all([
-        recordSessionMetric({
-          organizationId: project.organization_id,
-          projectId,
-          projectTitle: project.title,
-          inputTokens: totalInputTokens,
-          outputTokens: totalOutputTokens,
-        }),
-        deductOrganizationTokens(project.organization_id, totalTokensUsed),
-      ]);
-
-      console.log(
-        `[metric] session recorded & tokens deducted for ${projectId}`,
-      );
-    } catch (err) {
-      console.error("[metric] failed to save metrics:", err);
-    }
+    const usage = getTotalUsage();
+    console.log(
+      `[metric] orchestrator: in=${orchestratorInputTokens} out=${orchestratorOutputTokens} | subagents: in=${subagentUsageTracker.inputTokens} out=${subagentUsageTracker.outputTokens} | steps=${stepCount} | deductedSoFar=${tokensDeductedSoFar}`,
+    );
+    await logTokenMetrics(
+      organizationId,
+      projectId,
+      projectTitle,
+      usage,
+      tokensDeductedSoFar,
+    );
   });
 
   return createAgentUIStreamResponse({
@@ -180,27 +134,29 @@ export async function POST(req: NextRequest) {
     // Generate consistent server-side IDs for persistence
     generateMessageId: createIdGenerator({ prefix: "msg", size: 16 }),
     messageMetadata({ part }): AgentMessageMetadata | undefined {
-      // Accumulate tokens here because messageMetadata fires BEFORE
+      // Accumulate orchestrator tokens here because messageMetadata fires BEFORE
       // onStepFinish in the SDK stream pipeline (the eventProcessor
       // enqueues the chunk downstream before awaiting onStepFinish).
       if (part.type === "finish-step") {
-        totalInputTokens += part.usage.inputTokens ?? 0;
-        totalOutputTokens += part.usage.outputTokens ?? 0;
+        orchestratorInputTokens += part.usage.inputTokens ?? 0;
+        orchestratorOutputTokens += part.usage.outputTokens ?? 0;
+        const usage = getTotalUsage();
         return {
           tokenUsage: {
-            inputTokens: totalInputTokens,
-            outputTokens: totalOutputTokens,
-            totalTokens: totalInputTokens + totalOutputTokens,
+            inputTokens: usage.inputTokens,
+            outputTokens: usage.outputTokens,
+            totalTokens: usage.totalTokens,
           },
           ...(balanceExhausted && { balanceExhausted: true }),
         };
       }
       if (part.type === "finish") {
+        const usage = getTotalUsage();
         return {
           tokenUsage: {
-            inputTokens: totalInputTokens,
-            outputTokens: totalOutputTokens,
-            totalTokens: totalInputTokens + totalOutputTokens,
+            inputTokens: usage.inputTokens,
+            outputTokens: usage.outputTokens,
+            totalTokens: usage.totalTokens,
           },
           ...(balanceExhausted && { balanceExhausted: true }),
         };
@@ -210,11 +166,16 @@ export async function POST(req: NextRequest) {
     onStepFinish({ stepNumber, usage, finishReason, toolCalls }) {
       // Tokens are already accumulated in messageMetadata (fires first)
       stepCount = stepNumber;
+      const combined = getTotalUsage();
       console.log(`[agent] step ${stepNumber} finished:`, {
-        inputTokens: usage.inputTokens,
-        outputTokens: usage.outputTokens,
-        totalInputTokens,
-        totalOutputTokens,
+        stepInputTokens: usage.inputTokens,
+        stepOutputTokens: usage.outputTokens,
+        orchestratorInputTokens,
+        orchestratorOutputTokens,
+        subagentInputTokens: subagentUsageTracker.inputTokens,
+        subagentOutputTokens: subagentUsageTracker.outputTokens,
+        combinedInputTokens: combined.inputTokens,
+        combinedOutputTokens: combined.outputTokens,
         finishReason,
         toolsUsed: toolCalls?.map((tc) => tc.toolName),
       });
@@ -222,21 +183,49 @@ export async function POST(req: NextRequest) {
       // Keep sandbox alive while the agent is still working
       extendSandboxTimeout(sandbox);
 
+      // Incrementally deduct tokens used since last deduction
+      const delta = combined.totalTokens - tokensDeductedSoFar;
+      if (delta > 0) {
+        const deductAmount = delta;
+        tokensDeductedSoFar = combined.totalTokens;
+        deductTokensIncremental(organizationId, deductAmount).then(
+          (newBalance) => {
+            if (newBalance >= 0) liveBalance = newBalance;
+          },
+        );
+      }
+
       // Check if balance is exhausted after this step
-      const tokensUsedSoFar = totalInputTokens + totalOutputTokens;
-      if (tokensUsedSoFar >= balance && !balanceExhausted) {
+      if (liveBalance <= 0 && !balanceExhausted) {
         balanceExhausted = true;
         console.log(
-          `[agent] balance exhausted mid-stream (used=${tokensUsedSoFar}, balance=${balance}). Aborting.`,
+          `[agent] balance exhausted mid-stream (used=${combined.totalTokens}, liveBalance=${liveBalance}). Snapshotting & aborting.`,
         );
-        abortController.abort();
+        snapshotAndProvision(sandbox, projectId, organizationId, nextVersion)
+          .then(() => abortController.abort())
+          .catch(() => abortController.abort());
       }
     },
-    onFinish({ messages: finalMessages }) {
-      // Persist complete chat history to Redis
-      saveChatMessages(projectId, finalMessages).catch((err) =>
-        console.error("[chat] failed to save messages:", err),
-      );
+    async onFinish({ messages: finalMessages }) {
+      clearInterval(keepalive);
+
+      try {
+        await saveChatMessages(projectId, finalMessages);
+      } catch (err) {
+        console.error("[chat] failed to save messages:", err);
+      }
+
+      // Snapshot and create a new sandbox BEFORE the stream closes.
+      // This ensures the UI's onStreamingComplete refetch sees the
+      // updated project with the new sandbox's preview URL.
+      if (!balanceExhausted) {
+        await snapshotAndProvision(
+          sandbox,
+          projectId,
+          organizationId,
+          nextVersion,
+        );
+      }
     },
     abortSignal: abortController.signal,
   });

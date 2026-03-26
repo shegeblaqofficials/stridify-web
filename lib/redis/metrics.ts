@@ -9,8 +9,6 @@ import { createClient } from "@/lib/supabase/server";
 // Project output tokens:    project:tokens:output:{projectId} → number
 // Project last active:      project:tokens:last:{projectId}   → string (ISO)
 // Org project set:          org:projects:{orgId}         → Set<projectId>
-// Project title cache:      project:title:{projectId}    → string
-//
 // Balance (token_balance) lives in Supabase — it is the source of truth.
 
 const keys = {
@@ -21,7 +19,6 @@ const keys = {
   projectOutputTokens: (pid: string) => `project:tokens:output:${pid}`,
   projectLastActive: (pid: string) => `project:tokens:last:${pid}`,
   orgProjects: (orgId: string) => `org:projects:${orgId}`,
-  projectTitle: (pid: string) => `project:title:${pid}`,
 };
 
 // ── Balance (Supabase — source of truth) ──────────────────────────────
@@ -75,9 +72,6 @@ export async function recordSessionMetric(opts: {
   // Track project as belonging to org
   pipeline.sadd(keys.orgProjects(organizationId), projectId);
 
-  // Cache project title
-  pipeline.set(keys.projectTitle(projectId), projectTitle);
-
   // Increment session count
   pipeline.incr(keys.projectSessions(projectId));
 
@@ -92,6 +86,21 @@ export async function recordSessionMetric(opts: {
   // Update last active timestamp
   pipeline.set(keys.projectLastActive(projectId), new Date().toISOString());
 
+  await pipeline.exec();
+}
+
+// ── Cleanup ───────────────────────────────────────────────────────────
+
+export async function deleteProjectRedisData(
+  projectId: string,
+  organizationId: string,
+): Promise<void> {
+  const pipeline = redis.pipeline();
+  pipeline.del(keys.projectSessions(projectId));
+  pipeline.del(keys.projectInputTokens(projectId));
+  pipeline.del(keys.projectOutputTokens(projectId));
+  pipeline.del(keys.projectLastActive(projectId));
+  pipeline.srem(keys.orgProjects(organizationId), projectId);
   await pipeline.exec();
 }
 
@@ -142,7 +151,6 @@ export async function getOrganizationMetrics(organizationId: string): Promise<
   // Fetch all project data in a single pipeline
   const pipeline = redis.pipeline();
   for (const pid of projectIds) {
-    pipeline.get(keys.projectTitle(pid));
     pipeline.get(keys.projectSessions(pid));
     pipeline.get(keys.projectInputTokens(pid));
     pipeline.get(keys.projectOutputTokens(pid));

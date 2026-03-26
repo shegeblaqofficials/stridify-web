@@ -75,23 +75,32 @@ export async function createSandboxFromSnapshot(
 export async function takeSandboxSnapshot(sandbox: Sandbox): Promise<string> {
   console.log(`[sandbox] taking snapshot of ${sandbox.sandboxId}...`);
   const snapshot = await sandbox.snapshot({
-    expiration: 14 * 24 * 60 * 60 * 1000, // 14 days
+    expiration: 0, // Never expire
   });
   console.log(`[sandbox] snapshot created: ${snapshot.snapshotId}`);
   return snapshot.snapshotId;
 }
 
 /**
- * Extend the sandbox timeout by 4 minutes only if remaining time
- * is under 2 minutes. Avoids unnecessary API calls on quick steps.
+ * Extend the sandbox timeout. Called periodically to keep the sandbox
+ * alive while the agent is working.
+ *
+ * Note: `sandbox.timeout` is the static configured value (not a live
+ * countdown), so we track the deadline ourselves.
  */
+let sandboxDeadlines = new Map<string, number>();
+
 export async function extendSandboxTimeout(sandbox: Sandbox): Promise<void> {
   try {
-    if (sandbox.timeout > 120_000) return;
+    const now = Date.now();
+    const deadline = sandboxDeadlines.get(sandbox.sandboxId) ?? 0;
+
+    // Only extend if less than 2 minutes remain on our tracked deadline
+    if (deadline - now > 120_000) return;
+
     await sandbox.extendTimeout(SANDBOX_TIMEOUT);
-    console.log(
-      `[sandbox] extended timeout for ${sandbox.sandboxId} (was ${sandbox.timeout}ms remaining)`,
-    );
+    sandboxDeadlines.set(sandbox.sandboxId, now + SANDBOX_TIMEOUT);
+    console.log(`[sandbox] extended timeout for ${sandbox.sandboxId}`);
   } catch (err) {
     console.error(`[sandbox] failed to extend timeout:`, err);
   }

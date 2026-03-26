@@ -4,7 +4,11 @@ import type { Project, AgentType } from "@/model/project/project";
 import type { Prompt } from "@/model/project/prompt";
 import { createClient } from "../supabase/server";
 import { cookies } from "next/headers";
-import { getOrganizationBalance } from "@/lib/redis/metrics";
+import {
+  getOrganizationBalance,
+  deleteProjectRedisData,
+} from "@/lib/redis/metrics";
+import { deleteChatMessages } from "@/lib/redis/chat";
 
 const PENDING_PROMPT_COOKIE = "pendingPrompt";
 
@@ -152,6 +156,14 @@ export async function updateProjectSandbox(
 
 export async function deleteProject(projectId: string): Promise<boolean> {
   const supabase = await createClient();
+
+  // Fetch org ID before deleting so we can clean up Redis
+  const { data: project } = await supabase
+    .from("projects")
+    .select("organization_id")
+    .eq("project_id", projectId)
+    .single();
+
   const { error } = await supabase
     .from("projects")
     .delete()
@@ -160,5 +172,17 @@ export async function deleteProject(projectId: string): Promise<boolean> {
     console.error("Error deleting project:", error.message);
     return false;
   }
+
+  // Cascade: clean up Redis data (best-effort, don't fail the delete)
+  try {
+    const cleanups: Promise<void>[] = [deleteChatMessages(projectId)];
+    if (project?.organization_id) {
+      cleanups.push(deleteProjectRedisData(projectId, project.organization_id));
+    }
+    await Promise.all(cleanups);
+  } catch (err) {
+    console.error("Error cleaning up Redis data for project:", err);
+  }
+
   return true;
 }
