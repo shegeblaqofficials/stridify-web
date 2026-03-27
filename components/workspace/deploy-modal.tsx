@@ -9,8 +9,11 @@ import {
   HiOutlineCheckCircle,
   HiOutlineExclamationTriangle,
   HiOutlineEye,
+  HiOutlineChevronUpDown,
+  HiOutlineFolderOpen,
 } from "react-icons/hi2";
 import type { DeploymentEnvironment } from "@/model/deployment/deployment";
+import type { Project } from "@/model/project/project";
 
 type DeployStep = "configure" | "deploying" | "success" | "error";
 
@@ -20,14 +23,17 @@ interface DeployModalProps {
   projectId?: string;
   organizationId?: string;
   userId?: string;
+  /** When provided, the modal shows a project selector (used from the deployments page) */
+  projects?: Project[];
 }
 
 export function DeployModal({
   open,
   onClose,
-  projectId,
+  projectId: externalProjectId,
   organizationId,
   userId,
+  projects,
 }: DeployModalProps) {
   const [step, setStep] = useState<DeployStep>("configure");
   const [environment, setEnvironment] =
@@ -38,8 +44,13 @@ export function DeployModal({
   const [inspectorUrl, setInspectorUrl] = useState<string | null>(null);
   const [status, setStatus] = useState<string>("queued");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<
+    string | undefined
+  >(externalProjectId);
   const overlayRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const activeProjectId = externalProjectId ?? selectedProjectId;
 
   // Reset when modal opens
   useEffect(() => {
@@ -52,6 +63,7 @@ export function DeployModal({
       setInspectorUrl(null);
       setStatus("queued");
       setErrorMessage(null);
+      setSelectedProjectId(externalProjectId);
     }
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
@@ -99,7 +111,14 @@ export function DeployModal({
   }, []);
 
   const handleDeploy = async () => {
-    if (!projectId || !organizationId || !userId) return;
+    const trimmedDeploymentName = deploymentName.trim();
+    if (
+      !activeProjectId ||
+      !organizationId ||
+      !userId ||
+      !trimmedDeploymentName
+    )
+      return;
 
     setStep("deploying");
     setStatus("queued");
@@ -110,11 +129,11 @@ export function DeployModal({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          projectId,
+          projectId: activeProjectId,
           organizationId,
           userId,
           environment,
-          deploymentName: deploymentName.trim() || undefined,
+          deploymentName: trimmedDeploymentName,
         }),
       });
 
@@ -150,18 +169,26 @@ export function DeployModal({
       onClick={(e) => {
         if (e.target === overlayRef.current && step !== "deploying") onClose();
       }}
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 backdrop-blur-sm"
     >
       <div className="w-full max-w-lg mx-4 rounded-2xl border border-border bg-surface shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
         {step === "configure" && (
           <ConfigureStep
+            projects={projects}
+            selectedProjectId={activeProjectId}
+            setSelectedProjectId={setSelectedProjectId}
             environment={environment}
             setEnvironment={setEnvironment}
             deploymentName={deploymentName}
             setDeploymentName={setDeploymentName}
             onClose={onClose}
             onDeploy={handleDeploy}
-            disabled={!projectId || !organizationId || !userId}
+            disabled={
+              !activeProjectId ||
+              !organizationId ||
+              !userId ||
+              !deploymentName.trim()
+            }
           />
         )}
 
@@ -193,6 +220,9 @@ export function DeployModal({
 /* ─── Configure Step ────────────────────────────────────── */
 
 function ConfigureStep({
+  projects,
+  selectedProjectId,
+  setSelectedProjectId,
   environment,
   setEnvironment,
   deploymentName,
@@ -201,6 +231,9 @@ function ConfigureStep({
   onDeploy,
   disabled,
 }: {
+  projects?: Project[];
+  selectedProjectId?: string;
+  setSelectedProjectId: (id: string) => void;
   environment: DeploymentEnvironment;
   setEnvironment: (e: DeploymentEnvironment) => void;
   deploymentName: string;
@@ -225,6 +258,39 @@ function ConfigureStep({
         Deploy your application directly from your workspace. Choose an
         environment and deploy with one click.
       </p>
+
+      {/* Project selector (for deployments page flow) */}
+      {projects && projects.length > 0 && (
+        <div className="px-6 pb-4">
+          <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Project
+          </label>
+          <div className="relative mt-2">
+            <select
+              value={selectedProjectId ?? ""}
+              onChange={(e) => setSelectedProjectId(e.target.value)}
+              className="w-full appearance-none rounded-xl border border-border bg-background px-3 py-2.5 pr-10 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/30"
+            >
+              <option value="">Select a project</option>
+              {projects.map((project) => (
+                <option key={project.project_id} value={project.project_id}>
+                  {project.title}
+                </option>
+              ))}
+            </select>
+            <HiOutlineChevronUpDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          </div>
+        </div>
+      )}
+
+      {projects && projects.length === 0 && (
+        <div className="px-6 pb-4">
+          <div className="flex items-center gap-2 rounded-xl border border-border bg-surface-elevated/50 px-3 py-2.5 text-sm text-muted-foreground">
+            <HiOutlineFolderOpen className="size-4" />
+            No projects available yet.
+          </div>
+        </div>
+      )}
 
       {/* Environment selector */}
       <div className="px-6 space-y-3">
@@ -291,19 +357,22 @@ function ConfigureStep({
           </button>
         </div>
 
-        {/* Optional deployment name */}
+        {/* Required deployment name */}
         <div className="pt-2">
           <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Deployment Name{" "}
-            <span className="font-normal normal-case">(optional)</span>
+            Deployment Name <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
             value={deploymentName}
             onChange={(e) => setDeploymentName(e.target.value)}
-            placeholder="e.g. v2 redesign"
+            placeholder="e.g. storefront-v2"
             className="mt-2 w-full px-3 py-2.5 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors"
           />
+          <p className="mt-1.5 text-[11px] text-muted-foreground">
+            This will be used as the Vercel deployment name. On first deploy, it
+            will also be used as the Vercel project name.
+          </p>
         </div>
       </div>
 
@@ -440,27 +509,10 @@ function SuccessStep({
           Visit Site
         </a>
       )}
-
-      {url && (
-        <p className="mt-3 text-xs text-muted-foreground break-all max-w-sm">
-          {url}
-        </p>
-      )}
-
       <div className="mt-5 flex items-center gap-3">
-        {inspectorUrl && (
-          <a
-            href={inspectorUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors underline"
-          >
-            View Build Logs
-          </a>
-        )}
         <button
           onClick={onClose}
-          className="text-xs text-muted-foreground hover:text-foreground transition-colors underline"
+          className="text-sm text-muted-foreground hover:text-foreground transition-colors underline"
         >
           Close
         </button>

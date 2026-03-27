@@ -104,7 +104,7 @@ export async function readSandboxFiles(
  */
 export async function createVercelDeployment(params: {
   vercelProjectId: string;
-  projectName: string;
+  deploymentName: string;
   files: { file: string; data: string; encoding: "base64" }[];
   target?: "production" | undefined; // undefined = preview
 }): Promise<{
@@ -117,7 +117,7 @@ export async function createVercelDeployment(params: {
   const result = await vercel.deployments.createDeployment({
     teamId: VERCEL_TEAM_ID,
     requestBody: {
-      name: params.projectName,
+      name: params.deploymentName,
       project: params.vercelProjectId,
       files: params.files,
       projectSettings: {
@@ -158,4 +158,30 @@ export async function getVercelDeploymentStatus(deploymentId: string): Promise<{
     inspectorUrl: (result as any).inspectorUrl ?? null,
     state: result.status,
   };
+}
+
+/**
+ * Delete a deployment on Vercel.
+ */
+export async function deleteVercelDeployment(
+  vercelDeploymentId: string,
+): Promise<void> {
+  const vercel = getVercelClient();
+  await vercel.deployments.deleteDeployment({
+    id: vercelDeploymentId,
+    teamId: VERCEL_TEAM_ID,
+  });
+}
+
+/**
+ * Delete a Vercel project.
+ */
+export async function deleteVercelProject(
+  vercelProjectId: string,
+): Promise<void> {
+  const vercel = getVercelClient();
+  await vercel.projects.deleteProject({
+    idOrName: vercelProjectId,
+    teamId: VERCEL_TEAM_ID,
+  });
 }

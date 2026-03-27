@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAccount } from "@/provider/account-provider";
 import { getOrganizationDeployments } from "@/lib/deployment/actions";
 import { getProjects } from "@/lib/project/actions";
@@ -18,7 +18,10 @@ import {
   HiOutlineEye,
   HiOutlineArrowTopRightOnSquare,
   HiOutlineArrowPath,
-  HiOutlineFolderOpen,
+  HiOutlinePlus,
+  HiOutlineEllipsisVertical,
+  HiOutlinePencilSquare,
+  HiOutlineTrash,
 } from "react-icons/hi2";
 
 const statusConfig: Record<
@@ -101,8 +104,32 @@ export function Deployment() {
   const [deployments, setDeployments] = useState<DeploymentType[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showDeployModal, setShowDeployModal] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [selectedDeployment, setSelectedDeployment] =
+    useState<DeploymentType | null>(null);
+  const [deployModalProjectId, setDeployModalProjectId] = useState<
+    string | undefined
+  >(undefined);
+  const [openMenuDeploymentId, setOpenMenuDeploymentId] = useState<
+    string | null
+  >(null);
+  const menuContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!openMenuDeploymentId) return;
+    const onOutsideClick = (event: MouseEvent) => {
+      if (
+        menuContainerRef.current &&
+        !menuContainerRef.current.contains(event.target as Node)
+      ) {
+        setOpenMenuDeploymentId(null);
+      }
+    };
+    document.addEventListener("mousedown", onOutsideClick);
+    return () => document.removeEventListener("mousedown", onOutsideClick);
+  }, [openMenuDeploymentId]);
 
   useEffect(() => {
     if (accountLoading || !organization?.organization_id) return;
@@ -128,16 +155,51 @@ export function Deployment() {
     setLoading(false);
   };
 
-  const handleDeployProject = (project: Project) => {
-    setSelectedProject(project);
+  const handleOpenDeployModal = (projectId?: string) => {
+    setDeployModalProjectId(projectId);
     setShowDeployModal(true);
   };
 
   const handleDeployModalClose = () => {
     setShowDeployModal(false);
-    setSelectedProject(null);
+    setDeployModalProjectId(undefined);
     // Refresh deployments after modal closes
     refresh();
+  };
+
+  const handleDeleteClick = (deployment: DeploymentType) => {
+    setOpenMenuDeploymentId(null);
+    setSelectedDeployment(deployment);
+    setShowDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedDeployment) return;
+
+    setDeleting(true);
+    try {
+      const res = await fetch("/api/deploy", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          deploymentId: selectedDeployment.deployment_id,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed to delete deployment");
+      }
+
+      setShowDeleteDialog(false);
+      setSelectedDeployment(null);
+      await refresh();
+    } catch (err) {
+      console.error("[deployment] delete failed:", err);
+      alert(err instanceof Error ? err.message : "Failed to delete deployment");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const isEmpty = !loading && deployments.length === 0;
@@ -156,16 +218,26 @@ export function Deployment() {
             </p>
           </div>
           {!isEmpty && (
-            <button
-              onClick={refresh}
-              disabled={loading}
-              className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-surface-elevated transition-colors disabled:opacity-50"
-            >
-              <HiOutlineArrowPath
-                className={`size-4 ${loading ? "animate-spin" : ""}`}
-              />
-              Refresh
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={refresh}
+                disabled={loading}
+                className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-surface-elevated transition-colors disabled:opacity-50"
+              >
+                <HiOutlineArrowPath
+                  className={`size-4 ${loading ? "animate-spin" : ""}`}
+                />
+                Refresh
+              </button>
+
+              <button
+                onClick={() => handleOpenDeployModal()}
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-3.5 py-1.5 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
+              >
+                <HiOutlinePlus className="size-4" />
+                New Deployment
+              </button>
+            </div>
           )}
         </div>
 
@@ -198,61 +270,25 @@ export function Deployment() {
                 No deployments yet
               </h3>
               <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-                Select a project below to deploy it to Vercel.
+                Create your first deployment in a few clicks.
               </p>
+              <button
+                onClick={() => handleOpenDeployModal()}
+                className="mt-6 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
+              >
+                <HiOutlinePlus className="size-4" />
+                New Deployment
+              </button>
             </div>
-
-            {/* Project picker */}
-            {projects.length > 0 && (
-              <div className="border-t border-border">
-                <div className="px-5 py-3 sm:px-6">
-                  <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Your Projects
-                  </h4>
-                </div>
-                <div className="divide-y divide-border">
-                  {projects.map((project) => (
-                    <div
-                      key={project.project_id}
-                      className="flex items-center gap-4 px-5 py-3.5 sm:px-6 hover:bg-surface-elevated/50 transition-colors"
-                    >
-                      <div className="flex size-9 items-center justify-center rounded-lg bg-surface-elevated shrink-0">
-                        <HiOutlineFolderOpen className="size-4 text-muted-foreground" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">
-                          {project.title}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {formatDate(project.updated_at)}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => handleDeployProject(project)}
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90 transition-opacity shrink-0"
-                      >
-                        <HiOutlineRocketLaunch className="size-3.5" />
-                        Deploy
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {projects.length === 0 && (
-              <div className="border-t border-border px-6 py-8 text-center">
-                <p className="text-sm text-muted-foreground">
-                  No projects found. Create a project in the workspace first.
-                </p>
-              </div>
-            )}
           </div>
         )}
 
         {/* Deployment list */}
         {!loading && deployments.length > 0 && (
-          <div className="mt-8 overflow-hidden rounded-xl border border-border bg-surface divide-y divide-border">
+          <div
+            ref={menuContainerRef}
+            className="mt-8 overflow-visible rounded-xl border border-border bg-surface divide-y divide-border"
+          >
             {deployments.map((dep) => (
               <div
                 key={dep.deployment_id}
@@ -300,17 +336,51 @@ export function Deployment() {
                       <HiOutlineArrowTopRightOnSquare className="size-4" />
                     </a>
                   )}
-                  {dep.inspector_url && (
-                    <a
-                      href={dep.inspector_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+
+                  <div className="relative">
+                    <button
+                      onClick={() =>
+                        setOpenMenuDeploymentId((current) =>
+                          current === dep.deployment_id
+                            ? null
+                            : dep.deployment_id,
+                        )
+                      }
                       className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface-elevated transition-colors"
-                      title="Build logs"
+                      title="Deployment actions"
                     >
-                      <HiOutlineEye className="size-4" />
-                    </a>
-                  )}
+                      <HiOutlineEllipsisVertical className="size-4" />
+                    </button>
+
+                    {openMenuDeploymentId === dep.deployment_id && (
+                      <div className="absolute right-0 top-full z-50 mt-2 w-52 rounded-xl border border-border bg-surface shadow-xl p-1.5 animate-in fade-in zoom-in-95 duration-150">
+                        <button
+                          onClick={() => {
+                            setOpenMenuDeploymentId(null);
+                            handleOpenDeployModal(dep.project_id);
+                          }}
+                          className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground hover:bg-surface-elevated transition-colors"
+                        >
+                          <HiOutlineArrowPath className="size-4 text-muted-foreground" />
+                          Update Deployment
+                        </button>
+                        <button
+                          onClick={() => setOpenMenuDeploymentId(null)}
+                          className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground hover:bg-surface-elevated transition-colors"
+                        >
+                          <HiOutlinePencilSquare className="size-4 text-muted-foreground" />
+                          Edit Deployment
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(dep)}
+                          className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-500/10 transition-colors"
+                        >
+                          <HiOutlineTrash className="size-4" />
+                          Delete Deployment
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -321,10 +391,50 @@ export function Deployment() {
       <DeployModal
         open={showDeployModal}
         onClose={handleDeployModalClose}
-        projectId={selectedProject?.project_id}
+        projectId={deployModalProjectId}
         organizationId={organization?.organization_id}
         userId={user?.id}
+        projects={projects}
       />
+
+      {showDeleteDialog && selectedDeployment && (
+        <div className="fixed inset-0 z-70 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-2xl border border-border bg-surface shadow-2xl p-6 animate-in fade-in zoom-in-95 duration-150">
+            <h3 className="text-lg font-semibold text-foreground">
+              Delete deployment?
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              This will delete the deployment from Vercel and remove it from
+              your records.
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Deployment:{" "}
+              {selectedDeployment.deployment_name ||
+                selectedDeployment.deployment_id.slice(0, 8)}
+            </p>
+
+            <div className="mt-6 flex items-center justify-end gap-2">
+              <button
+                onClick={() => {
+                  if (deleting) return;
+                  setShowDeleteDialog(false);
+                  setSelectedDeployment(null);
+                }}
+                className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-surface-elevated transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                disabled={deleting}
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+              >
+                {deleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

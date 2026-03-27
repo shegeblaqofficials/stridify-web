@@ -163,3 +163,65 @@ export async function getOrganizationDeployments(
   if (error || !data) return [];
   return data as Deployment[];
 }
+
+export async function countOtherDeploymentsForVercelProject(
+  vercelProjectId: string,
+  excludeDeploymentId: string,
+): Promise<number> {
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from("deployments")
+    .select("id", { count: "exact", head: true })
+    .eq("vercel_project_id", vercelProjectId)
+    .neq("deployment_id", excludeDeploymentId);
+
+  if (error) {
+    console.error(
+      "[deployment] Error counting project deployments:",
+      error.message,
+    );
+    return 0;
+  }
+
+  return count ?? 0;
+}
+
+export async function deleteDeploymentRecord(
+  deploymentId: string,
+): Promise<boolean> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("deployments")
+    .delete()
+    .eq("deployment_id", deploymentId);
+
+  if (error) {
+    console.error(
+      "[deployment] Error deleting deployment record:",
+      error.message,
+    );
+    return false;
+  }
+
+  return true;
+}
+
+export async function deleteVercelProjectRecord(
+  vercelProjectId: string,
+): Promise<boolean> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("vercel_projects")
+    .delete()
+    .eq("vercel_project_id", vercelProjectId);
+
+  if (error) {
+    console.error(
+      "[deployment] Error deleting vercel project record:",
+      error.message,
+    );
+    return false;
+  }
+
+  return true;
+}

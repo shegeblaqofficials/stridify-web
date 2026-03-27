@@ -5,11 +5,17 @@ import {
   getVercelProjectByProjectId,
   createVercelProjectRecord,
   createDeploymentRecord,
+  getDeployment,
+  deleteDeploymentRecord,
+  deleteVercelProjectRecord,
+  countOtherDeploymentsForVercelProject,
 } from "@/lib/deployment/actions";
 import {
   createVercelProject,
   readSandboxFiles,
   createVercelDeployment,
+  deleteVercelDeployment,
+  deleteVercelProject,
 } from "@/lib/vercel/deploy";
 import {
   createSandboxFromSnapshot,
@@ -32,12 +38,17 @@ export async function POST(req: NextRequest) {
       organizationId: string;
       userId: string;
       environment?: DeploymentEnvironment;
-      deploymentName?: string;
+      deploymentName: string;
     };
 
-    if (!projectId || !organizationId || !userId) {
+    const normalizedDeploymentName = deploymentName?.trim();
+
+    if (!projectId || !organizationId || !userId || !normalizedDeploymentName) {
       return Response.json(
-        { error: "Missing required fields: projectId, organizationId, userId" },
+        {
+          error:
+            "Missing required fields: projectId, organizationId, userId, deploymentName",
+        },
         { status: 400 },
       );
     }
@@ -93,19 +104,19 @@ export async function POST(req: NextRequest) {
     let vercelProject = await getVercelProjectByProjectId(projectId);
 
     if (!vercelProject) {
-      // First deployment — create a new Vercel project
-      const safeName = (project.title || "stridify-project")
+      // First deployment — create a new Vercel project using deployment name
+      const safeName = normalizedDeploymentName
         .toLowerCase()
         .replace(/[^a-z0-9-]/g, "-")
         .replace(/-+/g, "-")
         .replace(/^-|-$/g, "")
         .slice(0, 50);
 
-      const uniqueName = `${safeName}-${projectId.slice(0, 8)}`;
+      const projectName = safeName || `deployment-${projectId.slice(0, 8)}`;
 
-      console.log(`[deploy] Creating Vercel project: ${uniqueName}`);
+      console.log(`[deploy] Creating Vercel project: ${projectName}`);
       const { vercelProjectId, vercelProjectName } =
-        await createVercelProject(uniqueName);
+        await createVercelProject(projectName);
 
       vercelProject = await createVercelProjectRecord({
         vercelProjectId,
@@ -141,7 +152,7 @@ export async function POST(req: NextRequest) {
     const target = environment === "production" ? "production" : undefined;
     const deployment = await createVercelDeployment({
       vercelProjectId: vercelProject.vercel_project_id,
-      projectName: vercelProject.vercel_project_name,
+      deploymentName: normalizedDeploymentName,
       files,
       target,
     });
@@ -166,7 +177,7 @@ export async function POST(req: NextRequest) {
       status: statusMap[deployment.readyState] || "queued",
       url: deployment.url ?? undefined,
       inspectorUrl: deployment.inspectorUrl ?? undefined,
-      deploymentName: deploymentName ?? undefined,
+      deploymentName: normalizedDeploymentName,
       createdByUserId: userId,
     });
 
@@ -186,6 +197,76 @@ export async function POST(req: NextRequest) {
     console.error("[deploy] Error:", err);
     return Response.json(
       { error: err?.message || "Deployment failed" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { deploymentId } = body as { deploymentId?: string };
+
+    if (!deploymentId) {
+      return Response.json(
+        { error: "Missing required field: deploymentId" },
+        { status: 400 },
+      );
+    }
+
+    const deployment = await getDeployment(deploymentId);
+    if (!deployment) {
+      return Response.json({ error: "Deployment not found" }, { status: 404 });
+    }
+
+    // 1) Delete the Vercel deployment
+    await deleteVercelDeployment(deployment.vercel_deployment_id);
+
+    // 2) Delete deployment DB record
+    const deletedDeployment = await deleteDeploymentRecord(deploymentId);
+    if (!deletedDeployment) {
+      return Response.json(
+        { error: "Failed to delete deployment record" },
+        { status: 500 },
+      );
+    }
+
+    // 3) If no more deployments exist for this Vercel project, delete the project + mapping
+    const remaining = await countOtherDeploymentsForVercelProject(
+      deployment.vercel_project_id,
+      deploymentId,
+    );
+
+    let deletedVercelProject = false;
+
+    if (remaining === 0) {
+      await deleteVercelProject(deployment.vercel_project_id);
+      deletedVercelProject = true;
+
+      const deletedMapping = await deleteVercelProjectRecord(
+        deployment.vercel_project_id,
+      );
+
+      if (!deletedMapping) {
+        return Response.json(
+          {
+            error:
+              "Deployment deleted, but failed to remove Vercel project mapping",
+          },
+          { status: 500 },
+        );
+      }
+    }
+
+    return Response.json({
+      success: true,
+      deploymentId,
+      deletedVercelProject,
+    });
+  } catch (err: any) {
+    console.error("[deploy] Delete error:", err);
+    return Response.json(
+      { error: err?.message || "Failed to delete deployment" },
       { status: 500 },
     );
   }
