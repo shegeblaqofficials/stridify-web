@@ -14,9 +14,9 @@ export function PartnersSection() {
       <div className="mx-auto max-w-7xl">
         <p
           data-aos="fade-up"
-          className="text-center text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground"
+          className="text-center text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground"
         >
-          Powered by world class AI infrastructure
+          Powered by world-class infrastructure
         </p>
 
         <div

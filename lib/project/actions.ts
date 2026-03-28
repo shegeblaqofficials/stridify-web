@@ -1,6 +1,10 @@
 "use server";
 
-import type { Project, AgentType } from "@/model/project/project";
+import type {
+  Project,
+  AgentType,
+  ProjectAccessType,
+} from "@/model/project/project";
 import type { Prompt } from "@/model/project/prompt";
 import { createClient } from "../supabase/server";
 import { cookies } from "next/headers";
@@ -12,11 +16,15 @@ import { deleteChatMessages } from "@/lib/redis/chat";
 
 const PENDING_PROMPT_COOKIE = "pendingPrompt";
 
-export async function setPendingPrompt(prompt: string, agentType: string) {
+export async function setPendingPrompt(
+  prompt: string,
+  agentType: string,
+  accessType: string = "public",
+) {
   const cookieStore = await cookies();
   cookieStore.set(
     PENDING_PROMPT_COOKIE,
-    JSON.stringify({ prompt, agentType }),
+    JSON.stringify({ prompt, agentType, accessType }),
     {
       path: "/",
       httpOnly: true,
@@ -38,7 +46,7 @@ export async function createProjectFromPendingPrompt(
   cookieStore.delete(PENDING_PROMPT_COOKIE);
 
   try {
-    const { prompt, agentType } = JSON.parse(raw);
+    const { prompt, agentType, accessType } = JSON.parse(raw);
     if (!prompt) return null;
     return createProject(
       organizationId,
@@ -46,6 +54,7 @@ export async function createProjectFromPendingPrompt(
       prompt.slice(0, 80),
       agentType || "web",
       prompt,
+      accessType || "public",
     );
   } catch {
     return null;
@@ -58,6 +67,7 @@ export async function createProject(
   title: string,
   agentType: AgentType,
   promptContent: string,
+  accessType: ProjectAccessType = "public",
 ): Promise<{ project: Project; prompt: Prompt } | null> {
   const supabase = await createClient();
 
@@ -70,6 +80,7 @@ export async function createProject(
       agent_type: agentType,
       created_by_user_id: user_id,
       status: "draft",
+      access_type: accessType,
     })
     .select()
     .single();

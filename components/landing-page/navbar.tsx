@@ -56,10 +56,7 @@ export function Navbar() {
             <span className="text-base font-bold uppercase tracking-widest">
               Stridify
             </span>
-            <span
-              className="rounded-md border border-foreground/30 px-2 py-[3px] text-[9px] font-bold uppercase leading-none tracking-wide dark:border-primary/50"
-              style={{ color: "var(--foreground)" }}
-            >
+            <span className="rounded-md border border-border px-2 py-0.75 text-[9px] font-bold uppercase leading-none tracking-wide text-muted-foreground">
               Beta
             </span>
           </Link>

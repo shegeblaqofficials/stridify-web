@@ -1,68 +1,86 @@
 import {
-  HiOutlineChatBubbleBottomCenterText,
-  HiOutlineCpuChip,
-  HiOutlineRocketLaunch,
+  HiOutlineGlobeAlt,
+  HiOutlinePhone,
+  HiOutlineCodeBracketSquare,
+  HiOutlineBolt,
+  HiOutlineShieldCheck,
+  HiOutlineArrowPath,
 } from "react-icons/hi2";
 
-const steps = [
+const capabilities = [
   {
-    icon: HiOutlineChatBubbleBottomCenterText,
-    title: "Prompt",
+    icon: HiOutlineGlobeAlt,
+    title: "Web Apps",
     description:
-      "Share your agent’s vibe, goals, and workflow in your own words with no code needed.",
-    color: "bg-primary/10 text-primary ring-primary/20",
+      "Deploy voice agents as full web applications with custom domains and instant global CDN.",
   },
   {
-    icon: HiOutlineCpuChip,
-    title: "Build",
+    icon: HiOutlinePhone,
+    title: "Telephony",
     description:
-      "Stridify spins up your agent, builds the voice interface, and connects the logic instantly.",
-    color: "bg-secondary/10 text-secondary ring-secondary/20",
+      "Connect your agent to a phone number. Customers call in and talk directly with no extra setup.",
   },
   {
-    icon: HiOutlineRocketLaunch,
-    title: "Deploy",
+    icon: HiOutlineCodeBracketSquare,
+    title: "Embeddable Widget",
     description:
-      "Go live in minutes and launch to our cloud, use as an API, or drop into your app or website.",
-    color: "bg-accent/10 text-accent ring-accent/20",
+      "Drop a voice widget into any existing site with a single script tag. Works everywhere.",
+  },
+  {
+    icon: HiOutlineBolt,
+    title: "Real Time Response",
+    description:
+      "Optimized voice streaming pipeline delivers sub-200ms latency so responses feel natural and instant.",
+  },
+  {
+    icon: HiOutlineShieldCheck,
+    title: "Enterprise Ready",
+    description:
+      "SOC 2 compliant infrastructure with end-to-end encryption, SSO, and audit logging built in.",
+  },
+  {
+    icon: HiOutlineArrowPath,
+    title: "Iterate with Prompts",
+    description:
+      "Refine your agent with follow-up prompts. Change behavior, add features, and redeploy in seconds.",
   },
 ];
 
 export function HowItWorksSection() {
   return (
-    <section id="how-it-works" className="px-6 py-24 bg-section-alt">
-      <div className="mx-auto max-w-7xl">
+    <section id="how-it-works" className="px-6 py-24 md:py-32 bg-section-alt">
+      <div className="mx-auto max-w-6xl">
         {/* Header */}
-        <div data-aos="fade-up" className="text-center">
-          <h2 className="text-4xl font-black tracking-tight md:text-5xl">
-            Three Steps. One Voice Agent.
+        <div data-aos="fade-up" className="text-center mb-16 md:mb-20">
+          <p className="text-sm font-medium text-muted-foreground mb-4">
+            Capabilities
+          </p>
+          <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
+            Built for every channel
           </h2>
-          <p className="mx-auto mt-4 max-w-xl text-lg text-muted-foreground">
-            Go from idea to live, production ready voice agent in minutes with
-            no backend setup and complex integrations.
+          <p className="mx-auto mt-4 max-w-lg text-base text-muted-foreground leading-relaxed">
+            One platform, every deployment target. Build once and ship to web,
+            phone, or widget.
           </p>
         </div>
 
-        {/* Steps */}
-        <div className="relative mt-20 grid grid-cols-1 gap-16 md:grid-cols-3 md:gap-8">
-          {/* Connecting line */}
-          <div className="pointer-events-none absolute left-[calc(16.67%+28px)] right-[calc(16.67%+28px)] top-9 hidden h-px bg-border md:block" />
-
-          {steps.map((step, i) => (
+        {/* Grid */}
+        <div className="grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-3">
+          {capabilities.map((cap, i) => (
             <div
-              key={step.title}
+              key={cap.title}
               data-aos="fade-up"
-              data-aos-delay={String(i * 150)}
-              className="flex flex-col items-center text-center"
+              data-aos-delay={String(i * 60)}
+              className="group rounded-2xl p-8 transition-colors duration-200 hover:bg-white dark:hover:bg-[#1a1a1f]"
             >
-              <div
-                className={`relative z-10 flex h-18 w-18 items-center justify-center rounded-2xl ring-1 ${step.color}`}
-              >
-                <step.icon className="h-7 w-7" />
+              <div className="mb-4 inline-flex size-10 items-center justify-center rounded-xl bg-foreground/5">
+                <cap.icon className="size-5 text-foreground" />
               </div>
-              <h3 className="mt-6 text-lg font-bold">{step.title}</h3>
-              <p className="mt-2 max-w-xs text-sm leading-relaxed text-muted-foreground">
-                {step.description}
+              <h3 className="text-base font-semibold text-foreground">
+                {cap.title}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                {cap.description}
               </p>
             </div>
           ))}

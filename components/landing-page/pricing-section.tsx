@@ -23,11 +23,11 @@ const plans: Plan[] = [
   {
     name: "Starter",
     price: "$0",
-    suffix: "/mo",
+    suffix: " per month",
     description:
       "Build your first voice agent for free, perfect for experimenting.",
     features: [
-      { label: "1,000 credits / month", included: true },
+      { label: "1,000 credits per month", included: true },
       { label: "Access to standard voice models", included: true },
       { label: "Community support", included: true },
       { label: "Custom voice training", included: false },
@@ -38,11 +38,11 @@ const plans: Plan[] = [
   {
     name: "Professional",
     price: "$29",
-    suffix: "/mo",
+    suffix: " per month",
     description:
       "For builders shipping voice agents to real users, with cloud hosting, and priority support.",
     features: [
-      { label: "10,000 credits / month", included: true },
+      { label: "10,000 credits per month", included: true },
       { label: "Custom voice models", included: true },
       { label: "Advanced platform features", included: true },
       { label: "Priority support", included: true },
@@ -54,11 +54,11 @@ const plans: Plan[] = [
   {
     name: "Team",
     price: "$79",
-    suffix: "/mo",
+    suffix: " per month",
     description:
       "For teams building multiple agents together with shared workspaces and usage insights.",
     features: [
-      { label: "100,000 credits / month", included: true },
+      { label: "100,000 credits per month", included: true },
       { label: "Everything in Pro", included: true },
       { label: "Up to 5 team members", included: true },
       { label: "Shared agent workspace", included: true },
@@ -86,15 +86,18 @@ export function PricingSection() {
   const [selectedPlan, setSelectedPlan] = useState("Professional");
 
   return (
-    <section id="pricing" className="px-6 py-24 bg-section-alt">
+    <section id="pricing" className="px-6 py-24">
       {/* Header */}
       <div data-aos="fade-up" className="mx-auto max-w-3xl text-center">
-        <h2 className="text-4xl font-bold tracking-tight md:text-5xl">
-          Pricing that grows with you.
+        <p className="text-sm font-medium text-muted-foreground mb-4">
+          Pricing
+        </p>
+        <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
+          Pricing that grows with you
         </h2>
-        <p className="mx-auto mt-5 max-w-2xl text-lg text-muted-foreground">
-          Start free, build your first voice agent today, and scale to
-          production when you’re ready. No surprise fees.
+        <p className="mx-auto mt-5 max-w-2xl text-base text-muted-foreground leading-relaxed">
+          Start free and scale to production when you're ready. No surprise
+          fees.
         </p>
       </div>
 
@@ -118,29 +121,13 @@ export function PricingSection() {
       {/* Compare CTA */}
       <div data-aos="fade-up" className="mx-auto mt-14 max-w-xl text-center">
         <p className="text-sm leading-relaxed text-muted-foreground">
-          <span className="text-foreground">
-            All plans are flexible — upgrade, downgrade, or cancel anytime. No
-            lock-in, no hidden fees.
-          </span>
+          All plans are flexible. Upgrade, downgrade, or cancel anytime.
         </p>
         <Link
           href="/pricing"
-          className="mt-4 inline-flex items-center gap-2 rounded-full border border-border bg-surface px-5 py-2.5 text-sm font-semibold transition-all hover:border-muted-foreground/50 hover:shadow-sm"
+          className="mt-4 inline-block text-sm font-medium text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground"
         >
-          Compare all features
-          <svg
-            className="h-4 w-4"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M5 12h14" />
-            <path d="m12 5 7 7-7 7" />
-          </svg>
+          Compare all features &rarr;
         </Link>
       </div>
     </section>
@@ -160,14 +147,14 @@ function PricingCard({
     <article
       onClick={onSelect}
       className={[
-        "glass-card relative flex cursor-pointer flex-col rounded-xl p-8 transition-all",
+        "glass-card relative flex cursor-pointer flex-col rounded-xl p-8 transition-all duration-300",
         isSelected
-          ? "border-primary shadow-[0_0_30px_rgba(17,82,212,0.12)] ring-1 ring-primary/30"
-          : "hover:border-muted-foreground/30",
+          ? "border-foreground/20 bg-surface-elevated shadow-[0_0_0_1px_var(--foreground)_/_0.08] scale-[1.02]"
+          : "hover:border-foreground/15 hover:bg-surface-elevated/50 hover:shadow-sm",
       ].join(" ")}
     >
       {plan.highlighted && (
-        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-accent px-3 py-1 text-[10px] font-bold uppercase tracking-tight text-accent-foreground">
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full border border-foreground/15 bg-foreground px-3 py-1 text-[10px] font-bold uppercase tracking-tight text-background">
           Most Popular
         </span>
       )}

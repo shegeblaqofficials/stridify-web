@@ -1,5 +1,7 @@
 export type AgentType = "web" | "telephony" | "widget" | "mobile";
 
+export type ProjectAccessType = "public" | "private";
+
 export type ProjectStatus = "draft" | "building" | "ready" | "deployed";
 
 export interface Project {
@@ -14,4 +16,5 @@ export interface Project {
   created_by_user_id: string;
   created_at: string;
   updated_at: string;
+  access_type: ProjectAccessType;
 }

@@ -11,7 +11,7 @@ const faqs: FaqItem[] = [
   {
     question: "What is vibe coding?",
     answer:
-      "Vibe coding is a new way to build software by describing what you want in natural language instead of writing code. On Stridify, you write a prompt, and our platform generates a fully working voice agent — complete with conversation logic, AI models, and a live interface you can test immediately.",
+      "Vibe coding is a new way to build software by describing what you want in natural language instead of writing code. On Stridify, you write a prompt, and our platform generates a fully working voice agent with everything you need: conversation logic, AI models, and a live interface you can test immediately.",
   },
   {
     question: "What can I build with Stridify?",
@@ -21,7 +21,7 @@ const faqs: FaqItem[] = [
   {
     question: "Do I need to know how to code?",
     answer:
-      "Not at all. Stridify is built for anyone with an idea. You describe what your voice agent should do in plain English, and the platform handles the rest — from wiring up AI models to generating the UI and deploying to the cloud.",
+      "Not at all. Stridify is built for anyone with an idea. You describe what your voice agent should do in plain English, and the platform handles everything else, from setting up AI models to generating the UI and deploying to the cloud.",
   },
   {
     question: "How do I deploy my voice agent?",
@@ -41,23 +41,25 @@ const faqs: FaqItem[] = [
   {
     question: "Can I switch plans at any time?",
     answer:
-      "Yes — all plans are flexible. You can upgrade, downgrade, or cancel at any time. Changes take effect immediately and billing is prorated automatically.",
+      "Yes, all plans are flexible and you can upgrade, downgrade, or cancel at any time. Changes take effect immediately and billing is prorated automatically.",
   },
 ];
 
 export function FaqSection() {
   return (
-    <section id="faq" className="px-6 py-24 bg-section-alt">
-      <h2
-        data-aos="fade-up"
-        className="mb-12 text-center text-3xl font-bold tracking-tight"
-      >
-        Frequently Asked Questions
-      </h2>
+    <section id="faq" className="px-6 py-24">
+      <div data-aos="fade-up" className="mx-auto max-w-3xl text-center">
+        <p className="text-sm font-medium text-muted-foreground mb-4">
+          Support
+        </p>
+        <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
+          Frequently asked questions
+        </h2>
+      </div>
       <div
         data-aos="fade-up"
         data-aos-delay="150"
-        className="mx-auto max-w-3xl divide-y divide-border"
+        className="mx-auto mt-12 max-w-3xl divide-y divide-border"
       >
         {faqs.map((faq) => (
           <FaqRow key={faq.question} faq={faq} />

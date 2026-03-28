@@ -1,15 +1,12 @@
 import {
-  HiOutlineChatBubbleBottomCenterText,
-  HiOutlineEye,
-  HiOutlineCloudArrowUp,
   HiOutlineUser,
   HiOutlineCpuChip,
   HiOutlineCheckCircle,
   HiOutlinePaperAirplane,
-  HiOutlineSparkles,
   HiOutlineGlobeAlt,
   HiOutlineArrowTrendingUp,
   HiOutlineSignal,
+  HiOutlineArrowRight,
 } from "react-icons/hi2";
 import Link from "next/link";
 
@@ -19,15 +16,14 @@ import Link from "next/link";
 function ChatBuilderMockup() {
   return (
     <div className="relative w-full max-w-lg mx-auto">
-      <div className="rounded-2xl border border-border bg-surface shadow-xl overflow-hidden">
-        {/* Mini chat messages */}
+      <div className="rounded-2xl border border-border bg-surface overflow-hidden">
         <div className="p-5 md:p-6 space-y-4">
           {/* User message */}
           <div className="flex gap-3 items-start">
-            <div className="size-8 rounded-full bg-surface-elevated flex items-center justify-center shrink-0">
-              <HiOutlineUser className="size-4 text-muted-foreground" />
+            <div className="size-7 rounded-full bg-surface-elevated flex items-center justify-center shrink-0">
+              <HiOutlineUser className="size-3.5 text-muted-foreground" />
             </div>
-            <div className="bg-surface-elevated border border-border rounded-xl rounded-tl-none px-4 py-2.5 text-sm text-foreground leading-relaxed">
+            <div className="bg-surface-elevated rounded-xl rounded-tl-none px-4 py-2.5 text-sm text-foreground leading-relaxed">
               Build a customer support agent for an e-commerce store that
               handles returns and order tracking.
             </div>
@@ -35,38 +31,35 @@ function ChatBuilderMockup() {
 
           {/* System logs */}
           <div className="flex gap-3 items-start">
-            <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <HiOutlineCpuChip className="size-4 text-primary" />
+            <div className="size-7 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
+              <HiOutlineCpuChip className="size-3.5 text-accent" />
             </div>
             <div className="flex-1 space-y-2">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                System Logs
+              <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                Build Log
               </p>
               <div className="flex items-center gap-2.5 text-xs">
-                <HiOutlineCheckCircle className="size-4 text-green-500 shrink-0" />
+                <HiOutlineCheckCircle className="size-3.5 text-green-500 shrink-0" />
                 <span className="text-muted-foreground">
-                  Generating voice pipeline...
+                  Generating voice pipeline
                 </span>
-                <span className="ml-auto text-[10px] text-muted-foreground/60">
+                <span className="ml-auto text-[10px] text-muted-foreground/50 font-mono">
                   0.6s
                 </span>
               </div>
               <div className="flex items-center gap-2.5 text-xs">
-                <HiOutlineCheckCircle className="size-4 text-green-500 shrink-0" />
+                <HiOutlineCheckCircle className="size-3.5 text-green-500 shrink-0" />
                 <span className="text-muted-foreground">
-                  Configuring LLM context...
+                  Configuring LLM context
                 </span>
-                <span className="ml-auto text-[10px] text-muted-foreground/60">
+                <span className="ml-auto text-[10px] text-muted-foreground/50 font-mono">
                   1.2s
                 </span>
               </div>
               <div className="flex items-center gap-2.5 text-xs">
-                <div className="size-4 rounded-full border-2 border-primary border-t-transparent animate-spin shrink-0" />
+                <div className="size-3.5 rounded-full border-2 border-foreground/30 border-t-transparent animate-spin shrink-0" />
                 <span className="text-foreground font-medium">
-                  Wiring API integrations...
-                </span>
-                <span className="ml-auto text-[10px] text-muted-foreground/60">
-                  In progress
+                  Wiring integrations...
                 </span>
               </div>
             </div>
@@ -74,10 +67,10 @@ function ChatBuilderMockup() {
 
           {/* AI response */}
           <div className="flex gap-3 items-start">
-            <div className="size-8 invisible shrink-0" />
-            <div className="bg-primary/5 border border-primary/20 rounded-xl px-4 py-2.5 text-sm text-foreground leading-relaxed">
-              Your support agent is ready! It can handle return requests, track
-              orders, and escalate to human agents.
+            <div className="size-7 invisible shrink-0" />
+            <div className="bg-accent/5 border border-accent/15 rounded-xl px-4 py-2.5 text-sm text-foreground leading-relaxed">
+              Your support agent is ready. It handles returns, tracks orders,
+              and escalates to human agents.
             </div>
           </div>
         </div>
@@ -85,12 +78,12 @@ function ChatBuilderMockup() {
         {/* Input bar */}
         <div className="px-5 pb-5 md:px-6 md:pb-6">
           <div className="relative">
-            <div className="w-full rounded-xl bg-surface-elevated border border-border px-4 py-3 text-sm text-muted-foreground">
+            <div className="w-full rounded-xl bg-surface-elevated px-4 py-3 text-sm text-muted-foreground/50">
               Describe the feature you want to build...
             </div>
             <div className="absolute right-3 top-1/2 -translate-y-1/2">
-              <div className="size-7 rounded-lg bg-primary flex items-center justify-center">
-                <HiOutlinePaperAirplane className="size-3.5 text-primary-foreground" />
+              <div className="size-7 rounded-lg bg-foreground flex items-center justify-center">
+                <HiOutlinePaperAirplane className="size-3.5 text-background" />
               </div>
             </div>
           </div>
@@ -106,74 +99,79 @@ function ChatBuilderMockup() {
 function LivePreviewMockup() {
   return (
     <div className="relative w-full max-w-lg mx-auto">
-      <div className="rounded-2xl border border-border bg-surface shadow-xl overflow-hidden">
+      <div className="rounded-2xl border border-border bg-surface overflow-hidden">
         {/* Browser chrome */}
         <div className="h-10 bg-surface-elevated border-b border-border flex items-center px-4 gap-3">
           <div className="flex gap-1.5">
-            <div className="size-2.5 rounded-full bg-danger/40" />
-            <div className="size-2.5 rounded-full bg-accent/40" />
-            <div className="size-2.5 rounded-full bg-secondary/40" />
+            <div className="size-2.5 rounded-full bg-muted-foreground/20" />
+            <div className="size-2.5 rounded-full bg-muted-foreground/20" />
+            <div className="size-2.5 rounded-full bg-muted-foreground/20" />
           </div>
-          <div className="flex-1 max-w-[220px] h-5 bg-background rounded-md px-2.5 flex items-center border border-border">
-            <span className="text-[9px] text-muted-foreground">
-              stridify.app/preview/travel-concierge
+          <div className="flex-1 max-w-55 h-6 bg-background rounded-md px-2.5 flex items-center border border-border">
+            <span className="text-[9px] text-muted-foreground font-mono">
+              stridify.app/travel-concierge
             </span>
           </div>
         </div>
 
-        {/* App preview content — Travel Concierge Agent */}
+        {/* App preview content */}
         <div className="p-6 space-y-5">
           <div className="flex items-center justify-between">
-            <h4 className="text-base font-bold text-foreground">
+            <h4 className="text-sm font-semibold text-foreground">
               Travel Concierge
             </h4>
-            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/10 border border-green-500/20">
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-500/10">
               <div className="size-1.5 rounded-full bg-green-500" />
-              <span className="text-[9px] font-semibold text-green-500">
+              <span className="text-[9px] font-medium text-green-600 dark:text-green-400">
                 Live
               </span>
             </div>
           </div>
 
           {/* Voice visualizer */}
-          <div className="flex items-center justify-center py-6">
+          <div className="flex items-center justify-center py-5">
             <div className="relative">
-              <div className="size-20 rounded-full bg-primary/15 flex items-center justify-center">
-                <div className="size-12 rounded-full bg-primary/30 flex items-center justify-center">
-                  <div className="size-6 rounded-full bg-primary" />
+              <div className="size-16 rounded-full bg-foreground/5 flex items-center justify-center">
+                <div className="size-10 rounded-full bg-foreground/10 flex items-center justify-center">
+                  <div className="size-5 rounded-full bg-foreground" />
                 </div>
               </div>
-              {/* Pulse rings */}
-              <div className="absolute inset-0 rounded-full border border-primary/20 animate-ping" />
+              <div className="absolute inset-0 rounded-full border border-foreground/10 animate-ping" />
             </div>
           </div>
 
           {/* Conversation preview */}
-          <div className="space-y-2.5">
-            <div className="bg-surface-elevated rounded-lg px-4 py-2.5 text-xs text-muted-foreground">
+          <div className="space-y-2">
+            <div className="bg-surface-elevated rounded-lg px-3.5 py-2.5 text-xs text-muted-foreground">
               <span className="text-foreground font-medium">User:</span>{" "}
               &ldquo;Find me a flight to Tokyo next week&rdquo;
             </div>
-            <div className="bg-primary/5 border border-primary/10 rounded-lg px-4 py-2.5 text-xs text-muted-foreground">
-              <span className="text-primary font-medium">Agent:</span> &ldquo;I
-              found 3 flights to Tokyo. The best option departs Tuesday at 10:45
-              AM for $847 — shall I book it?&rdquo;
+            <div className="bg-accent/5 border border-accent/10 rounded-lg px-3.5 py-2.5 text-xs text-muted-foreground">
+              <span className="text-foreground font-medium">Agent:</span>{" "}
+              &ldquo;Found 3 flights. Best option departs Tuesday at 10:45 AM
+              for $847.&rdquo;
             </div>
           </div>
 
           {/* Stats row */}
-          <div className="grid grid-cols-3 gap-3 pt-2">
+          <div className="grid grid-cols-3 gap-3 pt-1">
             <div className="text-center">
-              <p className="text-[11px] text-muted-foreground">Latency</p>
-              <p className="text-sm font-bold text-foreground">120ms</p>
+              <p className="text-[10px] text-muted-foreground">Latency</p>
+              <p className="text-sm font-semibold text-foreground font-mono">
+                120ms
+              </p>
             </div>
             <div className="text-center">
-              <p className="text-[11px] text-muted-foreground">Sessions</p>
-              <p className="text-sm font-bold text-foreground">2.4k</p>
+              <p className="text-[10px] text-muted-foreground">Sessions</p>
+              <p className="text-sm font-semibold text-foreground font-mono">
+                2.4k
+              </p>
             </div>
             <div className="text-center">
-              <p className="text-[11px] text-muted-foreground">Accuracy</p>
-              <p className="text-sm font-bold text-foreground">98.7%</p>
+              <p className="text-[10px] text-muted-foreground">Accuracy</p>
+              <p className="text-sm font-semibold text-foreground font-mono">
+                98.7%
+              </p>
             </div>
           </div>
         </div>
@@ -188,61 +186,63 @@ function LivePreviewMockup() {
 function DeployMockup() {
   return (
     <div className="relative w-full max-w-lg mx-auto">
-      <div className="rounded-2xl border border-border bg-surface shadow-xl overflow-hidden">
+      <div className="rounded-2xl border border-border bg-surface overflow-hidden">
         <div className="p-6 space-y-5">
           {/* Header */}
           <div className="flex items-center justify-between">
-            <h4 className="text-base font-bold text-foreground">Deployment</h4>
-            <span className="text-[10px] font-semibold text-primary bg-primary/10 px-2.5 py-0.5 rounded-full border border-primary/20">
+            <h4 className="text-sm font-semibold text-foreground">
+              Deployment
+            </h4>
+            <span className="text-[10px] font-medium text-accent bg-accent/10 px-2.5 py-0.5 rounded-full">
               Production
             </span>
           </div>
 
           {/* Deploy options as cards */}
-          <div className="space-y-2.5">
-            <div className="flex items-center gap-3.5 p-3.5 rounded-xl border border-primary bg-primary/5">
-              <div className="size-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                <HiOutlineGlobeAlt className="size-4.5 text-primary" />
+          <div className="space-y-2">
+            <div className="flex items-center gap-3.5 p-3 rounded-xl border border-foreground/15 bg-foreground/3">
+              <div className="size-8 rounded-lg bg-foreground/5 flex items-center justify-center">
+                <HiOutlineGlobeAlt className="size-4 text-foreground" />
               </div>
               <div className="flex-1">
-                <p className="text-xs font-semibold text-foreground">
+                <p className="text-xs font-medium text-foreground">
                   Web Application
                 </p>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-[10px] text-muted-foreground font-mono">
                   agent.stridify.app
                 </p>
               </div>
-              <HiOutlineCheckCircle className="size-5 text-primary" />
+              <HiOutlineCheckCircle className="size-4.5 text-foreground" />
             </div>
 
-            <div className="flex items-center gap-3.5 p-3.5 rounded-xl border border-border">
-              <div className="size-9 rounded-lg bg-surface-elevated flex items-center justify-center">
-                <HiOutlineSignal className="size-4.5 text-muted-foreground" />
+            <div className="flex items-center gap-3.5 p-3 rounded-xl border border-border">
+              <div className="size-8 rounded-lg bg-surface-elevated flex items-center justify-center">
+                <HiOutlineSignal className="size-4 text-muted-foreground" />
               </div>
               <div className="flex-1">
-                <p className="text-xs font-semibold text-foreground">
+                <p className="text-xs font-medium text-foreground">
                   API Endpoint
                 </p>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-[10px] text-muted-foreground font-mono">
                   api.stridify.app/v1
                 </p>
               </div>
-              <div className="size-5 rounded-full border-2 border-border" />
+              <div className="size-4.5 rounded-full border-2 border-border" />
             </div>
           </div>
 
           {/* Usage bar */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] text-muted-foreground">
-                Scaling • Auto
+              <span className="text-[10px] text-muted-foreground">
+                Auto scaling
               </span>
-              <span className="text-[11px] font-semibold text-foreground">
-                3 / 10 instances
+              <span className="text-[10px] font-medium text-foreground font-mono">
+                3 / 10
               </span>
             </div>
-            <div className="h-2 w-full rounded-full bg-surface-elevated">
-              <div className="h-full w-[30%] rounded-full bg-primary" />
+            <div className="h-1.5 w-full rounded-full bg-surface-elevated">
+              <div className="h-full w-[30%] rounded-full bg-foreground" />
             </div>
           </div>
 
@@ -255,21 +255,25 @@ function DeployMockup() {
                   Uptime
                 </span>
               </div>
-              <p className="text-base font-bold text-foreground">99.99%</p>
+              <p className="text-sm font-semibold text-foreground font-mono">
+                99.99%
+              </p>
             </div>
             <div className="p-3 rounded-xl bg-surface-elevated">
               <div className="flex items-center gap-1.5 mb-1">
-                <HiOutlineSignal className="size-3.5 text-primary" />
+                <HiOutlineSignal className="size-3.5 text-accent" />
                 <span className="text-[10px] text-muted-foreground">
                   Requests
                 </span>
               </div>
-              <p className="text-base font-bold text-foreground">1.2M/mo</p>
+              <p className="text-sm font-semibold text-foreground font-mono">
+                1.2M/mo
+              </p>
             </div>
           </div>
 
           {/* Deploy button */}
-          <button className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm">
+          <button className="w-full py-2.5 rounded-xl bg-foreground text-background font-medium text-sm transition-colors hover:bg-foreground/90">
             Deploy Now
           </button>
         </div>
@@ -283,40 +287,31 @@ function DeployMockup() {
    ────────────────────────────────────────────── */
 const features = [
   {
-    icon: HiOutlineChatBubbleBottomCenterText,
-    badge: "AI Builder",
-    title: "Design with Natural Language",
-    subtitle: "Prompt driven development",
+    step: "01",
+    title: "Describe your agent in plain English",
     description:
-      "Describe your voice agent in plain English. Stridify gets your intent, builds the conversation flow, and connects the logic with no code needed. Refine your agent instantly with follow-up prompts as you go.",
-    cta: { label: "Start Building", href: "/beta-access" },
+      "Write what your voice agent should do: handle support tickets, book appointments, answer product questions. Stridify understands intent, builds the conversation flow, and wires the logic automatically.",
+    cta: { label: "Start building", href: "/discover" },
     mockup: ChatBuilderMockup,
     reverse: false,
-    bg: "bg-section-alt",
   },
   {
-    icon: HiOutlineEye,
-    badge: "Live Preview",
-    title: "See Changes Instantly",
-    subtitle: "Realtime agent preview",
+    step: "02",
+    title: "Preview and test in real time",
     description:
-      "See your changes live as you build. Test voice interactions, conversation flows, and UI components side by side. No waiting, what you describe is what you get.",
-    cta: { label: "Explore Templates", href: "/templates" },
+      "See your agent come alive as you build. Test voice interactions, conversation flows, and UI side by side. Every change renders instantly. What you describe is what you get.",
+    cta: { label: "Explore templates", href: "/discover" },
     mockup: LivePreviewMockup,
     reverse: true,
-    bg: "bg-section-muted",
   },
   {
-    icon: HiOutlineCloudArrowUp,
-    badge: "Deploy",
-    title: "Ship to Production in One Click",
-    subtitle: "Global infrastructure, zero config",
+    step: "03",
+    title: "Deploy to production in one click",
     description:
-      "Deploy your agent as a web app, mobile PWA, or API endpoint. Stridify takes care of scaling, fast routing, and security, your agent goes from prototype to production in one click.",
-    cta: { label: "View Pricing", href: "/pricing" },
+      "Ship your agent as a web app, embeddable widget, or connect it to a phone number. Stridify handles infrastructure, scaling, and global routing. Zero configuration required.",
+    cta: { label: "View pricing", href: "/pricing" },
     mockup: DeployMockup,
     reverse: false,
-    bg: "bg-section-alt",
   },
 ];
 
@@ -325,55 +320,55 @@ const features = [
    ────────────────────────────────────────────── */
 export function FeaturesSection() {
   return (
-    <section id="features">
+    <section id="features" className="px-6 py-24 md:py-32">
       {/* Section header */}
-      <div className="px-6 py-24 pb-16 bg-background">
-        <div data-aos="fade-up" className="mx-auto max-w-4xl text-center">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20 mb-5">
-            <HiOutlineSparkles className="size-3.5" />
-            Platform
-          </span>
-          <h2 className="text-4xl font-black tracking-tight md:text-5xl lg:text-6xl">
-            Everything You Need to Build
-          </h2>
-          <p className="mx-auto mt-5 max-w-2xl text-lg md:text-xl text-muted-foreground leading-relaxed">
-            A complete workspace to design, test, and deploy production ready
-            live voice agents powered by AI.
-          </p>
-        </div>
+      <div
+        data-aos="fade-up"
+        className="mx-auto max-w-3xl text-center mb-20 md:mb-28"
+      >
+        <p className="text-sm font-medium text-muted-foreground mb-4">
+          How it works
+        </p>
+        <h2 className="text-3xl font-bold tracking-tight md:text-4xl lg:text-5xl">
+          From idea to live agent
+          <br />
+          <span className="text-muted-foreground">in three steps.</span>
+        </h2>
+        <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground leading-relaxed md:text-lg">
+          A complete workspace to design, test, and deploy production ready
+          voice agents. No backend setup, no complex integrations.
+        </p>
       </div>
 
-      {/* Feature blocks — each in its own full-width band */}
-      {features.map((feature, i) => (
-        <div key={feature.title} className={feature.bg}>
+      {/* Feature blocks */}
+      <div className="mx-auto max-w-6xl space-y-24 md:space-y-32">
+        {features.map((feature, i) => (
           <div
+            key={feature.step}
             data-aos="fade-up"
             data-aos-delay={String(i * 80)}
-            className={`mx-auto max-w-7xl px-6 py-20 md:py-28 flex flex-col items-center gap-12 lg:gap-20 ${
+            className={`flex flex-col items-center gap-12 lg:gap-20 ${
               feature.reverse ? "lg:flex-row-reverse" : "lg:flex-row"
             }`}
           >
             {/* Text content */}
-            <div className="flex-1 max-w-xl">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20 mb-5">
-                <feature.icon className="size-4" />
-                {feature.badge}
+            <div className="flex-1 max-w-lg">
+              <span className="step-number text-sm font-medium text-muted-foreground/50 mb-4 block">
+                {feature.step}
               </span>
-              <h3 className="text-3xl font-black tracking-tight md:text-4xl lg:text-[2.75rem] leading-tight">
+              <h3 className="text-2xl font-bold tracking-tight md:text-3xl leading-tight">
                 {feature.title}
               </h3>
-              <p className="mt-3 text-base md:text-lg font-medium text-primary">
-                {feature.subtitle}
-              </p>
-              <p className="mt-5 text-lg text-muted-foreground leading-relaxed">
+              <p className="mt-4 text-base text-muted-foreground leading-relaxed md:text-lg">
                 {feature.description}
               </p>
-              <div className="mt-8">
+              <div className="mt-6">
                 <Link
                   href={feature.cta.href}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl transition-all active:scale-[0.98] border border-border bg-surface text-muted-foreground hover:border-muted-foreground hover:text-foreground px-5 py-2.5 text-sm font-bold"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-foreground transition-colors hover:text-muted-foreground"
                 >
                   {feature.cta.label}
+                  <HiOutlineArrowRight className="size-3.5" />
                 </Link>
               </div>
             </div>
@@ -383,8 +378,8 @@ export function FeaturesSection() {
               <feature.mockup />
             </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </section>
   );
 }

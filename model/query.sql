@@ -24,6 +24,7 @@ CREATE TABLE public.projects (
   sandbox_id character varying,
   status character varying,
   created_by_user_id character varying,
+  access_type character varying,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT project_pkey PRIMARY KEY (id)

@@ -1,36 +1,38 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   color-scheme: light;
 
   /* Base */
-  --background: #f7f8fc;
-  --foreground: #111827;
+  --background: #fafafa;
+  --foreground: #0a0a0a;
 
   /* Surfaces */
   --surface: #ffffff;
-  --surface-elevated: #eef2ff;
+  --surface-elevated: #f4f4f5;
 
   /* Content */
-  --muted-foreground: #4b5563;
+  --muted-foreground: #71717a;
 
   /* UI */
-  --border: #dbe2f1;
-  --ring: #4f46e5;
+  --border: #e4e4e7;
+  --ring: #18181b;
 
   /* Brand + semantic */
-  --primary: #1152d4;
-  --primary-foreground: #ffffff;
-  --secondary: #14b8a6;
-  --secondary-foreground: #042f2e;
-  --accent: #f59e0b;
-  --accent-foreground: #3b2200;
+  --primary: #18181b;
+  --primary-foreground: #fafafa;
+  --secondary: #09090b;
+  --secondary-foreground: #fafafa;
+  --accent: #6366f1;
+  --accent-foreground: #ffffff;
   --danger: #ef4444;
   --danger-foreground: #fff1f2;
 
   /* Section alternates */
-  --section-alt: #edf0f7;
-  --section-muted: #e5e9f2;
+  --section-alt: #f4f4f5;
+  --section-muted: #fafafa;
 }
 
 @theme inline {
@@ -59,33 +61,33 @@
   color-scheme: dark;
 
   /* Base */
-  --background: #0a0a0b;
-  --foreground: #cbd5e1;
+  --background: #09090b;
+  --foreground: #fafafa;
 
   /* Surfaces */
-  --surface: #111114;
+  --surface: #0f0f12;
   --surface-elevated: #18181b;
 
   /* Content */
-  --muted-foreground: #64748b;
+  --muted-foreground: #a1a1aa;
 
   /* UI */
-  --border: #1f1f23;
-  --ring: #3b82f6;
+  --border: #27272a;
+  --ring: #fafafa;
 
   /* Brand + semantic */
-  --primary: #1152d4;
-  --primary-foreground: #ffffff;
-  --secondary: #2dd4bf;
-  --secondary-foreground: #042f2e;
-  --accent: #fbbf24;
-  --accent-foreground: #3b2200;
+  --primary: #fafafa;
+  --primary-foreground: #09090b;
+  --secondary: #fafafa;
+  --secondary-foreground: #09090b;
+  --accent: #818cf8;
+  --accent-foreground: #09090b;
   --danger: #fb7185;
   --danger-foreground: #2a0d14;
 
   /* Section alternates */
-  --section-alt: #111114;
-  --section-muted: #151518;
+  --section-alt: #0f0f12;
+  --section-muted: #09090b;
 }
 
 html {
@@ -98,35 +100,31 @@ body {
   font-family: var(--font-geist-sans), sans-serif;
 }
 
-/* Noise texture overlay – from the reference design */
+/* Noise texture overlay – subtle grain */
 .noise-overlay {
   position: fixed;
   inset: 0;
   z-index: 50;
   pointer-events: none;
-  opacity: 0.12;
+  opacity: 0.025;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
 }
 
 .dark .noise-overlay {
-  opacity: 0.03;
+  opacity: 0.02;
 }
 
 /* Glass card for pricing cards */
 .glass-card {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--foreground) 3%, transparent) 0%,
-    transparent 100%
-  );
-  border: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
+  background: var(--surface);
+  border: 1px solid var(--border);
 }
 
 /* Glass panel for sticky header */
 .glass-panel {
-  background: color-mix(in srgb, var(--background) 80%, transparent);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: color-mix(in srgb, var(--background) 85%, transparent);
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
 }
 
 /* Waveform bars for template cards */
@@ -178,4 +176,82 @@ body {
   .iframe-hide-scrollbar::-webkit-scrollbar {
     display: none; /* Chrome, Safari, Edge */
   }
+}
+
+/* Gradient mesh for hero */
+.hero-gradient {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.hero-gradient::before {
+  content: "";
+  position: absolute;
+  top: -40%;
+  left: 50%;
+  width: 120%;
+  height: 120%;
+  transform: translateX(-50%);
+  background: radial-gradient(
+    ellipse 60% 50% at 50% 0%,
+    var(--accent) 0%,
+    transparent 70%
+  );
+  opacity: 0.06;
+}
+.dark .hero-gradient::before {
+  opacity: 0.12;
+}
+
+/* Subtle grid pattern */
+.grid-pattern {
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 64px 64px;
+  opacity: 0.4;
+}
+.dark .grid-pattern {
+  opacity: 0.4;
+}
+
+/* Feature card hover glow */
+.feature-glow {
+  position: relative;
+  overflow: hidden;
+}
+.feature-glow::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, var(--accent), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  z-index: -1;
+}
+.feature-glow:hover::before {
+  opacity: 0.1;
+}
+
+/* Smooth appear animation */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-up {
+  animation: fade-up 0.6s ease-out both;
+}
+
+/* Number counter style */
+.step-number {
+  font-family: var(--font-geist-mono), monospace;
+  font-variant-numeric: tabular-nums;
 }

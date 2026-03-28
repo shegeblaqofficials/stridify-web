@@ -4,16 +4,15 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useAccount } from "@/provider/account-provider";
-import { HiOutlineMicrophone, HiOutlinePaperClip } from "react-icons/hi2";
 import {
-  HiOutlineSparkles,
   HiOutlineGlobeAlt,
   HiOutlinePhone,
   HiOutlineCodeBracketSquare,
   HiOutlineChevronDown,
-  HiOutlineBolt,
   HiOutlineArrowRight,
   HiOutlineCommandLine,
+  HiOutlineSparkles,
+  HiOutlineLockClosed,
 } from "react-icons/hi2";
 import { createProject, getProjects } from "@/lib/project/actions";
 
@@ -24,6 +23,13 @@ const agentTypes = [
 ] as const;
 
 type AgentType = (typeof agentTypes)[number]["id"];
+
+const visibilityOptions = [
+  { id: "public", label: "Public", icon: HiOutlineGlobeAlt },
+  { id: "private", label: "Private", icon: HiOutlineLockClosed },
+] as const;
+
+type Visibility = (typeof visibilityOptions)[number]["id"];
 
 const quickPrompts = [
   {
@@ -106,8 +112,11 @@ export default function DashboardHome() {
   const [prompt, setPrompt] = useState("");
   const [agentType, setAgentType] = useState<AgentType>("web");
   const [typeOpen, setTypeOpen] = useState(false);
+  const [visibility, setVisibility] = useState<Visibility>("public");
+  const [visOpen, setVisOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const visDropdownRef = useRef<HTMLDivElement>(null);
   const [projectCount, setProjectCount] = useState<number | null>(null);
 
   useEffect(() => {
@@ -125,6 +134,12 @@ export default function DashboardHome() {
       ) {
         setTypeOpen(false);
       }
+      if (
+        visDropdownRef.current &&
+        !visDropdownRef.current.contains(e.target as Node)
+      ) {
+        setVisOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -140,6 +155,7 @@ export default function DashboardHome() {
         prompt.trim().slice(0, 80),
         agentType,
         prompt.trim(),
+        visibility,
       );
       if (result) {
         router.push(`/projects/${result.project.project_id}`);
@@ -168,31 +184,29 @@ export default function DashboardHome() {
 
           {/* Prompt input */}
           <div className="relative mx-auto mb-10 max-w-3xl">
-            <div className="absolute -inset-0.5 rounded-2xl bg-primary/10 opacity-30 blur-xl" />
-            <div className="relative rounded-2xl border border-border bg-surface shadow-xl shadow-black/2">
-              <div className="flex items-start gap-2 p-3 sm:gap-3 sm:p-5">
-                <HiOutlineSparkles className="mt-1 h-4 w-4 shrink-0 text-muted-foreground/40 sm:h-5 sm:w-5" />
+            <div className="rounded-2xl border border-border bg-surface shadow-sm transition-shadow focus-within:shadow-md focus-within:border-foreground/20">
+              <div className="p-4 sm:p-5">
                 <textarea
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="h-20 w-full resize-none bg-transparent text-base font-medium text-foreground placeholder:text-muted-foreground/30 focus:outline-none sm:h-28 sm:text-xl"
+                  className="h-20 w-full resize-none bg-transparent text-base text-foreground placeholder:text-muted-foreground/60 focus:outline-none sm:h-24 sm:text-lg"
                   placeholder={placeholder + "│"}
                 />
               </div>
 
               {/* Toolbar */}
-              <div className="flex items-center justify-between rounded-b-2xl border-t border-border/50 bg-surface-elevated/30 p-2.5 sm:p-4">
-                <div className="flex items-center gap-4 text-muted-foreground/50">
-                  <HiOutlineMicrophone className="h-5 w-5 cursor-pointer transition-colors hover:text-foreground" />
-                  <HiOutlinePaperClip className="h-5 w-5 cursor-pointer transition-colors hover:text-foreground" />
-
+              <div className="flex items-center justify-between border-t border-border px-4 py-3 sm:px-5">
+                <div className="flex items-center gap-3">
                   {/* Agent type dropdown */}
                   <div ref={dropdownRef} className="relative">
                     <button
                       type="button"
-                      onClick={() => setTypeOpen(!typeOpen)}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface/50 px-2.5 py-1.5 text-xs font-semibold text-muted-foreground transition-all hover:border-muted-foreground/40 hover:text-foreground"
+                      onClick={() => {
+                        setTypeOpen(!typeOpen);
+                        setVisOpen(false);
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:border-foreground/30 hover:text-foreground"
                     >
                       {(() => {
                         const active = agentTypes.find(
@@ -212,7 +226,7 @@ export default function DashboardHome() {
                     </button>
 
                     {typeOpen && (
-                      <div className="absolute left-0 top-full z-10 mt-2 min-w-40 rounded-xl border border-border bg-surface shadow-xl">
+                      <div className="absolute left-0 top-full z-10 mt-2 min-w-40 rounded-xl border border-border bg-surface shadow-lg">
                         {agentTypes.map((type) => {
                           const Icon = type.icon;
                           const isActive = agentType === type.id;
@@ -225,16 +239,75 @@ export default function DashboardHome() {
                                 setTypeOpen(false);
                               }}
                               className={[
-                                "flex w-full items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold transition-colors first:rounded-t-xl last:rounded-b-xl",
+                                "flex w-full items-center gap-2.5 px-3.5 py-2.5 text-xs font-medium transition-colors first:rounded-t-xl last:rounded-b-xl",
                                 isActive
-                                  ? "bg-primary/10 text-primary"
-                                  : "text-muted-foreground hover:bg-surface-elevated hover:text-foreground",
+                                  ? "bg-foreground/5 text-foreground"
+                                  : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground",
                               ].join(" ")}
                             >
                               <Icon className="h-4 w-4" />
                               {type.label}
                               {isActive && (
-                                <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />
+                                <span className="ml-auto h-1.5 w-1.5 rounded-full bg-foreground" />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Visibility dropdown */}
+                  <div ref={visDropdownRef} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setVisOpen(!visOpen);
+                        setTypeOpen(false);
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:border-foreground/30 hover:text-foreground"
+                    >
+                      {(() => {
+                        const active = visibilityOptions.find(
+                          (v) => v.id === visibility,
+                        )!;
+                        const ActiveIcon = active.icon;
+                        return (
+                          <>
+                            <ActiveIcon className="h-3.5 w-3.5" />
+                            {active.label}
+                          </>
+                        );
+                      })()}
+                      <HiOutlineChevronDown
+                        className={`h-3 w-3 transition-transform ${visOpen ? "rotate-180" : ""}`}
+                      />
+                    </button>
+
+                    {visOpen && (
+                      <div className="absolute left-0 top-full z-10 mt-2 min-w-40 rounded-xl border border-border bg-surface shadow-lg">
+                        {visibilityOptions.map((opt) => {
+                          const Icon = opt.icon;
+                          const isActive = visibility === opt.id;
+                          return (
+                            <button
+                              key={opt.id}
+                              type="button"
+                              onClick={() => {
+                                setVisibility(opt.id);
+                                setVisOpen(false);
+                              }}
+                              className={[
+                                "flex w-full items-center gap-2.5 px-3.5 py-2.5 text-xs font-medium transition-colors first:rounded-t-xl last:rounded-b-xl",
+                                isActive
+                                  ? "bg-foreground/5 text-foreground"
+                                  : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground",
+                              ].join(" ")}
+                            >
+                              <Icon className="h-4 w-4" />
+                              {opt.label}
+                              {isActive && (
+                                <span className="ml-auto h-1.5 w-1.5 rounded-full bg-foreground" />
                               )}
                             </button>
                           );
@@ -245,26 +318,32 @@ export default function DashboardHome() {
                 </div>
 
                 <Button
-                  size="sm"
-                  className="sm:px-10 sm:py-3.5 sm:text-sm"
+                  size="md"
+                  className="gap-2 rounded-lg px-5"
                   onClick={handleGenerate}
                   disabled={isCreating}
                 >
-                  {isCreating ? "Creating..." : "Generate App"}
-                  {!isCreating && <HiOutlineBolt className="h-4 w-4" />}
+                  {isCreating ? (
+                    "Creating..."
+                  ) : (
+                    <>
+                      Generate
+                      <HiOutlineArrowRight className="h-3.5 w-3.5" />
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
           </div>
 
           {/* Quick prompts */}
-          <div className="mb-8 flex flex-wrap justify-center gap-2 sm:mb-12 sm:gap-3">
+          <div className="mb-8 flex flex-wrap justify-center gap-2 sm:mb-12">
             {quickPrompts.map((item) => (
               <button
                 key={item.label}
                 type="button"
                 onClick={() => setPrompt(item.value)}
-                className="rounded-full border border-border bg-surface px-3 py-1.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground transition-all hover:border-foreground hover:text-foreground sm:px-5 sm:py-2 sm:text-[10px] sm:font-bold sm:tracking-widest"
+                className="rounded-full border border-border px-3.5 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:border-foreground/30 hover:text-foreground"
               >
                 {item.label}
               </button>
