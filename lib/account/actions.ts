@@ -26,9 +26,12 @@ export async function upsertAccount(): Promise<Account | null> {
       existing.organization_id,
       user.email!,
       (user.user_metadata?.full_name as string) || undefined,
-    ).catch((err) =>
-      console.error("Failed to ensure Stripe customer on sign-in:", err),
-    );
+    ).catch((err) => {
+      console.error(
+        "[account] Failed to ensure Stripe customer on sign-in:",
+        err instanceof Error ? err.message : String(err),
+      );
+    });
     return existing as Account;
   }
 
@@ -71,7 +74,12 @@ export async function upsertAccount(): Promise<Account | null> {
     company.organization_id,
     user.email!,
     fullName || undefined,
-  ).catch((err) => console.error("Failed to create Stripe customer:", err));
+  ).catch((err) => {
+    console.error(
+      "[account] Failed to create Stripe customer for new org:",
+      err instanceof Error ? err.message : String(err),
+    );
+  });
 
   return created as Account;
 }

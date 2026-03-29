@@ -1,4 +1,3 @@
-"use server";
 import { stripe } from "./client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
@@ -33,13 +32,20 @@ export async function createStripeCustomer(
   });
 
   const supabase = createAdminClient();
-  await supabase
+  const { error } = await supabase
     .from("organizations")
     .update({
       stripe_customer_id: customer.id,
       updated_at: new Date().toISOString(),
     })
     .eq("organization_id", organizationId);
+
+  if (error) {
+    console.error(
+      "[stripe] Failed to update organization with customer ID:",
+      error.message,
+    );
+  }
 
   return customer.id;
 }
