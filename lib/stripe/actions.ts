@@ -1,3 +1,4 @@
+"use server";
 import { stripe } from "./client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
