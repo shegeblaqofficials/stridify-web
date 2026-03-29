@@ -2,6 +2,7 @@ import { NextRequest, after } from "next/server";
 import { createAgentUIStreamResponse, createIdGenerator, UIMessage } from "ai";
 import {
   createCodingAgent,
+  discoverSkills,
   type AgentMessageMetadata,
 } from "@/lib/agents/coding-agent";
 import { createSubagentUsageTracker } from "@/lib/agents/subagent-tools";
@@ -86,7 +87,15 @@ export async function POST(req: NextRequest) {
 
   // Create the agent bound to this sandbox
   const subagentUsageTracker = createSubagentUsageTracker();
-  const agent = createCodingAgent(sandbox, subagentUsageTracker);
+
+  // Discover available skills from host filesystem (loads only metadata)
+  console.log("[route] discovering skills...");
+  const skills = await discoverSkills();
+  console.log(
+    `[route] discovered ${skills.length} skills: ${skills.map((s) => s.name).join(", ")}`,
+  );
+
+  const agent = createCodingAgent(sandbox, subagentUsageTracker, skills);
   console.log("[route] agent created, starting stream...");
 
   // Accumulate token usage across all steps.
@@ -177,7 +186,7 @@ export async function POST(req: NextRequest) {
         combinedInputTokens: combined.inputTokens,
         combinedOutputTokens: combined.outputTokens,
         finishReason,
-        toolsUsed: toolCalls?.map((tc) => tc.toolName),
+        toolsUsed: toolCalls?.map((tc) => tc?.toolName),
       });
 
       // Keep sandbox alive while the agent is still working

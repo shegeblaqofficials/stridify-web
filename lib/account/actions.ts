@@ -3,6 +3,7 @@
 import type { Account } from "@/model/account/account";
 import { createClient } from "../supabase/server";
 import { Organization } from "@/model/account/organization";
+import { ensureStripeCustomer } from "@/lib/stripe/actions";
 
 export async function upsertAccount(): Promise<Account | null> {
   const supabase = await createClient();
@@ -19,7 +20,17 @@ export async function upsertAccount(): Promise<Account | null> {
     .eq("email", user.email)
     .single();
 
-  if (existing) return existing as Account;
+  if (existing) {
+    // Ensure returning users have a Stripe customer (dedup-safe)
+    ensureStripeCustomer(
+      existing.organization_id,
+      user.email!,
+      (user.user_metadata?.full_name as string) || undefined,
+    ).catch((err) =>
+      console.error("Failed to ensure Stripe customer on sign-in:", err),
+    );
+    return existing as Account;
+  }
 
   const fullName = (user.user_metadata?.full_name as string) ?? "";
   const nameParts = fullName.split(" ");
@@ -38,7 +49,7 @@ export async function upsertAccount(): Promise<Account | null> {
       last_name: nameParts.slice(1).join(" ") || null,
       photo_url: (user.user_metadata?.avatar_url as string) || null,
       organization_id: company.organization_id,
-      is_active: false,
+      is_active: true,
     })
     .select()
     .single();
@@ -54,6 +65,13 @@ export async function upsertAccount(): Promise<Account | null> {
     user_id: user.id,
     role: "admin",
   });
+
+  // Create Stripe customer for the new organization (fire-and-forget, dedup-safe)
+  ensureStripeCustomer(
+    company.organization_id,
+    user.email!,
+    fullName || undefined,
+  ).catch((err) => console.error("Failed to create Stripe customer:", err));
 
   return created as Account;
 }
@@ -77,10 +95,11 @@ export async function createOrganization(
     .insert({
       name,
       organization_id: crypto.randomUUID(),
-      token_balance: 50000,
+      token_balance: 1000,
       is_subscribed: false,
       is_free_plan: true,
       plan: "Starter",
+      is_active: false,
     })
     .select()
     .single();

@@ -1,13 +1,16 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/middleware";
+import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 
-// Routes that require authentication
+// Routes that require authentication and active organization
 const protectedRoutes = [
   "/home",
   "/projects",
   "/deployments",
   "/templates",
   "/settings",
+  "/pricing",
+  "/discover",
 ];
 
 // Routes that authenticated users should be redirected away from
@@ -39,18 +42,32 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // For authenticated users on protected routes, check is_active
+  // For authenticated users on protected routes, check organization is_active
   if (user && isProtected) {
-    const { data: account } = await supabase
+    const admin = createSupabaseAdmin(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } },
+    );
+
+    const { data: account } = await admin
       .from("accounts")
-      .select("is_active")
+      .select("organization_id")
       .eq("user_id", user.id)
       .single();
 
-    if (account && account.is_active === false) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/beta-access";
-      return NextResponse.redirect(url);
+    if (account?.organization_id) {
+      const { data: org } = await admin
+        .from("organizations")
+        .select("is_active")
+        .eq("organization_id", account.organization_id)
+        .single();
+
+      if (!org || org.is_active === false) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/beta-access";
+        return NextResponse.redirect(url);
+      }
     }
   }
 

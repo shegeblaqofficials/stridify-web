@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Navbar } from "@/components/landing-page/navbar";
 import { Footer } from "@/components/landing-page/footer";
 import { Button } from "@/components/ui/button";
 import { ScrollToTop } from "@/components/ui/scroll-to-top";
+import { useAccount } from "@/provider/account-provider";
 
 /* ------------------------------------------------------------------ */
 /*  Data                                                               */
@@ -209,6 +211,41 @@ const featureGroups: FeatureGroup[] = [
 
 export default function PricingPage() {
   const [selectedPlan, setSelectedPlan] = useState("Professional");
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
+  const { account } = useAccount();
+  const router = useRouter();
+
+  async function handleCheckout(planName: string) {
+    if (planName === "Starter") {
+      router.push("/home");
+      return;
+    }
+    if (planName === "Enterprise") {
+      window.location.href = "mailto:sales@stridify.com";
+      return;
+    }
+    if (!account) {
+      router.push("/?signin=true");
+      return;
+    }
+
+    setCheckoutLoading(planName);
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: planName }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (err) {
+      console.error("Checkout error:", err);
+    } finally {
+      setCheckoutLoading(null);
+    }
+  }
 
   return (
     <>
@@ -323,16 +360,30 @@ export default function PricingPage() {
                         <Button
                           size="lg"
                           className="w-full rounded-lg bg-foreground text-background hover:bg-foreground/80"
+                          disabled={checkoutLoading === plan.name}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCheckout(plan.name);
+                          }}
                         >
-                          {plan.cta}
+                          {checkoutLoading === plan.name
+                            ? "Redirecting…"
+                            : plan.cta}
                         </Button>
                       ) : (
                         <Button
                           variant="outline"
                           size="lg"
                           className="w-full rounded-lg"
+                          disabled={checkoutLoading === plan.name}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCheckout(plan.name);
+                          }}
                         >
-                          {plan.cta}
+                          {checkoutLoading === plan.name
+                            ? "Redirecting…"
+                            : plan.cta}
                         </Button>
                       )}
                     </div>

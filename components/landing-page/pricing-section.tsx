@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { useAccount } from "@/provider/account-provider";
 
 type Feature = {
   label: string;
@@ -84,6 +86,38 @@ const plans: Plan[] = [
 
 export function PricingSection() {
   const [selectedPlan, setSelectedPlan] = useState("Professional");
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
+  const { account } = useAccount();
+  const router = useRouter();
+
+  async function handleCheckout(planName: string) {
+    if (planName === "Starter") {
+      router.push("/home");
+      return;
+    }
+    if (planName === "Enterprise") {
+      window.location.href = "mailto:sales@stridify.com";
+      return;
+    }
+    if (!account) {
+      router.push("/?signin=true");
+      return;
+    }
+    setCheckoutLoading(planName);
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: planName }),
+      });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    } catch (err) {
+      console.error("Checkout error:", err);
+    } finally {
+      setCheckoutLoading(null);
+    }
+  }
 
   return (
     <section id="pricing" className="px-6 py-24">
@@ -113,6 +147,8 @@ export function PricingSection() {
               plan={plan}
               isSelected={selectedPlan === plan.name}
               onSelect={() => setSelectedPlan(plan.name)}
+              onCheckout={() => handleCheckout(plan.name)}
+              loading={checkoutLoading === plan.name}
             />
           </div>
         ))}
@@ -138,10 +174,14 @@ function PricingCard({
   plan,
   isSelected,
   onSelect,
+  onCheckout,
+  loading,
 }: {
   plan: Plan;
   isSelected: boolean;
   onSelect: () => void;
+  onCheckout: () => void;
+  loading: boolean;
 }) {
   return (
     <article
@@ -197,12 +237,26 @@ function PricingCard({
           <Button
             size="lg"
             className="w-full rounded-lg bg-foreground text-background hover:bg-foreground/80"
+            disabled={loading}
+            onClick={(e) => {
+              e.stopPropagation();
+              onCheckout();
+            }}
           >
-            {plan.cta}
+            {loading ? "Redirecting…" : plan.cta}
           </Button>
         ) : (
-          <Button variant="outline" size="lg" className="w-full rounded-lg">
-            {plan.cta}
+          <Button
+            variant="outline"
+            size="lg"
+            className="w-full rounded-lg"
+            disabled={loading}
+            onClick={(e) => {
+              e.stopPropagation();
+              onCheckout();
+            }}
+          >
+            {loading ? "Redirecting…" : plan.cta}
           </Button>
         )}
       </>

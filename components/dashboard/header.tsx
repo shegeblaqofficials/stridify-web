@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { StridifyLogo } from "@/components/ui/logo";
 import { useAccount } from "@/provider/account-provider";
@@ -7,6 +8,7 @@ import {
   HiOutlineMagnifyingGlass,
   HiOutlineBolt,
   HiOutlineBars3,
+  HiOutlinePlusCircle,
 } from "react-icons/hi2";
 
 export function DashboardHeader({
@@ -16,6 +18,24 @@ export function DashboardHeader({
 }) {
   const { organization } = useAccount();
   const isFree = organization?.is_free_plan ?? true;
+  const [topupLoading, setTopupLoading] = useState(false);
+
+  async function handleTopup() {
+    setTopupLoading(true);
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "topup" }),
+      });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    } catch (err) {
+      console.error("Topup error:", err);
+    } finally {
+      setTopupLoading(false);
+    }
+  }
   return (
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-surface/80 px-4 backdrop-blur-md md:px-6">
       {/* Left: menu + logo */}
@@ -58,6 +78,17 @@ export function DashboardHeader({
 
       {/* Right actions */}
       <div className="flex items-center gap-3">
+        {/* Buy Credits — for paid users */}
+        {!isFree && (
+          <button
+            onClick={handleTopup}
+            disabled={topupLoading}
+            className="hidden items-center gap-1.5 rounded-lg border border-border px-3.5 py-1.5 text-xs font-semibold text-foreground shadow-sm transition-all hover:bg-surface-elevated active:scale-[0.98] disabled:opacity-50 md:inline-flex"
+          >
+            <HiOutlinePlusCircle className="h-3.5 w-3.5" />
+            {topupLoading ? "Redirecting…" : "Buy 50,000 Credits"}
+          </button>
+        )}
         {/* Upgrade — only on free plan, hidden on mobile */}
         {isFree && (
           <Link

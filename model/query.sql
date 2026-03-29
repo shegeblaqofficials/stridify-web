@@ -38,6 +38,10 @@ CREATE TABLE public.organizations (
   is_subscribed boolean DEFAULT false,
   is_free_plan boolean DEFAULT true,
   plan character varying,
+  stripe_customer_id character varying,
+  stripe_subscription_id character varying,
+  subscription_status character varying DEFAULT 'inactive',
+  is_active boolean DEFAULT false,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT organization_pkey PRIMARY KEY (id)

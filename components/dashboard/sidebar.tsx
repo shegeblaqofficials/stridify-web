@@ -17,6 +17,7 @@ import {
   HiOutlineChevronUp,
   HiOutlineBolt,
   HiOutlineXMark,
+  HiOutlinePlusCircle,
   HiHome,
   HiOutlineSun,
   HiOutlineMoon,
@@ -42,6 +43,7 @@ export function Sidebar({
   const router = useRouter();
   const { user, account, organization } = useAccount();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [topupLoading, setTopupLoading] = useState(false);
   const { theme, setTheme } = useTheme();
 
   const avatarUrl = user?.user_metadata?.avatar_url;
@@ -147,6 +149,30 @@ export function Sidebar({
                     {organization.token_balance.toLocaleString()}
                   </span>
                 </div>
+                <button
+                  type="button"
+                  disabled={topupLoading}
+                  onClick={async () => {
+                    setTopupLoading(true);
+                    try {
+                      const res = await fetch("/api/stripe/checkout", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ type: "topup" }),
+                      });
+                      const data = await res.json();
+                      if (data.url) window.location.href = data.url;
+                    } catch (err) {
+                      console.error("Topup error:", err);
+                    } finally {
+                      setTopupLoading(false);
+                    }
+                  }}
+                  className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg bg-surface-elevated px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-surface-elevated/80 disabled:opacity-50"
+                >
+                  <HiOutlinePlusCircle className="size-3.5" />
+                  {topupLoading ? "Redirecting…" : "Buy 50,000 Credits"}
+                </button>
               </div>
             )}
 

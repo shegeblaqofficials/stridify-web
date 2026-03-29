@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useAccount } from "@/provider/account-provider";
 import { Button } from "@/components/ui/button";
 import { getRedisOrganizationMetrics } from "@/lib/redis/actions";
@@ -12,7 +13,9 @@ import {
   HiOutlineArrowDown,
   HiOutlineArrowUp,
   HiOutlineCreditCard,
+  HiOutlinePlusCircle,
 } from "react-icons/hi2";
+import { TOPUP_CREDITS, TOPUP_PRICE_DOLLARS } from "@/lib/stripe/config";
 
 /* ------------------------------------------------------------------ */
 /*  Data                                                               */
@@ -34,8 +37,12 @@ const sectionIds: Record<Tab, string> = {
 
 export function Settings() {
   const { user, account, organization } = useAccount();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("Profile");
   const containerRef = useRef<HTMLDivElement>(null);
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [topupLoading, setTopupLoading] = useState(false);
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
 
   type ProjectUsage = {
     project_id: string;
@@ -290,6 +297,18 @@ export function Settings() {
               <span className="rounded-full bg-surface-elevated px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
                 {planName}
               </span>
+              {organization?.subscription_status &&
+                organization.subscription_status !== "inactive" && (
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                      organization.subscription_status === "active"
+                        ? "bg-green-500/10 text-green-600 dark:text-green-400"
+                        : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                    }`}
+                  >
+                    {organization.subscription_status}
+                  </span>
+                )}
             </h2>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               {/* Plan */}
@@ -325,36 +344,118 @@ export function Settings() {
                     </>
                   )}
                 </div>
-                {isFree && (
-                  <button
-                    type="button"
-                    className="mt-8 text-left text-sm font-semibold text-foreground underline underline-offset-4 transition-colors hover:text-muted-foreground"
-                  >
-                    Upgrade Plan
-                  </button>
-                )}
+                <div className="mt-8 flex flex-wrap items-center gap-3">
+                  {isFree ? (
+                    <button
+                      type="button"
+                      onClick={() => router.push("/pricing")}
+                      className="text-sm font-semibold text-foreground underline underline-offset-4 transition-colors hover:text-muted-foreground"
+                    >
+                      Upgrade Plan
+                    </button>
+                  ) : (
+                    <>
+                      {planName !== "Team" && (
+                        <button
+                          type="button"
+                          disabled={upgradeLoading}
+                          onClick={async () => {
+                            setUpgradeLoading(true);
+                            try {
+                              const res = await fetch("/api/stripe/checkout", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  type: "upgrade",
+                                  plan: "Team",
+                                }),
+                              });
+                              const data = await res.json();
+                              if (data.url) {
+                                window.location.href = data.url;
+                              } else if (data.upgraded) {
+                                window.location.reload();
+                              }
+                            } catch (err) {
+                              console.error("Upgrade error:", err);
+                            } finally {
+                              setUpgradeLoading(false);
+                            }
+                          }}
+                          className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-all hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
+                        >
+                          {upgradeLoading
+                            ? "Upgrading…"
+                            : "Upgrade to Team — $79/mo"}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        disabled={portalLoading}
+                        onClick={async () => {
+                          setPortalLoading(true);
+                          try {
+                            const res = await fetch("/api/stripe/portal", {
+                              method: "POST",
+                            });
+                            const data = await res.json();
+                            if (data.url) window.location.href = data.url;
+                          } catch (err) {
+                            console.error("Portal error:", err);
+                          } finally {
+                            setPortalLoading(false);
+                          }
+                        }}
+                        className="text-sm font-semibold text-foreground underline underline-offset-4 transition-colors hover:text-muted-foreground disabled:opacity-50"
+                      >
+                        {portalLoading ? "Redirecting…" : "Manage Subscription"}
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
 
-              {/* Payment Method */}
+              {/* Buy Credits / Payment */}
               <div className="flex flex-col justify-between rounded-xl border border-border bg-surface p-6">
                 <div>
                   <span className="mb-4 block text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    Payment Method
+                    Credits Top-Up
                   </span>
-                  <div className="flex flex-col items-center justify-center py-6">
+                  <div className="flex flex-col items-center justify-center py-4">
                     <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-surface-elevated">
-                      <HiOutlineCreditCard className="h-5 w-5 text-muted-foreground" />
+                      <HiOutlinePlusCircle className="h-5 w-5 text-muted-foreground" />
                     </div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      No payment method added
+                    <p className="text-sm font-medium text-foreground">
+                      {TOPUP_CREDITS.toLocaleString()} credits
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      One-time purchase — ${TOPUP_PRICE_DOLLARS}
                     </p>
                   </div>
                 </div>
                 <button
                   type="button"
-                  className="mt-4 text-left text-sm font-semibold text-foreground underline underline-offset-4 transition-colors hover:text-muted-foreground"
+                  disabled={topupLoading}
+                  onClick={async () => {
+                    setTopupLoading(true);
+                    try {
+                      const res = await fetch("/api/stripe/checkout", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ type: "topup" }),
+                      });
+                      const data = await res.json();
+                      if (data.url) window.location.href = data.url;
+                    } catch (err) {
+                      console.error("Topup error:", err);
+                    } finally {
+                      setTopupLoading(false);
+                    }
+                  }}
+                  className="mt-4 flex items-center justify-center gap-2 rounded-lg bg-surface-elevated px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-surface-elevated/80 disabled:opacity-50"
                 >
-                  Add Payment Method
+                  <HiOutlineCreditCard className="h-4 w-4" />
+                  {topupLoading ? "Redirecting…" : "Buy 50,000 Credits"}
                 </button>
               </div>
             </div>
