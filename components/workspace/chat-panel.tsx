@@ -313,14 +313,16 @@ export function ChatPanel({
                     Your progress has been saved. Upgrade your plan to keep
                     building.
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => onBuyCredits?.()}
-                    className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-amber-600 active:scale-[0.97]"
-                  >
-                    <HiOutlineSparkles className="size-3" />
-                    Buy 50,000 Credits
-                  </button>
+                  {onBuyCredits && (
+                    <button
+                      type="button"
+                      onClick={() => onBuyCredits()}
+                      className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-amber-600 active:scale-[0.97]"
+                    >
+                      <HiOutlineSparkles className="size-3" />
+                      Buy 50,000 Credits
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

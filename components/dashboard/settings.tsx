@@ -415,49 +415,51 @@ export function Settings() {
                 </div>
               </div>
 
-              {/* Buy Credits / Payment */}
-              <div className="flex flex-col justify-between rounded-xl border border-border bg-surface p-6">
-                <div>
-                  <span className="mb-4 block text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    Credits Top-Up
-                  </span>
-                  <div className="flex flex-col items-center justify-center py-4">
-                    <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-surface-elevated">
-                      <HiOutlinePlusCircle className="h-5 w-5 text-muted-foreground" />
+              {/* Buy Credits / Payment — only for subscribed orgs */}
+              {organization?.is_subscribed && (
+                <div className="flex flex-col justify-between rounded-xl border border-border bg-surface p-6">
+                  <div>
+                    <span className="mb-4 block text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Credits Top-Up
+                    </span>
+                    <div className="flex flex-col items-center justify-center py-4">
+                      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-surface-elevated">
+                        <HiOutlinePlusCircle className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <p className="text-sm font-medium text-foreground">
+                        {TOPUP_CREDITS.toLocaleString()} credits
+                      </p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        One-time purchase — ${TOPUP_PRICE_DOLLARS}
+                      </p>
                     </div>
-                    <p className="text-sm font-medium text-foreground">
-                      {TOPUP_CREDITS.toLocaleString()} credits
-                    </p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      One-time purchase — ${TOPUP_PRICE_DOLLARS}
-                    </p>
                   </div>
+                  <button
+                    type="button"
+                    disabled={topupLoading}
+                    onClick={async () => {
+                      setTopupLoading(true);
+                      try {
+                        const res = await fetch("/api/stripe/checkout", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ type: "topup" }),
+                        });
+                        const data = await res.json();
+                        if (data.url) window.location.href = data.url;
+                      } catch (err) {
+                        console.error("Topup error:", err);
+                      } finally {
+                        setTopupLoading(false);
+                      }
+                    }}
+                    className="mt-4 flex items-center justify-center gap-2 rounded-lg bg-surface-elevated px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-surface-elevated/80 disabled:opacity-50"
+                  >
+                    <HiOutlineCreditCard className="h-4 w-4" />
+                    {topupLoading ? "Redirecting…" : "Buy 50,000 Credits"}
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  disabled={topupLoading}
-                  onClick={async () => {
-                    setTopupLoading(true);
-                    try {
-                      const res = await fetch("/api/stripe/checkout", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ type: "topup" }),
-                      });
-                      const data = await res.json();
-                      if (data.url) window.location.href = data.url;
-                    } catch (err) {
-                      console.error("Topup error:", err);
-                    } finally {
-                      setTopupLoading(false);
-                    }
-                  }}
-                  className="mt-4 flex items-center justify-center gap-2 rounded-lg bg-surface-elevated px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-surface-elevated/80 disabled:opacity-50"
-                >
-                  <HiOutlineCreditCard className="h-4 w-4" />
-                  {topupLoading ? "Redirecting…" : "Buy 50,000 Credits"}
-                </button>
-              </div>
+              )}
             </div>
           </section>
 

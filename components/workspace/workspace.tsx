@@ -43,7 +43,8 @@ export default function Workspace({ projectId }: WorkspaceProps) {
   const [mobileTab, setMobileTab] = useState<MobileTab>("chat");
   const [showMobileBanner, setShowMobileBanner] = useState(true);
   const [chatCollapsed, setChatCollapsed] = useState(false);
-  const { user, account, loading } = useAccount();
+  const { user, account, organization, loading } = useAccount();
+  const isSubscribed = !!organization?.is_subscribed;
 
   const refreshProject = useCallback(async () => {
     const [proj, snaps] = await Promise.all([
@@ -211,7 +212,7 @@ export default function Workspace({ projectId }: WorkspaceProps) {
             onInsufficientBalance={() => {
               setBalanceExhausted(true);
             }}
-            onBuyCredits={() => setShowUpgradeModal(true)}
+            onBuyCredits={isSubscribed ? () => setShowUpgradeModal(true) : undefined}
           />
         </div>
 
@@ -229,7 +230,7 @@ export default function Workspace({ projectId }: WorkspaceProps) {
             refreshKey={previewRefreshKey}
             balanceExhausted={balanceExhausted}
             sandboxLoading={sandboxLoading}
-            onUpgrade={() => setShowUpgradeModal(true)}
+            onUpgrade={isSubscribed ? () => setShowUpgradeModal(true) : undefined}
             chatCollapsed={chatCollapsed}
             onToggleChat={() => setChatCollapsed((c) => !c)}
           />

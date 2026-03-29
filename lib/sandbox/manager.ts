@@ -88,7 +88,7 @@ export async function takeSandboxSnapshot(sandbox: Sandbox): Promise<string> {
  * Note: `sandbox.timeout` is the static configured value (not a live
  * countdown), so we track the deadline ourselves.
  */
-let sandboxDeadlines = new Map<string, number>();
+const sandboxDeadlines = new Map<string, number>();
 
 export async function extendSandboxTimeout(sandbox: Sandbox): Promise<void> {
   try {

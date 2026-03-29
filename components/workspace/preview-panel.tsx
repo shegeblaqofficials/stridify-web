@@ -152,14 +152,16 @@ export function PreviewPanel({
               Your credits have been exhausted. Upgrade your plan to resume
               building and previewing your agent.
             </p>
-            <button
-              type="button"
-              onClick={onUpgrade}
-              className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.97]"
-            >
-              <HiOutlineSparkles className="size-4" />
-              Buy 50,000 Credits
-            </button>
+            {onUpgrade && (
+              <button
+                type="button"
+                onClick={onUpgrade}
+                className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.97]"
+              >
+                <HiOutlineSparkles className="size-4" />
+                Buy 50,000 Credits
+              </button>
+            )}
           </div>
         ) : (
           <div

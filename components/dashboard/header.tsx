@@ -78,8 +78,8 @@ export function DashboardHeader({
 
       {/* Right actions */}
       <div className="flex items-center gap-3">
-        {/* Buy Credits — for paid users */}
-        {!isFree && (
+        {/* Buy Credits — only for subscribed orgs */}
+        {organization?.is_subscribed && (
           <button
             onClick={handleTopup}
             disabled={topupLoading}

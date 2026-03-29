@@ -19,6 +19,12 @@ export async function createStripeCustomer(
   email: string,
   name?: string,
 ): Promise<string> {
+  console.log(
+    "[stripe] creating customer for org %s email=%s name=%s",
+    organizationId,
+    email,
+    name,
+  );
   const customer = await stripe.customers.create({
     email,
     name: name ?? undefined,

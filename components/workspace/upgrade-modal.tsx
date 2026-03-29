@@ -9,6 +9,7 @@ import {
   HiOutlinePlusCircle,
 } from "react-icons/hi2";
 import { TOPUP_CREDITS, TOPUP_PRICE_DOLLARS } from "@/lib/stripe/config";
+import { useAccount } from "@/provider/account-provider";
 
 interface UpgradeModalProps {
   open: boolean;
@@ -18,6 +19,8 @@ interface UpgradeModalProps {
 export function UpgradeModal({ open, onClose }: UpgradeModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [topupLoading, setTopupLoading] = useState(false);
+  const { organization } = useAccount();
+  const isSubscribed = organization?.is_subscribed ?? false;
 
   useEffect(() => {
     if (!open) return;
@@ -75,8 +78,10 @@ export function UpgradeModal({ open, onClose }: UpgradeModalProps) {
             You&apos;ve run out of credits
           </h2>
           <p className="mt-2 text-sm text-muted-foreground leading-relaxed max-w-xs mx-auto">
-            Your token balance has reached zero. Upgrade your plan or buy more
-            credits to continue building.
+            Your token balance has reached zero.{" "}
+            {isSubscribed
+              ? "Buy more credits to continue building."
+              : "Upgrade your plan to continue building."}
           </p>
 
           {/* Actions */}
@@ -88,16 +93,18 @@ export function UpgradeModal({ open, onClose }: UpgradeModalProps) {
               <HiOutlineSparkles className="size-4" />
               Upgrade Plan
             </Link>
-            <button
-              onClick={handleTopup}
-              disabled={topupLoading}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-6 py-3 text-sm font-semibold text-foreground transition-all hover:bg-surface-elevated active:scale-[0.98] disabled:opacity-50"
-            >
-              <HiOutlinePlusCircle className="size-4" />
-              {topupLoading
-                ? "Redirecting…"
-                : `Buy ${TOPUP_CREDITS.toLocaleString()} credits — $${TOPUP_PRICE_DOLLARS}`}
-            </button>
+            {isSubscribed && (
+              <button
+                onClick={handleTopup}
+                disabled={topupLoading}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-6 py-3 text-sm font-semibold text-foreground transition-all hover:bg-surface-elevated active:scale-[0.98] disabled:opacity-50"
+              >
+                <HiOutlinePlusCircle className="size-4" />
+                {topupLoading
+                  ? "Redirecting…"
+                  : `Buy ${TOPUP_CREDITS.toLocaleString()} credits — $${TOPUP_PRICE_DOLLARS}`}
+              </button>
+            )}
             <button
               onClick={onClose}
               className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
