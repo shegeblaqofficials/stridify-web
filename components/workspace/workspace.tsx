@@ -212,7 +212,9 @@ export default function Workspace({ projectId }: WorkspaceProps) {
             onInsufficientBalance={() => {
               setBalanceExhausted(true);
             }}
-            onBuyCredits={isSubscribed ? () => setShowUpgradeModal(true) : undefined}
+            onBuyCredits={
+              isSubscribed ? () => setShowUpgradeModal(true) : undefined
+            }
           />
         </div>
 
@@ -230,7 +232,9 @@ export default function Workspace({ projectId }: WorkspaceProps) {
             refreshKey={previewRefreshKey}
             balanceExhausted={balanceExhausted}
             sandboxLoading={sandboxLoading}
-            onUpgrade={isSubscribed ? () => setShowUpgradeModal(true) : undefined}
+            onUpgrade={
+              isSubscribed ? () => setShowUpgradeModal(true) : undefined
+            }
             chatCollapsed={chatCollapsed}
             onToggleChat={() => setChatCollapsed((c) => !c)}
           />

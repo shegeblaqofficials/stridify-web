@@ -19,7 +19,7 @@ export async function createStripeCustomer(
   email: string,
   name?: string,
 ): Promise<string> {
-  console.log(
+  console.warn(
     "[stripe] creating customer for org %s email=%s name=%s",
     organizationId,
     email,
