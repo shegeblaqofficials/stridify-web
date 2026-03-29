@@ -1,3 +1,5 @@
+"use server";
+
 import { stripe } from "./client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
@@ -19,35 +21,66 @@ export async function createStripeCustomer(
   email: string,
   name?: string,
 ): Promise<string> {
-  console.warn(
-    "[stripe] creating customer for org %s email=%s name=%s",
-    organizationId,
-    email,
-    name,
-  );
-  const customer = await stripe.customers.create({
-    email,
-    name: name ?? undefined,
-    metadata: { organization_id: organizationId },
-  });
-
-  const supabase = createAdminClient();
-  const { error } = await supabase
-    .from("organizations")
-    .update({
-      stripe_customer_id: customer.id,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("organization_id", organizationId);
-
-  if (error) {
-    console.error(
-      "[stripe] Failed to update organization with customer ID:",
-      error.message,
+  try {
+    console.warn(
+      "[stripe] creating customer for org %s email=%s name=%s",
+      organizationId,
+      email,
+      name,
     );
-  }
 
-  return customer.id;
+    // Create Stripe customer
+    const customer = await stripe.customers.create({
+      email,
+      name: name ?? undefined,
+      metadata: { organization_id: organizationId },
+    });
+    console.log("[stripe] customer created: %s", customer.id);
+
+    // Persist to Supabase
+    let supabase;
+    try {
+      supabase = createAdminClient();
+    } catch (adminErr) {
+      console.error(
+        "[stripe] failed to initialize admin client:",
+        adminErr instanceof Error ? adminErr.message : String(adminErr),
+      );
+      throw adminErr;
+    }
+
+    const { error } = await supabase
+      .from("organizations")
+      .update({
+        stripe_customer_id: customer.id,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("organization_id", organizationId);
+
+    if (error) {
+      console.error(
+        "[stripe] failed to update org %s with customer id %s: %s",
+        organizationId,
+        customer.id,
+        error.message,
+      );
+      throw new Error(`Failed to persist Stripe customer: ${error.message}`);
+    }
+
+    console.log(
+      "[stripe] org %s updated with customer %s",
+      organizationId,
+      customer.id,
+    );
+    return customer.id;
+  } catch (err) {
+    console.error(
+      "[stripe] createStripeCustomer failed for org %s:",
+      organizationId,
+      err instanceof Error ? err.message : String(err),
+    );
+    throw err;
+  }
 }
 
 /** Get or create a Stripe customer ID for the org. */
@@ -56,16 +89,51 @@ export async function ensureStripeCustomer(
   email: string,
   name?: string,
 ): Promise<string> {
-  const supabase = createAdminClient();
-  const { data: org } = await supabase
-    .from("organizations")
-    .select("stripe_customer_id")
-    .eq("organization_id", organizationId)
-    .single();
+  try {
+    let supabase;
+    try {
+      supabase = createAdminClient();
+    } catch (adminErr) {
+      console.error(
+        "[stripe] failed to initialize admin client in ensureStripeCustomer:",
+        adminErr instanceof Error ? adminErr.message : String(adminErr),
+      );
+      throw adminErr;
+    }
 
-  if (org?.stripe_customer_id) return org.stripe_customer_id;
+    const { data: org, error: queryErr } = await supabase
+      .from("organizations")
+      .select("stripe_customer_id")
+      .eq("organization_id", organizationId)
+      .single();
 
-  return createStripeCustomer(organizationId, email, name);
+    if (queryErr) {
+      console.warn(
+        "[stripe] failed to query org %s: %s",
+        organizationId,
+        queryErr.message,
+      );
+    }
+
+    if (org?.stripe_customer_id) {
+      console.log(
+        "[stripe] org %s already has customer %s",
+        organizationId,
+        org.stripe_customer_id,
+      );
+      return org.stripe_customer_id;
+    }
+
+    console.log("[stripe] org %s has no customer, creating...", organizationId);
+    return createStripeCustomer(organizationId, email, name);
+  } catch (err) {
+    console.error(
+      "[stripe] ensureStripeCustomer failed for org %s:",
+      organizationId,
+      err instanceof Error ? err.message : String(err),
+    );
+    throw err;
+  }
 }
 
 /* ------------------------------------------------------------------ */

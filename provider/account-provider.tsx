@@ -36,14 +36,29 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
 
     async function loadAccount(u: User) {
-      // Try fetching first; if missing, upsert to create the row
-      let acc = await getAccount(u.id);
-      if (!acc) acc = await upsertAccount();
-      if (cancelled) return;
-      setAccount(acc);
-      if (acc) {
-        const org = await getOrganization(acc.organization_id);
-        if (!cancelled) setOrganization(org);
+      try {
+        // Try fetching first; if missing, upsert to create the row
+        let acc = await getAccount(u.id);
+        if (!acc) {
+          console.log("[account-provider] Account not found, upserting...");
+          acc = await upsertAccount();
+        }
+        if (cancelled) return;
+        setAccount(acc);
+        if (acc) {
+          const org = await getOrganization(acc.organization_id);
+          if (!cancelled) setOrganization(org);
+        }
+      } catch (error) {
+        console.error(
+          "[account-provider] Failed to load account:",
+          error instanceof Error ? error.message : String(error),
+        );
+        // Still set account to null state but don't crash
+        if (!cancelled) {
+          setAccount(null);
+          setOrganization(null);
+        }
       }
     }
 
