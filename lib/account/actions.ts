@@ -83,7 +83,7 @@ export async function upsertAccount(): Promise<Account | null> {
   });
 
   // Add to broadcast audience and send welcome email (fire-and-forget)
-  onboardNewUser(
+  await onboardNewUser(
     user.email!,
     nameParts[0] || undefined,
     nameParts.slice(1).join(" ") || undefined,

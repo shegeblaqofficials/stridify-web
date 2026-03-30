@@ -37,8 +37,8 @@ function getSystemTheme(): "light" | "dark" {
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window === "undefined") return "system";
-    return (localStorage.getItem("theme") as Theme) ?? "system";
+    if (typeof window === "undefined") return "dark";
+    return (localStorage.getItem("theme") as Theme) ?? "dark";
   });
 
   // Apply the correct class on mount
