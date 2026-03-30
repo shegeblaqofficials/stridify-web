@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
       );
       sandbox = result.sandbox;
 
-      console.log(`[deploy] sandbox ready: ${sandbox.sandboxId}`);
+      console.log(`[deploy] sandbox ready: ${sandbox.name}`);
     } catch (err) {
       console.error("[deploy] failed to get sandbox:", err);
       return Response.json(

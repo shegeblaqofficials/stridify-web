@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
     latestSnapshot,
     project.sandbox_slot,
   );
-  console.log(`[route] sandbox=${sandbox.sandboxId} previewUrl=${previewUrl}`);
+  console.log(`[route] sandbox=${sandbox.name} previewUrl=${previewUrl}`);
 
   // Extend timeout before the agent starts working
   await extendSandboxTimeout(sandbox);

@@ -4,6 +4,7 @@ import type { Account } from "@/model/account/account";
 import { createClient } from "../supabase/server";
 import { Organization } from "@/model/account/organization";
 import { ensureStripeCustomer } from "@/lib/stripe/actions";
+import { onboardNewUser } from "@/lib/email/welcome";
 
 export async function upsertAccount(): Promise<Account | null> {
   const supabase = await createClient();
@@ -77,6 +78,18 @@ export async function upsertAccount(): Promise<Account | null> {
   ).catch((err) => {
     console.error(
       "[account] Failed to create Stripe customer for new org:",
+      err instanceof Error ? err.message : String(err),
+    );
+  });
+
+  // Add to broadcast audience and send welcome email (fire-and-forget)
+  onboardNewUser(
+    user.email!,
+    nameParts[0] || undefined,
+    nameParts.slice(1).join(" ") || undefined,
+  ).catch((err) => {
+    console.error(
+      "[account] Failed to onboard new user via email:",
       err instanceof Error ? err.message : String(err),
     );
   });

@@ -135,7 +135,7 @@ async function createNamedSandboxFromTemplate(
     runtime: "node22",
     timeout: SANDBOX_TIMEOUT,
   });
-  console.log(`[sandbox] created "${name}" id=${sandbox.sandboxId}`);
+  console.log(`[sandbox] created "${name}"`);
 
   console.log("[sandbox] running pnpm install...");
   const install = await sandbox.runCommand({ cmd: "pnpm", args: ["install"] });
@@ -171,7 +171,7 @@ async function createNamedSandboxFromSnapshot(
     ports: [3000],
     timeout: SANDBOX_TIMEOUT,
   });
-  console.log(`[sandbox] created "${name}" id=${sandbox.sandboxId}`);
+  console.log(`[sandbox] created "${name}"`);
 
   console.log("[sandbox] starting dev server...");
   await sandbox.runCommand({
@@ -194,7 +194,7 @@ async function createNamedSandboxFromSnapshot(
  * Returns the Vercel snapshot ID.
  */
 export async function takeSandboxSnapshot(sandbox: Sandbox): Promise<string> {
-  console.log(`[sandbox] taking snapshot of ${sandbox.sandboxId}...`);
+  console.log(`[sandbox] taking snapshot of ${sandbox.name}...`);
   const snapshot = await sandbox.snapshot({
     expiration: 0, // Never expire
   });
@@ -213,7 +213,7 @@ export async function takeSandboxSnapshot(sandbox: Sandbox): Promise<string> {
 async function resumeAfterSnapshot(sandbox: Sandbox): Promise<void> {
   try {
     // Re-fetch to get current status after snapshot
-    const current = await Sandbox.get({ sandboxId: sandbox.sandboxId });
+    const current = await Sandbox.get({ name: sandbox.name });
     console.log(`[sandbox] post-snapshot status=${current.status}`);
 
     if (current.status === "running") return;
@@ -225,7 +225,7 @@ async function resumeAfterSnapshot(sandbox: Sandbox): Promise<void> {
         let s = current;
         while (s.status === "pending" && attempts < 20) {
           await new Promise((r) => setTimeout(r, 500));
-          s = await Sandbox.get({ sandboxId: sandbox.sandboxId });
+          s = await Sandbox.get({ name: sandbox.name });
           attempts++;
         }
       }
@@ -253,13 +253,13 @@ const sandboxDeadlines = new Map<string, number>();
 export async function extendSandboxTimeout(sandbox: Sandbox): Promise<void> {
   try {
     const now = Date.now();
-    const deadline = sandboxDeadlines.get(sandbox.sandboxId) ?? 0;
+    const deadline = sandboxDeadlines.get(sandbox.name) ?? 0;
 
     if (deadline - now > 120_000) return;
 
     await sandbox.extendTimeout(SANDBOX_TIMEOUT);
-    sandboxDeadlines.set(sandbox.sandboxId, now + SANDBOX_TIMEOUT);
-    console.log(`[sandbox] extended timeout for ${sandbox.sandboxId}`);
+    sandboxDeadlines.set(sandbox.name, now + SANDBOX_TIMEOUT);
+    console.log(`[sandbox] extended timeout for ${sandbox.name}`);
   } catch (err) {
     console.error(`[sandbox] failed to extend timeout:`, err);
   }
@@ -272,7 +272,7 @@ export async function extendSandboxTimeout(sandbox: Sandbox): Promise<void> {
 export async function shutdownSandbox(sandbox: Sandbox): Promise<void> {
   try {
     await sandbox.stop({ blocking: true });
-    console.log(`[sandbox] stopped ${sandbox.sandboxId}`);
+    console.log(`[sandbox] stopped ${sandbox.name}`);
   } catch (err) {
     console.error(`[sandbox] failed to stop:`, err);
   }

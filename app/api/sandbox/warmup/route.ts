@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     project.sandbox_slot,
   );
 
-  console.log(`[warmup] sandbox=${sandbox.sandboxId} previewUrl=${previewUrl}`);
+  console.log(`[warmup] sandbox=${sandbox.name} previewUrl=${previewUrl}`);
 
-  return Response.json({ previewUrl, sandboxId: sandbox.sandboxId });
+  return Response.json({ previewUrl, sandboxId: sandbox.name });
 }
