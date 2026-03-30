@@ -1,12 +1,7 @@
 import type { Sandbox } from "@vercel/sandbox";
 import { Snapshot as VercelSnapshot } from "@vercel/sandbox";
 import type { Snapshot } from "@/model/project/snapshot";
-import {
-  createSandboxFromTemplate,
-  createSandboxFromSnapshot,
-  getExistingSandbox,
-  takeSandboxSnapshot,
-} from "@/lib/sandbox/manager";
+import { getOrCreateSandbox, takeSandboxSnapshot } from "@/lib/sandbox/manager";
 import { getProject } from "@/lib/project/actions";
 import { recordSessionMetric } from "@/lib/redis/metrics";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -14,55 +9,28 @@ import { createAdminClient } from "@/lib/supabase/admin";
 const MAX_SNAPSHOTS = 5;
 
 /* --------------------------------------------------------------------------
- * Sandbox resolution
+ * Sandbox resolution — uses named persistent sandboxes
  * ----------------------------------------------------------------------- */
 
 export async function resolveSandbox(
   projectId: string,
-  projectSandboxId: string | null,
   latestSnapshot: Snapshot | null,
+  slot = 1,
 ): Promise<{ sandbox: Sandbox; previewUrl: string }> {
-  // 1. Try to reconnect to the project's current sandbox
-  if (projectSandboxId) {
-    const existing = await getExistingSandbox(projectSandboxId);
-    if (existing) {
-      console.log(
-        `[sandbox] reusing existing sandbox ${existing.sandbox.sandboxId}`,
-      );
-      return existing;
-    }
-  }
-
-  // 2. Check if a warmup created a sandbox while we were loading
-  const freshProject = await getProject(projectId);
-  if (
-    freshProject?.sandbox_id &&
-    freshProject.sandbox_id !== projectSandboxId
-  ) {
-    console.log(
-      `[sandbox] warmup created sandbox ${freshProject.sandbox_id}, trying to connect...`,
-    );
-    const existing = await getExistingSandbox(freshProject.sandbox_id);
-    if (existing) return existing;
-  }
-
-  // 3. Create from snapshot or template
-  console.log("[sandbox] creating new sandbox...");
-  return latestSnapshot
-    ? await createSandboxFromSnapshot(latestSnapshot.snapshot_id)
-    : await createSandboxFromTemplate();
+  return getOrCreateSandbox(projectId, latestSnapshot?.snapshot_id, slot);
 }
 
 /* --------------------------------------------------------------------------
- * Snapshot + provision new sandbox
+ * Manual snapshot — triggered by user "Save Version" action
  * ----------------------------------------------------------------------- */
 
-export async function snapshotAndProvision(
+export async function saveSnapshot(
   sandbox: Sandbox,
   projectId: string,
   organizationId: string,
   nextVersionNumber: number,
-): Promise<void> {
+  versionName?: string,
+): Promise<{ snapshotId: string; versionNumber: number } | null> {
   const supabase = createAdminClient();
 
   try {
@@ -71,37 +39,51 @@ export async function snapshotAndProvision(
     // Prune old snapshots before inserting
     await pruneOldSnapshots(supabase, projectId);
 
+    const label = versionName || `v${nextVersionNumber}`;
+
     // Insert new snapshot record
     const { error } = await supabase.from("snapshots").insert({
       snapshot_id: snapshotId,
       project_id: projectId,
       organization_id: organizationId,
-      version_name: `v${nextVersionNumber}`,
+      version_name: label,
       version_number: nextVersionNumber,
     });
     if (error) {
-      console.error("[agent] failed to save snapshot to DB:", error.message);
-    } else {
-      console.log(`[agent] snapshot ${snapshotId} saved for ${projectId}`);
+      console.error("[snapshot] failed to save to DB:", error.message);
+      return null;
     }
 
-    // Create a new sandbox from the snapshot so the preview URL stays live.
-    const warm = await createSandboxFromSnapshot(snapshotId);
-
-    // Update project with new sandbox info (cookie-free)
-    await supabase
-      .from("projects")
-      .update({
-        sandbox_id: warm.sandbox.sandboxId,
-        preview_url: warm.previewUrl,
-      })
-      .eq("project_id", projectId);
-
     console.log(
-      `[agent] new sandbox ${warm.sandbox.sandboxId} ready at ${warm.previewUrl}`,
+      `[snapshot] saved ${snapshotId} as "${label}" for ${projectId}`,
+    );
+    return { snapshotId, versionNumber: nextVersionNumber };
+  } catch (err) {
+    console.error("[snapshot] save failed:", err);
+    return null;
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * Emergency snapshot on balance exhaustion
+ * ----------------------------------------------------------------------- */
+
+export async function emergencySnapshot(
+  sandbox: Sandbox,
+  projectId: string,
+  organizationId: string,
+  nextVersionNumber: number,
+): Promise<void> {
+  try {
+    await saveSnapshot(
+      sandbox,
+      projectId,
+      organizationId,
+      nextVersionNumber,
+      `v${nextVersionNumber} (auto-save)`,
     );
   } catch (err) {
-    console.error("[agent] snapshot/new-sandbox failed:", err);
+    console.error("[agent] emergency snapshot failed:", err);
   }
 }
 

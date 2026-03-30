@@ -22,6 +22,8 @@ CREATE TABLE public.projects (
   agent_type character varying,
   preview_url text,
   sandbox_id character varying,
+  sandbox_provider character varying DEFAULT 'vercel',
+  sandbox_slot integer DEFAULT 1,
   status character varying,
   created_by_user_id character varying,
   access_type character varying,

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { Sandbox } from "@vercel/sandbox";
 import { getProject } from "@/lib/project/actions";
+import { sandboxName } from "@/lib/sandbox/manager";
 
 export async function GET(req: NextRequest) {
   const projectId = req.nextUrl.searchParams.get("projectId");
@@ -12,13 +13,13 @@ export async function GET(req: NextRequest) {
   if (!project) {
     return Response.json({ error: "Project not found" }, { status: 404 });
   }
-  if (!project.sandbox_id) {
-    return Response.json({ error: "No active sandbox" }, { status: 400 });
-  }
 
   let sandbox: Sandbox;
   try {
-    sandbox = await Sandbox.get({ sandboxId: project.sandbox_id });
+    // Use named sandbox lookup (persistent sandboxes)
+    sandbox = await Sandbox.get({
+      name: sandboxName(projectId, project.sandbox_slot),
+    });
     if (sandbox.status !== "running") {
       return Response.json(
         { error: "Sandbox is not running" },

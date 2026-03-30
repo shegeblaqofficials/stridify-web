@@ -4,6 +4,8 @@ export type ProjectAccessType = "public" | "private";
 
 export type ProjectStatus = "draft" | "building" | "ready" | "deployed";
 
+export type SandboxProvider = "vercel";
+
 export interface Project {
   id: number;
   project_id: string;
@@ -12,6 +14,8 @@ export interface Project {
   agent_type: AgentType;
   preview_url?: string;
   sandbox_id: string | null;
+  sandbox_provider: SandboxProvider;
+  sandbox_slot: number;
   status: ProjectStatus;
   created_by_user_id: string;
   created_at: string;

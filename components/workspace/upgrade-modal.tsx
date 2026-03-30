@@ -20,7 +20,7 @@ export function UpgradeModal({ open, onClose }: UpgradeModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [topupLoading, setTopupLoading] = useState(false);
   const { organization } = useAccount();
-  const isSubscribed = organization?.is_subscribed ?? false;
+  const isTopPlan = organization?.plan === "Team";
 
   useEffect(() => {
     if (!open) return;
@@ -79,31 +79,32 @@ export function UpgradeModal({ open, onClose }: UpgradeModalProps) {
           </h2>
           <p className="mt-2 text-sm text-muted-foreground leading-relaxed max-w-xs mx-auto">
             Your token balance has reached zero.{" "}
-            {isSubscribed
+            {isTopPlan
               ? "Buy more credits to continue building."
               : "Upgrade your plan to continue building."}
           </p>
 
           {/* Actions */}
           <div className="mt-6 flex flex-col gap-3">
-            <Link
-              href="/pricing"
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.98]"
-            >
-              <HiOutlineSparkles className="size-4" />
-              Upgrade Plan
-            </Link>
-            {isSubscribed && (
+            {isTopPlan ? (
               <button
                 onClick={handleTopup}
                 disabled={topupLoading}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-6 py-3 text-sm font-semibold text-foreground transition-all hover:bg-surface-elevated active:scale-[0.98] disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
               >
                 <HiOutlinePlusCircle className="size-4" />
                 {topupLoading
                   ? "Redirecting…"
                   : `Buy ${TOPUP_CREDITS.toLocaleString()} credits — $${TOPUP_PRICE_DOLLARS}`}
               </button>
+            ) : (
+              <Link
+                href="/pricing"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.98]"
+              >
+                <HiOutlineSparkles className="size-4" />
+                Upgrade Plan
+              </Link>
             )}
             <button
               onClick={onClose}

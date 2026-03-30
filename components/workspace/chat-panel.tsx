@@ -50,6 +50,7 @@ interface ChatPanelProps {
   isNewProject?: boolean;
   sandboxReady?: boolean;
   balanceExhausted?: boolean;
+  isSubscribed?: boolean;
   onTokenUpdate?: (usage: TokenUsage) => void;
   onStreamingComplete?: () => void;
   onInsufficientBalance?: () => void;
@@ -63,6 +64,7 @@ export function ChatPanel({
   isNewProject,
   sandboxReady = false,
   balanceExhausted: balanceExhaustedProp = false,
+  isSubscribed = false,
   onTokenUpdate,
   onStreamingComplete,
   onInsufficientBalance,
@@ -320,7 +322,7 @@ export function ChatPanel({
                       className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-amber-600 active:scale-[0.97]"
                     >
                       <HiOutlineSparkles className="size-3" />
-                      Buy 50,000 Credits
+                      {isSubscribed ? "Buy 50,000 Credits" : "Upgrade Plan"}
                     </button>
                   )}
                 </div>

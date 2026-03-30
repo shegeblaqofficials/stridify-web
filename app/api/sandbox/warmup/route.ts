@@ -1,11 +1,7 @@
 import { NextRequest } from "next/server";
-import {
-  createSandboxFromSnapshot,
-  createSandboxFromTemplate,
-  getExistingSandbox,
-} from "@/lib/sandbox/manager";
+import { getOrCreateSandbox } from "@/lib/sandbox/manager";
 import { getLatestSnapshot } from "@/lib/snapshot/actions";
-import { getProject, updateProjectSandbox } from "@/lib/project/actions";
+import { getProject } from "@/lib/project/actions";
 import { getOrganizationBalance } from "@/lib/redis/metrics";
 
 export async function POST(req: NextRequest) {
@@ -30,33 +26,15 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "insufficient_balance" }, { status: 402 });
   }
 
-  // Try to reconnect to an existing sandbox first
-  if (project.sandbox_id) {
-    const existing = await getExistingSandbox(project.sandbox_id);
-    if (existing) {
-      console.log(
-        `[warmup] reusing existing sandbox ${existing.sandbox.sandboxId}`,
-      );
-      return Response.json({
-        previewUrl: existing.previewUrl,
-        sandboxId: existing.sandbox.sandboxId,
-      });
-    }
-  }
-
-  // No sandbox_id or sandbox no longer exists — create a new one
+  // Use named persistent sandbox — resume or create
   const latestSnapshot = await getLatestSnapshot(projectId);
-  console.log(
-    `[warmup] creating new sandbox, latestSnapshot=${latestSnapshot?.snapshot_id ?? "none"}`,
+  const { sandbox, previewUrl } = await getOrCreateSandbox(
+    projectId,
+    latestSnapshot?.snapshot_id,
+    project.sandbox_slot,
   );
 
-  const { sandbox, previewUrl } = latestSnapshot
-    ? await createSandboxFromSnapshot(latestSnapshot.snapshot_id)
-    : await createSandboxFromTemplate();
-
   console.log(`[warmup] sandbox=${sandbox.sandboxId} previewUrl=${previewUrl}`);
-
-  await updateProjectSandbox(projectId, sandbox.sandboxId, previewUrl);
 
   return Response.json({ previewUrl, sandboxId: sandbox.sandboxId });
 }

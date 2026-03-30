@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { Sandbox } from "@vercel/sandbox";
-import { getProject, updateProjectSandbox } from "@/lib/project/actions";
+import { getProject } from "@/lib/project/actions";
 import {
   getVercelProjectByProjectId,
   createVercelProjectRecord,
@@ -17,10 +17,7 @@ import {
   deleteVercelDeployment,
   deleteVercelProject,
 } from "@/lib/vercel/deploy";
-import {
-  createSandboxFromSnapshot,
-  getExistingSandbox,
-} from "@/lib/sandbox/manager";
+import { getOrCreateSandbox, sandboxName } from "@/lib/sandbox/manager";
 import { getLatestSnapshot } from "@/lib/snapshot/actions";
 import type { DeploymentEnvironment } from "@/model/deployment/deployment";
 
@@ -61,43 +58,25 @@ export async function POST(req: NextRequest) {
 
     let sandbox: Sandbox | null = null;
 
-    // Try reusing the existing sandbox if it's still running
-    if (project.sandbox_id) {
-      const existing = await getExistingSandbox(project.sandbox_id);
-      if (existing) {
-        sandbox = existing.sandbox;
-        console.log(`[deploy] reusing existing sandbox ${sandbox.sandboxId}`);
-      }
-    }
-
-    // Sandbox not running — restore from the latest snapshot
-    if (!sandbox) {
+    // Get or resume the named persistent sandbox
+    try {
       const latestSnapshot = await getLatestSnapshot(projectId);
-      if (!latestSnapshot) {
-        return Response.json(
-          {
-            error:
-              "No active sandbox or snapshot available. Open the workspace first.",
-          },
-          { status: 400 },
-        );
-      }
-
-      console.log(
-        `[deploy] restoring sandbox from snapshot ${latestSnapshot.snapshot_id}...`,
-      );
-      const restored = await createSandboxFromSnapshot(
-        latestSnapshot.snapshot_id,
-      );
-      sandbox = restored.sandbox;
-
-      // Update the project with the new sandbox so future calls can reuse it
-      await updateProjectSandbox(
+      const result = await getOrCreateSandbox(
         projectId,
-        sandbox.sandboxId,
-        restored.previewUrl,
+        latestSnapshot?.snapshot_id,
+        project.sandbox_slot,
       );
-      console.log(`[deploy] sandbox restored: ${sandbox.sandboxId}`);
+      sandbox = result.sandbox;
+
+      console.log(`[deploy] sandbox ready: ${sandbox.sandboxId}`);
+    } catch (err) {
+      console.error("[deploy] failed to get sandbox:", err);
+      return Response.json(
+        {
+          error: "No active sandbox available. Open the workspace first.",
+        },
+        { status: 400 },
+      );
     }
 
     // 2. Get or create the Vercel project

@@ -68,9 +68,7 @@ export async function upsertAccount(): Promise<Account | null> {
     user_id: user.id,
     role: "admin",
   });
-  console.log(
-    "[account] Created new account and organization, ensuring Stripe customer...",
-  );
+
   // Create Stripe customer for the new organization (fire-and-forget, dedup-safe)
   await ensureStripeCustomer(
     company.organization_id,

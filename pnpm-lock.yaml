@@ -39,8 +39,8 @@ importers:
         specifier: ^1.37.0
         version: 1.37.0
       '@vercel/sandbox':
-        specifier: ^1.8.0
-        version: 1.8.0
+        specifier: 2.0.0-beta.9
+        version: 2.0.0-beta.9
       '@vercel/sdk':
         specifier: ^1.19.11
         version: 1.19.11
@@ -943,8 +943,8 @@ packages:
     resolution: {integrity: sha512-UycprH3T6n3jH0k44NHMa7pnFHGu/N05MjojYr+Mc6I7obkoLIJujSWwin1pCvdy/eOxrI/l3uDLQsmcrOb4ug==}
     engines: {node: '>= 20'}
 
-  '@vercel/sandbox@1.8.0':
-    resolution: {integrity: sha512-SbXkg8Fmp8i+I9IdyD4PAAVtxM/KS4ULV4eiEfY/9tab1AF1MPvmEA8/ebvCn7QTWQQ7twwtpJNSPlUVmOBp3w==}
+  '@vercel/sandbox@2.0.0-beta.9':
+    resolution: {integrity: sha512-BTxplf5Mcqp0H0KA5gCmV5nROgXcH7MudGqhrDKqWjKNiib4CV2fzF5zmIIaN/tVuZjHX73PUESIlKLPVMXZcQ==}
 
   '@vercel/sdk@1.19.11':
     resolution: {integrity: sha512-PzsZq7VMeUQfH684GBjNQQFSDjg0uuAOu79We6yxOPMd4pIkS64HD+eoufyAhkk82nQ3qZ5I4wjWL41cLWczng==}
@@ -3428,7 +3428,7 @@ snapshots:
 
   '@vercel/oidc@3.2.0': {}
 
-  '@vercel/sandbox@1.8.0':
+  '@vercel/sandbox@2.0.0-beta.9':
     dependencies:
       '@vercel/oidc': 3.2.0
       async-retry: 1.3.3

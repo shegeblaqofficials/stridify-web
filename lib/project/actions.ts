@@ -8,6 +8,7 @@ import type {
 import type { Prompt } from "@/model/project/prompt";
 import { createClient } from "../supabase/server";
 import { cookies } from "next/headers";
+import { Snapshot as VercelSnapshot } from "@vercel/sandbox";
 import {
   getOrganizationBalance,
   deleteProjectRedisData,
@@ -193,6 +194,41 @@ export async function deleteProject(projectId: string): Promise<boolean> {
     await Promise.all(cleanups);
   } catch (err) {
     console.error("Error cleaning up Redis data for project:", err);
+  }
+
+  // Cascade: delete associated prompt
+  try {
+    await supabase.from("prompts").delete().eq("project_id", projectId);
+  } catch (err) {
+    console.error("Error deleting prompt for project:", err);
+  }
+
+  // Cascade: delete associated snapshots (Vercel + DB)
+  try {
+    const { data: snapshots } = await supabase
+      .from("snapshots")
+      .select("id, snapshot_id")
+      .eq("project_id", projectId);
+
+    if (snapshots && snapshots.length > 0) {
+      // Delete from Vercel in parallel (best-effort)
+      await Promise.allSettled(
+        snapshots.map(async (row) => {
+          try {
+            const snap = await VercelSnapshot.get({
+              snapshotId: row.snapshot_id,
+            });
+            await snap.delete();
+          } catch {}
+        }),
+      );
+
+      // Delete from database
+      const ids = snapshots.map((row) => row.id);
+      await supabase.from("snapshots").delete().in("id", ids);
+    }
+  } catch (err) {
+    console.error("Error deleting snapshots for project:", err);
   }
 
   return true;

@@ -15,6 +15,8 @@ import {
   HiOutlineCheck,
   HiOutlineBolt,
   HiOutlineArrowDownTray,
+  HiOutlineBookmarkSquare,
+  HiOutlineXMark,
 } from "react-icons/hi2";
 import type { Snapshot } from "@/model/project/snapshot";
 
@@ -32,6 +34,8 @@ interface WorkspaceHeaderProps {
   activeSnapshotId?: string;
   onSnapshotChange?: (snapshotId: string) => void;
   tokenUsage?: TokenUsageDisplay | null;
+  onSaveVersion?: (versionName: string) => Promise<void>;
+  saving?: boolean;
 }
 
 function formatSnapshotDate(dateStr: string) {
@@ -49,12 +53,16 @@ export function WorkspaceHeader({
   activeSnapshotId,
   onSnapshotChange,
   tokenUsage,
+  onSaveVersion,
+  saving = false,
 }: WorkspaceHeaderProps) {
   const { user, organization } = useAccount();
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(projectName);
   const [showVersions, setShowVersions] = useState(false);
   const [showDeploy, setShowDeploy] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [versionLabel, setVersionLabel] = useState("");
   const [downloading, setDownloading] = useState(false);
   const [currentSnapshotId, setCurrentSnapshotId] = useState(
     activeSnapshotId ?? snapshots[0]?.snapshot_id,
@@ -241,6 +249,19 @@ export function WorkspaceHeader({
           <span>Share</span>
         </button>
         <button
+          disabled={!projectId || saving}
+          onClick={() => {
+            setVersionLabel("");
+            setShowSaveModal(true);
+          }}
+          className="hidden md:flex items-center gap-2 px-3 py-1.5 text-sm font-semibold rounded-lg bg-surface-elevated hover:opacity-80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <HiOutlineBookmarkSquare
+            className={`size-4 ${saving ? "animate-pulse" : ""}`}
+          />
+          <span>{saving ? "Saving..." : "Save Version"}</span>
+        </button>
+        <button
           disabled={!projectId || downloading}
           onClick={async () => {
             if (!projectId) return;
@@ -300,6 +321,65 @@ export function WorkspaceHeader({
         organizationId={organization?.organization_id}
         userId={user?.id}
       />
+
+      {/* Save Version Modal */}
+      {showSaveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowSaveModal(false)}
+          />
+          <div className="relative w-full max-w-sm mx-4 rounded-2xl border border-border bg-surface p-6 shadow-xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-semibold text-foreground">
+                Save Version
+              </h3>
+              <button
+                onClick={() => setShowSaveModal(false)}
+                className="p-1 rounded-lg hover:bg-surface-elevated transition-colors"
+              >
+                <HiOutlineXMark className="size-4 text-muted-foreground" />
+              </button>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Save the current state of your project as a version you can
+              restore later.
+            </p>
+            <input
+              type="text"
+              value={versionLabel}
+              onChange={(e) => setVersionLabel(e.target.value)}
+              placeholder={`v${(snapshots.length ?? 0) + 1}`}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 outline-none focus:ring-2 focus:ring-primary/30 mb-4"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !saving) {
+                  onSaveVersion?.(versionLabel);
+                  setShowSaveModal(false);
+                }
+              }}
+              autoFocus
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setShowSaveModal(false)}
+                className="px-4 py-2 text-sm font-medium rounded-lg hover:bg-surface-elevated transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={saving}
+                onClick={() => {
+                  onSaveVersion?.(versionLabel);
+                  setShowSaveModal(false);
+                }}
+                className="px-4 py-2 text-sm font-semibold rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                {saving ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

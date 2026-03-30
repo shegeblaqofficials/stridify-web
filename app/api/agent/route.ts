@@ -8,12 +8,12 @@ import {
 import { createSubagentUsageTracker } from "@/lib/agents/subagent-tools";
 import { extendSandboxTimeout } from "@/lib/sandbox/manager";
 import { getLatestSnapshot } from "@/lib/snapshot/actions";
-import { getProject, updateProjectSandbox } from "@/lib/project/actions";
+import { getProject } from "@/lib/project/actions";
 import { getOrganizationBalance } from "@/lib/redis/metrics";
 import { loadChatMessages, saveChatMessages } from "@/lib/redis/chat";
 import {
   resolveSandbox,
-  snapshotAndProvision,
+  emergencySnapshot,
   logTokenMetrics,
   deductTokensIncremental,
 } from "./actions";
@@ -64,16 +64,13 @@ export async function POST(req: NextRequest) {
     `[route] latestSnapshot=${latestSnapshot?.snapshot_id ?? "none"}`,
   );
 
-  // Resolve a running sandbox (reconnect, warmup, or create new)
+  // Resolve a running sandbox (resume named sandbox, or create new)
   const { sandbox, previewUrl } = await resolveSandbox(
     projectId,
-    project.sandbox_id,
     latestSnapshot,
+    project.sandbox_slot,
   );
   console.log(`[route] sandbox=${sandbox.sandboxId} previewUrl=${previewUrl}`);
-
-  // Update project with sandbox info
-  await updateProjectSandbox(projectId, sandbox.sandboxId, previewUrl);
 
   // Extend timeout before the agent starts working
   await extendSandboxTimeout(sandbox);
@@ -208,9 +205,9 @@ export async function POST(req: NextRequest) {
       if (liveBalance <= 0 && !balanceExhausted) {
         balanceExhausted = true;
         console.log(
-          `[agent] balance exhausted mid-stream (used=${combined.totalTokens}, liveBalance=${liveBalance}). Snapshotting & aborting.`,
+          `[agent] balance exhausted mid-stream (used=${combined.totalTokens}, liveBalance=${liveBalance}). Emergency snapshot & aborting.`,
         );
-        snapshotAndProvision(sandbox, projectId, organizationId, nextVersion)
+        emergencySnapshot(sandbox, projectId, organizationId, nextVersion)
           .then(() => abortController.abort())
           .catch(() => abortController.abort());
       }
@@ -224,17 +221,9 @@ export async function POST(req: NextRequest) {
         console.error("[chat] failed to save messages:", err);
       }
 
-      // Snapshot and create a new sandbox BEFORE the stream closes.
-      // This ensures the UI's onStreamingComplete refetch sees the
-      // updated project with the new sandbox's preview URL.
-      if (!balanceExhausted) {
-        await snapshotAndProvision(
-          sandbox,
-          projectId,
-          organizationId,
-          nextVersion,
-        );
-      }
+      // With persistent sandboxes, the filesystem is auto-saved when the
+      // sandbox stops. No need to snapshot after every request — the user
+      // can manually save a version from the workspace header.
     },
     abortSignal: abortController.signal,
   });

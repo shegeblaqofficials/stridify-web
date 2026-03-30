@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { useAccount } from "@/provider/account-provider";
 import { WorkspaceHeader } from "@/components/workspace/workspace-header";
 import { ChatPanel, type TokenUsage } from "@/components/workspace/chat-panel";
@@ -40,11 +41,22 @@ export default function Workspace({ projectId }: WorkspaceProps) {
   const [previewRefreshKey, setPreviewRefreshKey] = useState(0);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [balanceExhausted, setBalanceExhausted] = useState(false);
+  const [savingVersion, setSavingVersion] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>("chat");
   const [showMobileBanner, setShowMobileBanner] = useState(true);
   const [chatCollapsed, setChatCollapsed] = useState(false);
   const { user, account, organization, loading } = useAccount();
+  const router = useRouter();
   const isSubscribed = !!organization?.is_subscribed;
+  const isTopPlan = organization?.plan === "Team";
+
+  const handleUpgrade = useCallback(() => {
+    if (isTopPlan) {
+      setShowUpgradeModal(true);
+    } else {
+      router.push("/pricing");
+    }
+  }, [isTopPlan, router]);
 
   const refreshProject = useCallback(async () => {
     const [proj, snaps] = await Promise.all([
@@ -112,15 +124,38 @@ export default function Workspace({ projectId }: WorkspaceProps) {
 
   const handleStreamingComplete = useCallback(async () => {
     console.log("[workspace] agent streaming complete");
-    // Refresh project and snapshots to pick up any changes
-    const [proj, snaps] = await Promise.all([
-      getProject(projectId),
-      getProjectSnapshots(projectId),
-    ]);
+    // Refresh project to pick up any sandbox changes
+    const proj = await getProject(projectId);
     if (proj) setProject(proj);
-    setSnapshots(snaps);
     setPreviewRefreshKey((k) => k + 1);
   }, [projectId]);
+
+  const handleSaveVersion = useCallback(
+    async (versionName: string) => {
+      setSavingVersion(true);
+      try {
+        const res = await fetch("/api/snapshot/save", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ projectId, versionName }),
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          console.error("[workspace] save version failed:", err.error);
+          return;
+        }
+        // Refresh snapshots
+        const snaps = await getProjectSnapshots(projectId);
+        setSnapshots(snaps);
+        console.log("[workspace] version saved successfully");
+      } catch (err) {
+        console.error("[workspace] save version error:", err);
+      } finally {
+        setSavingVersion(false);
+      }
+    },
+    [projectId],
+  );
 
   if (loading || !user || !account || dataLoading) {
     return <PageLoader />;
@@ -134,6 +169,8 @@ export default function Workspace({ projectId }: WorkspaceProps) {
         snapshots={snapshots}
         activeSnapshotId={snapshots[0]?.snapshot_id}
         tokenUsage={tokenUsage}
+        onSaveVersion={handleSaveVersion}
+        saving={savingVersion}
       />
 
       {/* Mobile desktop-suggestion banner — phones only */}
@@ -207,14 +244,13 @@ export default function Workspace({ projectId }: WorkspaceProps) {
             isNewProject={snapshots.length === 0}
             sandboxReady={!sandboxLoading}
             balanceExhausted={balanceExhausted}
+            isSubscribed={isTopPlan}
             onTokenUpdate={setTokenUsage}
             onStreamingComplete={handleStreamingComplete}
             onInsufficientBalance={() => {
               setBalanceExhausted(true);
             }}
-            onBuyCredits={
-              isSubscribed ? () => setShowUpgradeModal(true) : undefined
-            }
+            onBuyCredits={handleUpgrade}
           />
         </div>
 
@@ -232,9 +268,8 @@ export default function Workspace({ projectId }: WorkspaceProps) {
             refreshKey={previewRefreshKey}
             balanceExhausted={balanceExhausted}
             sandboxLoading={sandboxLoading}
-            onUpgrade={
-              isSubscribed ? () => setShowUpgradeModal(true) : undefined
-            }
+            isSubscribed={isTopPlan}
+            onUpgrade={handleUpgrade}
             chatCollapsed={chatCollapsed}
             onToggleChat={() => setChatCollapsed((c) => !c)}
           />

@@ -30,6 +30,7 @@ interface PreviewPanelProps {
   refreshKey: number;
   balanceExhausted: boolean;
   sandboxLoading: boolean;
+  isSubscribed?: boolean;
   onUpgrade?: () => void;
   chatCollapsed?: boolean;
   onToggleChat?: () => void;
@@ -41,6 +42,7 @@ export function PreviewPanel({
   refreshKey,
   balanceExhausted,
   sandboxLoading,
+  isSubscribed = false,
   onUpgrade,
   chatCollapsed,
   onToggleChat,
@@ -159,7 +161,7 @@ export function PreviewPanel({
                 className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.97]"
               >
                 <HiOutlineSparkles className="size-4" />
-                Buy 50,000 Credits
+                {isSubscribed ? "Buy 50,000 Credits" : "Upgrade Plan"}
               </button>
             )}
           </div>
