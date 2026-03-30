@@ -2,13 +2,40 @@
 import { Navbar } from "@/components/landing-page/navbar";
 import { Footer } from "@/components/landing-page/footer";
 import { Button } from "@/components/ui/button";
-import { HiOutlineEnvelope, HiOutlineArrowLeft } from "react-icons/hi2";
+import {
+  HiOutlineEnvelope,
+  HiOutlineArrowLeft,
+  HiOutlineCheckCircle,
+  HiOutlineClock,
+} from "react-icons/hi2";
 import Link from "next/link";
 import { useAccount } from "@/provider/account-provider";
 import { PageLoader } from "@/components/ui/page-loader";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { getOrganization } from "@/lib/account/actions";
 
 export function BetaAccess() {
-  const { user, loading } = useAccount();
+  const { user, account, loading } = useAccount();
+  const router = useRouter();
+  const [checking, setChecking] = useState(false);
+  const [statusResult, setStatusResult] = useState<"pending" | null>(null);
+
+  async function handleCheckStatus() {
+    if (!account?.organization_id) return;
+    setChecking(true);
+    setStatusResult(null);
+    try {
+      const org = await getOrganization(account.organization_id);
+      if (org?.is_active) {
+        router.push("/home");
+        return;
+      }
+      setStatusResult("pending");
+    } finally {
+      setChecking(false);
+    }
+  }
 
   if (loading || !user) {
     return <PageLoader />;
@@ -77,14 +104,16 @@ export function BetaAccess() {
         </p>
 
         {/* Status + actions */}
-        <div className="mb-12 flex flex-col items-center gap-4 md:flex-row md:gap-6">
+        <div className="mb-6 flex flex-col items-center gap-4 md:flex-row md:gap-6">
           <Button
             size="lg"
             variant="outline"
             className="flex items-center gap-2"
+            onClick={handleCheckStatus}
+            disabled={checking}
           >
             <HiOutlineEnvelope className="h-5 w-5" />
-            Check Status
+            {checking ? "Checking…" : "Check Status"}
           </Button>
           <Button
             size="lg"
@@ -108,6 +137,15 @@ export function BetaAccess() {
             Follow us on X
           </Button>
         </div>
+
+        {/* Status feedback */}
+        {statusResult === "pending" && (
+          <div className="mb-8 flex items-center gap-2 rounded-lg border border-border bg-surface px-5 py-3 text-sm text-muted-foreground">
+            <HiOutlineClock className="h-4 w-4 shrink-0 text-yellow-500" />
+            Your account is still pending approval. We&apos;ll email you when
+            you&apos;re in.
+          </div>
+        )}
 
         {/* Return to homepage */}
         <Link
