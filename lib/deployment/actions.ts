@@ -67,6 +67,7 @@ export async function createDeploymentRecord(params: {
   inspectorUrl?: string;
   deploymentName?: string;
   createdByUserId?: string;
+  deploymentProvider?: string;
 }): Promise<Deployment | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -75,8 +76,9 @@ export async function createDeploymentRecord(params: {
       deployment_id: params.deploymentId,
       project_id: params.projectId,
       organization_id: params.organizationId,
-      vercel_project_id: params.vercelProjectId,
-      vercel_deployment_id: params.vercelDeploymentId,
+      deployer_project_id: params.vercelProjectId,
+      deployer_deployment_id: params.vercelDeploymentId,
+      deployment_provider: params.deploymentProvider ?? "vercel",
       environment: params.environment,
       status: params.status,
       url: params.url,
@@ -172,7 +174,7 @@ export async function countOtherDeploymentsForVercelProject(
   const { count, error } = await supabase
     .from("deployments")
     .select("id", { count: "exact", head: true })
-    .eq("vercel_project_id", vercelProjectId)
+    .eq("deployer_project_id", vercelProjectId)
     .neq("deployment_id", excludeDeploymentId);
 
   if (error) {

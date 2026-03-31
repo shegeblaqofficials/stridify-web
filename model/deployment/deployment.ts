@@ -23,8 +23,9 @@ export interface Deployment {
   deployment_id: string;
   project_id: string;
   organization_id: string;
-  vercel_project_id: string;
-  vercel_deployment_id: string;
+  deployer_project_id: string;
+  deployer_deployment_id: string;
+  deployment_provider: string;
   environment: DeploymentEnvironment;
   status: DeploymentStatus;
   url: string | null;

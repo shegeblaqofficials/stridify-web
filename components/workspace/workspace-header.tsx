@@ -17,6 +17,8 @@ import {
   HiOutlineArrowDownTray,
   HiOutlineBookmarkSquare,
   HiOutlineXMark,
+  HiOutlineEllipsisHorizontal,
+  HiOutlinePencilSquare,
 } from "react-icons/hi2";
 import type { Snapshot } from "@/model/project/snapshot";
 
@@ -62,6 +64,7 @@ export function WorkspaceHeader({
   const [showVersions, setShowVersions] = useState(false);
   const [showDeploy, setShowDeploy] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const [versionLabel, setVersionLabel] = useState("");
   const [downloading, setDownloading] = useState(false);
   const [currentSnapshotId, setCurrentSnapshotId] = useState(
@@ -71,36 +74,57 @@ export function WorkspaceHeader({
     (s) => s.snapshot_id === currentSnapshotId,
   );
   const inputRef = useRef<HTMLInputElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const dropdownButtonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (isEditing) inputRef.current?.select();
   }, [isEditing]);
 
-  // Close dropdown on outside click
+  // Close dropdown on outside click / Escape
   useEffect(() => {
     if (!showVersions) return;
     const handleClick = (e: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      ) {
+      const target = e.target as Node;
+      // Close if clicking outside the header entirely
+      if (headerRef.current && !headerRef.current.contains(target)) {
         setShowVersions(false);
       }
     };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [showVersions]);
-
-  // Close dropdown on Escape
-  useEffect(() => {
-    if (!showVersions) return;
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setShowVersions(false);
     };
+    document.addEventListener("mousedown", handleClick);
     document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleKey);
+    };
   }, [showVersions]);
+
+  // Close menu on outside click / Escape
+  useEffect(() => {
+    if (!showMenu) return;
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as Node;
+      // Close if clicking outside the header entirely
+      if (headerRef.current && !headerRef.current.contains(target)) {
+        setShowMenu(false);
+      }
+    };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowMenu(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, [showMenu]);
 
   const commitName = () => {
     setIsEditing(false);
@@ -119,7 +143,10 @@ export function WorkspaceHeader({
   );
 
   return (
-    <header className="flex h-14 items-center justify-between px-3 md:px-6 border-b border-border bg-surface shrink-0">
+    <header
+      ref={headerRef}
+      className="flex h-14 items-center justify-between px-3 md:px-6 border-b border-border bg-surface shrink-0"
+    >
       <div className="flex items-center gap-2 md:gap-4 min-w-0">
         <Link href="/home" className="flex items-center gap-2 shrink-0">
           <StridifyLogo className="h-5 w-5 text-foreground" />
@@ -156,16 +183,20 @@ export function WorkspaceHeader({
           ) : (
             <button
               onClick={() => setIsEditing(true)}
-              className="text-sm font-medium hover:text-foreground transition-colors truncate max-w-[200px]"
+              className="group/title flex items-center gap-1.5 text-sm font-medium hover:text-foreground transition-colors truncate max-w-50"
               title={name}
             >
-              {name}
+              <span className="truncate">{name}</span>
+              <HiOutlinePencilSquare className="size-3.5 shrink-0 opacity-0 group-hover/title:opacity-60 transition-opacity" />
             </button>
           )}
+
+          <div className="hidden sm:block h-4 w-px bg-border mx-3" />
 
           {/* Snapshot version dropdown */}
           <div ref={dropdownRef} className="relative">
             <button
+              ref={dropdownButtonRef}
               onClick={() => snapshots.length > 0 && setShowVersions((v) => !v)}
               className={`flex items-center gap-1 px-1.5 py-0.5 rounded transition-colors ${
                 snapshots.length > 0
@@ -244,65 +275,85 @@ export function WorkspaceHeader({
             <span className="text-muted-foreground/60">tokens</span>
           </div>
         )}
-        <button className="hidden md:flex items-center gap-2 px-3 py-1.5 text-sm font-semibold rounded-lg bg-surface-elevated hover:opacity-80 transition-colors">
-          <HiOutlineShare className="size-4" />
-          <span>Share</span>
-        </button>
-        <button
-          disabled={!projectId || saving}
-          onClick={() => {
-            setVersionLabel("");
-            setShowSaveModal(true);
-          }}
-          className="hidden md:flex items-center gap-2 px-3 py-1.5 text-sm font-semibold rounded-lg bg-surface-elevated hover:opacity-80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <HiOutlineBookmarkSquare
-            className={`size-4 ${saving ? "animate-pulse" : ""}`}
-          />
-          <span>{saving ? "Saving..." : "Save Version"}</span>
-        </button>
-        <button
-          disabled={!projectId || downloading}
-          onClick={async () => {
-            if (!projectId) return;
-            setDownloading(true);
-            try {
-              const res = await fetch(
-                `/api/sandbox/download?projectId=${encodeURIComponent(projectId)}`,
-              );
-              if (!res.ok) {
-                console.error("[download] failed:", res.status);
-                return;
-              }
-              const blob = await res.blob();
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download =
-                res.headers
-                  .get("Content-Disposition")
-                  ?.match(/filename="(.+)"/)?.[1] ?? "project.tar.gz";
-              document.body.appendChild(a);
-              a.click();
-              a.remove();
-              URL.revokeObjectURL(url);
-            } catch (err) {
-              console.error("[download] error:", err);
-            } finally {
-              setDownloading(false);
-            }
-          }}
-          className="hidden md:flex items-center gap-2 px-3 py-1.5 text-sm font-semibold rounded-lg bg-surface-elevated hover:opacity-80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <HiOutlineArrowDownTray
-            className={`size-4 ${downloading ? "animate-bounce" : ""}`}
-          />
-          <span>{downloading ? "Downloading..." : "Download"}</span>
-        </button>
-        <button className="hidden md:flex items-center gap-2 px-3 py-1.5 text-sm font-semibold rounded-lg bg-surface-elevated hover:opacity-80 transition-colors">
-          <HiOutlineCog6Tooth className="size-4" />
-          <span>Settings</span>
-        </button>
+
+        {/* More menu dropdown */}
+        <div ref={menuRef} className="relative">
+          <button
+            ref={menuButtonRef}
+            onClick={() => setShowMenu((v) => !v)}
+            className="hidden md:flex items-center gap-2 px-3 py-1.5 text-sm font-semibold rounded-lg bg-surface-elevated hover:opacity-80 transition-colors"
+          >
+            <span>More</span>
+            <HiOutlineEllipsisHorizontal className="size-4 text-muted-foreground" />
+          </button>
+
+          {showMenu && (
+            <div className="absolute top-full right-0 mt-1.5 w-48 rounded-xl border border-border bg-surface shadow-lg py-1 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+              <button
+                disabled={!projectId || saving}
+                onClick={() => {
+                  setVersionLabel("");
+                  setShowSaveModal(true);
+                  setShowMenu(false);
+                }}
+                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-surface-elevated transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <HiOutlineBookmarkSquare
+                  className={`size-4 ${saving ? "animate-pulse" : ""}`}
+                />
+                {saving ? "Saving..." : "Save Version"}
+              </button>
+              <button
+                disabled={!projectId || downloading}
+                onClick={async () => {
+                  if (!projectId) return;
+                  setShowMenu(false);
+                  setDownloading(true);
+                  try {
+                    const res = await fetch(
+                      `/api/sandbox/download?projectId=${encodeURIComponent(projectId)}`,
+                    );
+                    if (!res.ok) {
+                      console.error("[download] failed:", res.status);
+                      return;
+                    }
+                    const blob = await res.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download =
+                      res.headers
+                        .get("Content-Disposition")
+                        ?.match(/filename="(.+)"/)?.[1] ?? "project.tar.gz";
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    URL.revokeObjectURL(url);
+                  } catch (err) {
+                    console.error("[download] error:", err);
+                  } finally {
+                    setDownloading(false);
+                  }
+                }}
+                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-surface-elevated transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <HiOutlineArrowDownTray
+                  className={`size-4 ${downloading ? "animate-bounce" : ""}`}
+                />
+                {downloading ? "Downloading..." : "Download"}
+              </button>
+              <div className="h-px bg-border my-1" />
+              <button
+                onClick={() => setShowMenu(false)}
+                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-surface-elevated transition-colors"
+              >
+                <HiOutlineCog6Tooth className="size-4" />
+                Settings
+              </button>
+            </div>
+          )}
+        </div>
+
         <button
           onClick={() => setShowDeploy(true)}
           className="flex items-center gap-1.5 md:gap-2 p-1.5 md:px-4 md:py-1.5 text-xs md:text-sm font-semibold rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"

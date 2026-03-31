@@ -19,7 +19,9 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const status = await getVercelDeploymentStatus(record.vercel_deployment_id);
+    const status = await getVercelDeploymentStatus(
+      record.deployer_deployment_id,
+    );
 
     const statusMap: Record<string, DeploymentStatus> = {
       QUEUED: "queued",
@@ -43,7 +45,7 @@ export async function GET(req: NextRequest) {
 
     return Response.json({
       deploymentId,
-      vercelDeploymentId: record.vercel_deployment_id,
+      vercelDeploymentId: record.deployer_deployment_id,
       status: mappedStatus,
       url: status.url,
       inspectorUrl: status.inspectorUrl,

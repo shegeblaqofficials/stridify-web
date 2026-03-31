@@ -21,6 +21,7 @@ import { useTheme } from "@/components/ui/theme-provider";
 export function UserDropdown({ user }: { user: User }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const router = useRouter();
   const { organization } = useAccount();
   const { theme, setTheme } = useTheme();
@@ -37,18 +38,24 @@ export function UserDropdown({ user }: { user: User }) {
     .toUpperCase();
 
   useEffect(() => {
+    if (!open) return;
     const handleClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      const isClickOnButton = buttonRef.current?.contains(target);
+      const isClickOnMenu = ref.current?.contains(target);
+
+      if (!isClickOnButton && !isClickOnMenu) {
         setOpen(false);
       }
     };
-    if (open) document.addEventListener("mousedown", handleClick);
+    document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
 
   return (
     <div ref={ref} className="relative">
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setOpen(!open)}
         className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border-2 border-border transition-all hover:border-primary/50 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30"

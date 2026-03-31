@@ -177,12 +177,12 @@ function TemplateCard({
               className="inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-xs font-medium transition-all hover:bg-foreground hover:text-background hover:border-foreground active:scale-[0.98]"
             >
               <HiOutlinePlay className="h-3.5 w-3.5" />
-              Try
+              Try Live
             </Link>
           ) : (
             <span className="inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-xs font-medium text-muted-foreground/40 cursor-not-allowed">
               <HiOutlinePlay className="h-3.5 w-3.5" />
-              Try
+              Try Live
             </span>
           )}
         </div>

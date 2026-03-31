@@ -11,7 +11,7 @@ import { PageLoader } from "@/components/ui/page-loader";
 import { getProject, getProjectPrompts } from "@/lib/project/actions";
 import { getProjectSnapshots } from "@/lib/snapshot/actions";
 import { getChatMessages } from "@/lib/redis/actions";
-import { checkProjectBalance } from "@/lib/project/actions";
+import { checkProjectBalance, updateProjectTitle } from "@/lib/project/actions";
 import type { Project } from "@/model/project/project";
 import type { Prompt } from "@/model/project/prompt";
 import type { Snapshot } from "@/model/project/snapshot";
@@ -166,6 +166,10 @@ export default function Workspace({ projectId }: WorkspaceProps) {
       <WorkspaceHeader
         projectId={projectId}
         projectName={project?.title}
+        onProjectNameChange={async (newName) => {
+          await updateProjectTitle(projectId, newName);
+          setProject((p) => (p ? { ...p, title: newName } : p));
+        }}
         snapshots={snapshots}
         activeSnapshotId={snapshots[0]?.snapshot_id}
         tokenUsage={tokenUsage}

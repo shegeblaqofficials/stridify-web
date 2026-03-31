@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { Sandbox } from "@vercel/sandbox";
-import { getProject } from "@/lib/project/actions";
+import { getProject, updateProjectStatus } from "@/lib/project/actions";
 import {
   getVercelProjectByProjectId,
   createVercelProjectRecord,
@@ -164,6 +164,9 @@ export async function POST(req: NextRequest) {
       `[deploy] Deployment created: ${deploymentId} (vercel: ${deployment.deploymentId})`,
     );
 
+    // Update project status to deployed
+    await updateProjectStatus(projectId, "deployed");
+
     return Response.json({
       deploymentId,
       vercelDeploymentId: deployment.deploymentId,
@@ -199,7 +202,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     // 1) Delete the Vercel deployment
-    await deleteVercelDeployment(deployment.vercel_deployment_id);
+    await deleteVercelDeployment(deployment.deployer_deployment_id);
 
     // 2) Delete deployment DB record
     const deletedDeployment = await deleteDeploymentRecord(deploymentId);
@@ -212,18 +215,18 @@ export async function DELETE(req: NextRequest) {
 
     // 3) If no more deployments exist for this Vercel project, delete the project + mapping
     const remaining = await countOtherDeploymentsForVercelProject(
-      deployment.vercel_project_id,
+      deployment.deployer_project_id,
       deploymentId,
     );
 
     let deletedVercelProject = false;
 
     if (remaining === 0) {
-      await deleteVercelProject(deployment.vercel_project_id);
+      await deleteVercelProject(deployment.deployer_project_id);
       deletedVercelProject = true;
 
       const deletedMapping = await deleteVercelProjectRecord(
-        deployment.vercel_project_id,
+        deployment.deployer_project_id,
       );
 
       if (!deletedMapping) {

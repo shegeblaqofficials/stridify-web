@@ -108,6 +108,18 @@ export async function createProject(
     return null;
   }
 
+  // If agent type is telephony, create a telephony_projects record
+  if (agentType === "telephony") {
+    await createTelephonyProject({
+      projectId: project.project_id,
+      organizationId: organizationId,
+      agentName: "Voice Assistant",
+      agentVoice: "nova-professional",
+      voiceProvider: "openai",
+      provider: "livekit",
+    });
+  }
+
   return { project: project as Project, prompt: prompt as Prompt };
 }
 
@@ -164,6 +176,38 @@ export async function updateProjectSandbox(
     .from("projects")
     .update({ sandbox_id: sandboxId, preview_url: previewUrl })
     .eq("project_id", projectId);
+}
+
+export async function updateProjectTitle(
+  projectId: string,
+  title: string,
+): Promise<boolean> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("projects")
+    .update({ title })
+    .eq("project_id", projectId);
+  if (error) {
+    console.error("Error updating project title:", error.message);
+    return false;
+  }
+  return true;
+}
+
+export async function updateProjectStatus(
+  projectId: string,
+  status: string,
+): Promise<boolean> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("projects")
+    .update({ status })
+    .eq("project_id", projectId);
+  if (error) {
+    console.error("Error updating project status:", error.message);
+    return false;
+  }
+  return true;
 }
 
 export async function deleteProject(projectId: string): Promise<boolean> {
@@ -231,5 +275,102 @@ export async function deleteProject(projectId: string): Promise<boolean> {
     console.error("Error deleting snapshots for project:", err);
   }
 
+  // Cascade: delete associated telephony project record
+  try {
+    await supabase
+      .from("telephony_projects")
+      .delete()
+      .eq("project_id", projectId);
+  } catch (err) {
+    console.error("Error deleting telephony project for project:", err);
+  }
+
   return true;
+}
+
+// ─── Telephony Project Helpers ─────────────────────────────
+
+import type { TelephonyProject } from "@/model/project/telephony-project";
+
+export async function createTelephonyProject(params: {
+  projectId: string;
+  organizationId: string;
+  agentName: string;
+  agentVoice: string;
+  voiceProvider: string;
+  provider: string;
+}): Promise<TelephonyProject | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("telephony_projects")
+    .insert({
+      telephony_project_id: crypto.randomUUID(),
+      project_id: params.projectId,
+      organization_id: params.organizationId,
+      agent_name: params.agentName,
+      agent_voice: params.agentVoice,
+      voice_provider: params.voiceProvider,
+      agent_status: "not_connected",
+      provider: params.provider,
+      telephone_number: null,
+    })
+    .select()
+    .single();
+
+  if (error || !data) {
+    console.error(
+      "[telephony] Error creating telephony project:",
+      error?.message,
+    );
+    return null;
+  }
+
+  return data as TelephonyProject;
+}
+
+export async function getTelephonyProject(
+  projectId: string,
+): Promise<TelephonyProject | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("telephony_projects")
+    .select()
+    .eq("project_id", projectId)
+    .single();
+
+  if (error || !data) return null;
+  return data as TelephonyProject;
+}
+
+export async function updateTelephonyProject(params: {
+  projectId: string;
+  agentName?: string;
+  agentVoice?: string;
+  telephoneNumber?: string | null;
+  agentStatus?: string;
+}): Promise<TelephonyProject | null> {
+  const supabase = await createClient();
+  const update: Record<string, any> = {};
+  if (params.agentName) update.agent_name = params.agentName;
+  if (params.agentVoice) update.agent_voice = params.agentVoice;
+  if (params.telephoneNumber !== undefined)
+    update.telephone_number = params.telephoneNumber;
+  if (params.agentStatus) update.agent_status = params.agentStatus;
+
+  const { data, error } = await supabase
+    .from("telephony_projects")
+    .update(update)
+    .eq("project_id", params.projectId)
+    .select()
+    .maybeSingle();
+
+  if (error || !data) {
+    console.error(
+      "[telephony] Error updating telephony project:",
+      error?.message,
+    );
+    return null;
+  }
+
+  return data as TelephonyProject;
 }
