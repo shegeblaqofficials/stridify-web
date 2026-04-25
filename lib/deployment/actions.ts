@@ -99,6 +99,37 @@ export async function createDeploymentRecord(params: {
   return data as Deployment;
 }
 
+export async function updateDeploymentForRedeploy(params: {
+  deploymentId: string;
+  vercelDeploymentId: string;
+  status: string;
+  url?: string;
+  inspectorUrl?: string;
+}): Promise<Deployment | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("deployments")
+    .update({
+      deployer_deployment_id: params.vercelDeploymentId,
+      status: params.status,
+      url: params.url ?? null,
+      inspector_url: params.inspectorUrl ?? null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("deployment_id", params.deploymentId)
+    .select()
+    .single();
+
+  if (error || !data) {
+    console.error(
+      "[deployment] Error updating deployment record:",
+      error?.message,
+    );
+    return null;
+  }
+  return data as Deployment;
+}
+
 export async function updateDeploymentStatus(
   deploymentId: string,
   status: DeploymentStatus,

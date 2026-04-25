@@ -12,10 +12,18 @@ import {
   HiOutlineChevronUpDown,
   HiOutlineFolderOpen,
 } from "react-icons/hi2";
-import type { DeploymentEnvironment } from "@/model/deployment/deployment";
+import type {
+  DeploymentEnvironment,
+  Deployment,
+} from "@/model/deployment/deployment";
 import type { Project } from "@/model/project/project";
 
 type DeployStep = "configure" | "deploying" | "success" | "error";
+
+interface LatestDeployments {
+  preview: Deployment | null;
+  production: Deployment | null;
+}
 
 interface DeployModalProps {
   open: boolean;
@@ -47,10 +55,16 @@ export function DeployModal({
   const [selectedProjectId, setSelectedProjectId] = useState<
     string | undefined
   >(externalProjectId);
+  const [latestDeployments, setLatestDeployments] = useState<LatestDeployments>(
+    { preview: null, production: null },
+  );
+  const [loadingExisting, setLoadingExisting] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const activeProjectId = externalProjectId ?? selectedProjectId;
+  const existingDeployment = latestDeployments[environment];
+  const isUpdate = Boolean(existingDeployment);
 
   // Reset when modal opens
   useEffect(() => {
@@ -64,11 +78,52 @@ export function DeployModal({
       setStatus("queued");
       setErrorMessage(null);
       setSelectedProjectId(externalProjectId);
+      setLatestDeployments({ preview: null, production: null });
     }
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
   }, [open]);
+
+  // Load latest deployments per environment for the active project
+  useEffect(() => {
+    if (!open || !activeProjectId) {
+      setLatestDeployments({ preview: null, production: null });
+      return;
+    }
+    let cancelled = false;
+    setLoadingExisting(true);
+    fetch(`/api/deploy?projectId=${encodeURIComponent(activeProjectId)}`)
+      .then((res) => (res.ok ? res.json() : Promise.reject(res)))
+      .then((data) => {
+        if (cancelled) return;
+        setLatestDeployments({
+          preview: data?.latest?.preview ?? null,
+          production: data?.latest?.production ?? null,
+        });
+      })
+      .catch(() => {
+        if (!cancelled)
+          setLatestDeployments({ preview: null, production: null });
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingExisting(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, activeProjectId]);
+
+  // When the selected environment changes, prefill name with existing deployment name if any
+  useEffect(() => {
+    if (!open) return;
+    const existing = latestDeployments[environment];
+    if (existing?.deployment_name) {
+      setDeploymentName(existing.deployment_name);
+    } else {
+      setDeploymentName("");
+    }
+  }, [environment, latestDeployments, open]);
 
   // Close on Escape
   useEffect(() => {
@@ -183,11 +238,14 @@ export function DeployModal({
             setDeploymentName={setDeploymentName}
             onClose={onClose}
             onDeploy={handleDeploy}
+            isUpdate={isUpdate}
+            loadingExisting={loadingExisting}
             disabled={
               !activeProjectId ||
               !organizationId ||
               !userId ||
-              !deploymentName.trim()
+              !deploymentName.trim() ||
+              loadingExisting
             }
           />
         )}
@@ -230,6 +288,8 @@ function ConfigureStep({
   onClose,
   onDeploy,
   disabled,
+  isUpdate,
+  loadingExisting,
 }: {
   projects?: Project[];
   selectedProjectId?: string;
@@ -241,11 +301,15 @@ function ConfigureStep({
   onClose: () => void;
   onDeploy: () => void;
   disabled: boolean;
+  isUpdate: boolean;
+  loadingExisting: boolean;
 }) {
   return (
     <>
       <div className="flex items-center justify-between px-6 pt-6 pb-2">
-        <h2 className="text-xl font-bold text-foreground">Deploy to Vercel</h2>
+        <h2 className="text-xl font-bold text-foreground">
+          {isUpdate ? "Update Deployment" : "Deploy to Vercel"}
+        </h2>
         <button
           onClick={onClose}
           className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface-elevated transition-colors"
@@ -255,8 +319,9 @@ function ConfigureStep({
       </div>
 
       <p className="px-6 pb-5 text-sm text-muted-foreground leading-relaxed">
-        Deploy your application directly from your workspace. Choose an
-        environment and deploy with one click.
+        {isUpdate
+          ? `An existing ${environment} deployment was found. You can push a new build to the same deployment below.`
+          : "Deploy your application directly from your workspace. Choose an environment and deploy with one click."}
       </p>
 
       {/* Project selector (for deployments page flow) */}
@@ -367,11 +432,18 @@ function ConfigureStep({
             value={deploymentName}
             onChange={(e) => setDeploymentName(e.target.value)}
             placeholder="e.g. storefront-v2"
-            className="mt-2 w-full px-3 py-2.5 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors"
+            readOnly={isUpdate}
+            className={[
+              "mt-2 w-full px-3 py-2.5 text-sm rounded-xl border bg-background text-foreground placeholder:text-muted-foreground/50 outline-none transition-colors",
+              isUpdate
+                ? "border-border cursor-not-allowed opacity-80"
+                : "border-border focus:border-primary focus:ring-1 focus:ring-primary/30",
+            ].join(" ")}
           />
           <p className="mt-1.5 text-[11px] text-muted-foreground">
-            This will be used as the Vercel deployment name. On first deploy, it
-            will also be used as the Vercel project name.
+            {isUpdate
+              ? `Updating the existing ${environment} deployment. The name can't be changed.`
+              : "This will be used as the Vercel deployment name. On first deploy, it will also be used as the Vercel project name."}
           </p>
         </div>
       </div>
@@ -383,7 +455,11 @@ function ConfigureStep({
           className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <HiOutlineRocketLaunch className="size-4" />
-          Deploy Now
+          {loadingExisting
+            ? "Checking…"
+            : isUpdate
+              ? "Update Deployment"
+              : "Deploy Now"}
         </button>
       </div>
     </>

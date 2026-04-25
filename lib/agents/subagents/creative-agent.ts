@@ -16,6 +16,7 @@ Your workflow:
 Guidelines:
 - Don't write all the entire application in one step. 
 - Break it into logical pieces: first create the main page, then add components, then polish styles and ask before you add more external pages.
+- Always ask the user if they want you to add more pages after you finish the main page.
 - Files are at /vercel/sandbox. The dev server runs on port 3000 and hot-reloads.
 - Write COMPLETE file contents (not diffs or patches).
 - Use semantic HTML and accessible markup.

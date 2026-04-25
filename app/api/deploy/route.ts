@@ -9,6 +9,8 @@ import {
   deleteDeploymentRecord,
   deleteVercelProjectRecord,
   countOtherDeploymentsForVercelProject,
+  getProjectDeployments,
+  updateDeploymentForRedeploy,
 } from "@/lib/deployment/actions";
 import {
   createVercelProject,
@@ -137,7 +139,6 @@ export async function POST(req: NextRequest) {
     });
 
     // 5. Save the deployment record
-    const deploymentId = crypto.randomUUID();
     const statusMap: Record<string, string> = {
       QUEUED: "queued",
       BUILDING: "building",
@@ -145,24 +146,55 @@ export async function POST(req: NextRequest) {
       ERROR: "error",
       CANCELED: "canceled",
     };
+    const mappedStatus = statusMap[deployment.readyState] || "queued";
 
-    const record = await createDeploymentRecord({
-      deploymentId,
-      projectId,
-      organizationId,
-      vercelProjectId: vercelProject.vercel_project_id,
-      vercelDeploymentId: deployment.deploymentId,
-      environment,
-      status: statusMap[deployment.readyState] || "queued",
-      url: deployment.url ?? undefined,
-      inspectorUrl: deployment.inspectorUrl ?? undefined,
-      deploymentName: normalizedDeploymentName,
-      createdByUserId: userId,
-    });
-
-    console.log(
-      `[deploy] Deployment created: ${deploymentId} (vercel: ${deployment.deploymentId})`,
+    // Check for existing deployment in this environment (update vs create)
+    const existingDeployments = await getProjectDeployments(projectId);
+    const existing = existingDeployments.find(
+      (d) => d.environment === environment,
     );
+
+    let deploymentId: string;
+    let record;
+
+    if (existing) {
+      deploymentId = existing.deployment_id;
+      record = await updateDeploymentForRedeploy({
+        deploymentId,
+        vercelDeploymentId: deployment.deploymentId,
+        status: mappedStatus,
+        url: deployment.url ?? undefined,
+        inspectorUrl: deployment.inspectorUrl ?? undefined,
+      });
+      console.log(
+        `[deploy] Deployment updated: ${deploymentId} (vercel: ${deployment.deploymentId})`,
+      );
+    } else {
+      deploymentId = crypto.randomUUID();
+      record = await createDeploymentRecord({
+        deploymentId,
+        projectId,
+        organizationId,
+        vercelProjectId: vercelProject.vercel_project_id,
+        vercelDeploymentId: deployment.deploymentId,
+        environment,
+        status: mappedStatus,
+        url: deployment.url ?? undefined,
+        inspectorUrl: deployment.inspectorUrl ?? undefined,
+        deploymentName: normalizedDeploymentName,
+        createdByUserId: userId,
+      });
+      console.log(
+        `[deploy] Deployment created: ${deploymentId} (vercel: ${deployment.deploymentId})`,
+      );
+    }
+
+    if (!record) {
+      return Response.json(
+        { error: "Failed to save deployment record" },
+        { status: 500 },
+      );
+    }
 
     // Update project status to deployed
     await updateProjectStatus(projectId, "deployed");
@@ -172,13 +204,48 @@ export async function POST(req: NextRequest) {
       vercelDeploymentId: deployment.deploymentId,
       url: deployment.url,
       inspectorUrl: deployment.inspectorUrl,
-      status: statusMap[deployment.readyState] || "queued",
+      status: mappedStatus,
       environment,
     });
   } catch (err: any) {
     console.error("[deploy] Error:", err);
     return Response.json(
       { error: err?.message || "Deployment failed" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    const projectId = req.nextUrl.searchParams.get("projectId");
+    if (!projectId) {
+      return Response.json(
+        { error: "Missing required query param: projectId" },
+        { status: 400 },
+      );
+    }
+
+    const deployments = await getProjectDeployments(projectId);
+
+    // Latest (first, since ordered desc) deployment per environment
+    const latest: {
+      preview: (typeof deployments)[number] | null;
+      production: (typeof deployments)[number] | null;
+    } = { preview: null, production: null };
+
+    for (const d of deployments) {
+      if (d.environment === "preview" && !latest.preview) latest.preview = d;
+      if (d.environment === "production" && !latest.production)
+        latest.production = d;
+      if (latest.preview && latest.production) break;
+    }
+
+    return Response.json({ latest });
+  } catch (err: any) {
+    console.error("[deploy] GET Error:", err);
+    return Response.json(
+      { error: err?.message || "Failed to load deployments" },
       { status: 500 },
     );
   }

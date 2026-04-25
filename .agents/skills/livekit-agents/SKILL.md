@@ -1,248 +1,174 @@
 ---
 name: livekit-agents
-description: Integrate live voice chat with existing LiveKit agent servers in Next.js websites. Add floating voice assistants, widgets, or embedded voice chat. Use when building voice UI components that connect to a backend agent.
+description: Build client-only voice UI in Next.js that connects to an existing LiveKit agent backend. Use when adding a voice assistant, microphone button, floating voice widget, or embedded voice session to a page. The agent server, worker, and TTS are already running — only build the React client.
 license: MIT
-compatibility: Next.js 14+, requires @livekit/components-react, livekit-server-sdk packages
+compatibility: Next.js 14+, @livekit/components-react, livekit-client, livekit-server-sdk
 metadata:
   author: stridify
-  version: "2.0"
-  keywords: voice, chat, ui, components, streaming, client-integration
+  version: "3.0"
+  keywords: livekit, voice, agent, client, useSession, TokenSource
 ---
 
-# LiveKit Agents Client Integration
+# LiveKit Agents — Client Integration
 
-Build voice UI components that connect to your existing LiveKit agent server. Add voice interaction to websites as floating assistants, widgets, or embedded areas.
+Build **client-only** React components that stream audio to/from an already-deployed LiveKit agent. Do not build or modify the agent worker, TTS, instructions, or any backend logic — those already exist.
 
-## When to Use This Skill
+## When to Use
 
-Use this skill when:
+- Adding a voice button / mic UI that connects to the existing agent
+- Embedding a voice session on a page (e.g. travel guide, product advisor)
+- Building a floating voice widget or modal
 
-- Adding voice chat to a website
-- Creating floating voice assistant or widget
-- Embedding voice interaction on a page
-- Connecting Next.js frontend to backend agent server
+## Environment (Already Provided)
 
-## Architecture
-
-Your backend agent server is already configured with agent logic, instructions, TTS, and project ID. Your role is building the **client-side component** that streams audio to/from this server.
-
-```
-React Component → Create Token → Connect to LiveKit → Audio Streaming
-                  (API Route)      (Backend Agent)     (Real-time I/O)
-```
-
-## Step-by-Step Integration
-
-### Step 1: Verify Environment Variables
-
-Your `.env.local` should have:
+These always exist in `.env.local`. Do not prompt the user for them and do not rename them:
 
 ```env
-NEXT_PUBLIC_LIVEKIT_URL=ws://your-livekit-url
-LIVEKIT_API_KEY=your-api-key
-LIVEKIT_API_SECRET=your-api-secret
+LIVEKIT_URL=wss://...
+LIVEKIT_API_KEY=...
+LIVEKIT_API_SECRET=...
 LIVEKIT_TTS_VOICE=inworld/inworld-tts-1:Lauren
-PROJECT_ID=your-project-id
 ```
 
-The first variable should be public (`NEXT_PUBLIC_`), others are server-only.
+They are **server-only** — they are read inside `app/api/livekit/token/route.ts` and returned to the client via the token endpoint. Never expose them with `NEXT_PUBLIC_`.
 
-### Step 2: Create Token API Route
+## Backend Endpoint (Already Provided)
 
-Create `app/api/livekit/token/route.ts`:
+`POST /api/livekit/token?template=<slug>` returns:
 
-```typescript
-import { AccessToken } from "livekit-server-sdk";
-import { NextRequest, NextResponse } from "next/server";
+```json
+{ "server_url": "wss://...", "participant_token": "<jwt>" }
+```
 
-export async function POST(req: NextRequest) {
-  try {
-    const { roomName } = await req.json();
+Valid `template` slugs live in [lib/livekit/templates/index.ts](lib/livekit/templates/index.ts) (e.g. `city-travel-guide`, `restaurant-assistant`, `language-practice-coach`, `product-advisor`). Pick the slug that matches the page — **do not invent new slugs**. If a new template is truly needed, add it to that file first.
 
-    const token = new AccessToken(
-      process.env.LIVEKIT_API_KEY,
-      process.env.LIVEKIT_API_SECRET,
-    );
+## Required Packages
 
-    token.addGrant({
-      room: roomName,
-      roomJoin: true,
-      canPublish: true,
-      canPublishData: true,
-      canSubscribe: true,
-      metadata: JSON.stringify({
-        projectId: process.env.PROJECT_ID,
-      }),
-    });
+Already installed in this workspace. Only import from:
 
-    return NextResponse.json({ token: token.toJwt() });
-  } catch (error) {
-    return NextResponse.json(
-      { error: "Failed to generate token" },
-      { status: 500 },
-    );
-  }
+- `@livekit/components-react` — `useSession`, `SessionProvider`, `useAgent`, `RoomAudioRenderer`, `BarVisualizer`
+- `livekit-client` — `TokenSource`
+
+## The Pattern (Follow This Exactly)
+
+The canonical reference is `CityGuideVoiceCard` in [app/discover/city-travel-guide/page.tsx](app/discover/city-travel-guide/page.tsx). The pattern has three pieces:
+
+### 1. A module-level `TokenSource` pointing at the token route
+
+```tsx
+import { TokenSource } from "livekit-client";
+
+const tokenSource = TokenSource.endpoint(
+  "/api/livekit/token?template=city-travel-guide",
+);
+```
+
+### 2. A gating component that mounts the session only when active
+
+LiveKit hooks (`useSession`) must only run while a session should be live. Render a static "idle" card when inactive, and swap to the active session on user interaction.
+
+```tsx
+"use client";
+
+import { useState } from "react";
+
+function VoiceCard() {
+  const [isActive, setIsActive] = useState(false);
+  if (!isActive) return <IdleCard onStart={() => setIsActive(true)} />;
+  return <ActiveSession onEnd={() => setIsActive(false)} />;
 }
 ```
 
-### Step 3: Build Voice Component
+### 3. The active session: `useSession` → `SessionProvider` → `useAgent`
 
-See [assets/component-template.tsx](assets/component-template.tsx) for a complete example. Basic structure:
+```tsx
+import { useEffect, useRef } from "react";
+import {
+  useSession,
+  SessionProvider,
+  useAgent,
+  RoomAudioRenderer,
+  BarVisualizer,
+} from "@livekit/components-react";
 
-```typescript
-import { LiveKitRoom, VoiceAssistant } from "@livekit/components-react";
-import { useState } from "react";
+function ActiveSession({ onEnd }: { onEnd: () => void }) {
+  const session = useSession(tokenSource);
+  const started = useRef(false);
 
-export function VoiceChat() {
-  const [token, setToken] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const startSession = async () => {
-    setLoading(true);
-    const res = await fetch("/api/livekit/token", {
-      method: "POST",
-      body: JSON.stringify({ roomName: `room-${Date.now()}` }),
-    });
-    const { token } = await res.json();
-    setToken(token);
-    setLoading(false);
-  };
-
-  if (!token) {
-    return <button onClick={startSession}>Start Voice Chat</button>;
-  }
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    session.start();
+    return () => {
+      session.end();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
-    <LiveKitRoom
-      video={false}
-      audio={true}
-      token={token}
-      serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
-      onDisconnected={() => setToken("")}
-    >
-      <VoiceAssistant />
-    </LiveKitRoom>
+    <SessionProvider session={session}>
+      <SessionUI onEnd={onEnd} />
+      <RoomAudioRenderer />
+    </SessionProvider>
+  );
+}
+
+function SessionUI({ onEnd }: { onEnd: () => void }) {
+  const agent = useAgent();
+
+  const status =
+    agent.state === "listening"
+      ? "Listening..."
+      : agent.state === "thinking"
+        ? "Thinking..."
+        : agent.state === "speaking"
+          ? "Speaking..."
+          : "Connecting...";
+
+  return (
+    <div>
+      <p>{status}</p>
+      {agent.microphoneTrack && (
+        <BarVisualizer
+          track={agent.microphoneTrack}
+          state={agent.state}
+          barCount={5}
+        />
+      )}
+      <button onClick={onEnd}>End</button>
+    </div>
   );
 }
 ```
 
-### Step 4: Choose a Layout Pattern
+## Rules
 
-Pick from three common integration patterns (see [assets/component-patterns.md](assets/component-patterns.md)):
+1. **Client-only.** The file must start with `"use client"`. Do not write server code, route handlers, or agent worker code.
+2. **Do not re-create the token route.** Always call the existing `/api/livekit/token?template=<slug>`.
+3. **`tokenSource` is defined at module scope**, not inside a component, so it is stable across renders.
+4. **Guard `session.start()`** with a `useRef` to avoid double-starting under React Strict Mode. Call `session.end()` in cleanup.
+5. **`useSession` must only be mounted while active.** Use an `isActive` gate so the hook is not running on the idle screen.
+6. **Always render `<RoomAudioRenderer />`** inside `<SessionProvider>` — without it the agent has no audio output.
+7. **`useAgent` must be called inside `<SessionProvider>`**, not alongside `useSession`.
+8. **Use `BarVisualizer` only when `agent.microphoneTrack` exists.** Render a fallback "waiting" UI otherwise.
+9. **Do not set `NEXT_PUBLIC_LIVEKIT_*`.** The server URL is returned by the token endpoint; the client never reads LiveKit env vars directly.
+10. **Agent state values** are `"listening" | "thinking" | "speaking" | "initializing" | "disconnected"` — branch on these for UI, don't invent new ones.
 
-1. **Floating Button** — Bottom-right, expand on click
-2. **Embedded Section** — Voice area on page
-3. **Modal/Sidebar** — Voice chat in dialog or slide-out
+## Common Mistakes to Avoid
 
-## Key Implementation Details
+- ❌ Calling `useSession` at the top of a page that isn't actively in a voice session → wastes a token and opens an unused room.
+- ❌ Creating the `TokenSource` inside the component body → reconnects on every render.
+- ❌ Forgetting `<RoomAudioRenderer />` → user hears nothing.
+- ❌ Using `NEXT_PUBLIC_LIVEKIT_URL` → not needed; the server URL comes from the token response.
+- ❌ Writing a new `/api/livekit/token` route → one already exists and handles all templates.
+- ❌ Passing a hand-rolled JWT or `server_url` into the client → let `TokenSource.endpoint(...)` handle fetching.
 
-### Microphone Permissions
+## Minimal Checklist Before Finishing
 
-The browser will request microphone access when starting voice:
-
-```typescript
-const handleStart = async () => {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    // Permission granted, proceed with voice
-  } catch {
-    // Permission denied - show message
-  }
-};
-```
-
-### Connection States
-
-Track and handle connection phases:
-
-```typescript
-const [status, setStatus] = useState("idle"); // idle → connecting → connected → disconnecting
-
-return (
-  <LiveKitRoom
-    onConnected={() => setStatus("connected")}
-    onDisconnected={() => setStatus("idle")}
-  >
-    {status === "connected" && <VoiceAssistant />}
-  </LiveKitRoom>
-);
-```
-
-### Error Handling
-
-```typescript
-const handleError = (error: any) => {
-  if (error.code === "NotAllowedError") {
-    // User denied microphone
-  } else if (error.code === "NotFoundError") {
-    // No microphone device found
-  } else {
-    // Network or connection error
-  }
-};
-```
-
-## UI Integration Patterns
-
-### Pattern 1: Floating Assistant
-
-```typescript
-<div className="fixed bottom-6 right-6">
-  <button onClick={() => setOpen(!open)}>🎤 Voice</button>
-  {open && (
-    <div className="absolute bottom-20 right-0 w-80 bg-white rounded-lg shadow-xl">
-      <VoiceChat />
-    </div>
-  )}
-</div>
-```
-
-### Pattern 2: Embedded in Page
-
-```typescript
-<section className="bg-blue-50 p-6 rounded-lg">
-  <h2>Chat with Our Assistant</h2>
-  <VoiceChat />
-</section>
-```
-
-### Pattern 3: Modal
-
-```typescript
-{showVoiceModal && (
-  <dialog className="fixed inset-0 bg-black/50 flex items-center justify-center">
-    <div className="bg-white rounded-lg p-6">
-      <VoiceChat />
-    </div>
-  </dialog>
-)}
-```
-
-## Testing Your Integration
-
-Verify:
-
-- [ ] Microphone permission request appears
-- [ ] Token generation succeeds via API route
-- [ ] Connection to LiveKit establishes
-- [ ] Audio input is captured
-- [ ] Agent responds with real-time audio output
-- [ ] UI updates show connection status
-- [ ] Graceful disconnect when closing
-
-## Common Integration Issues
-
-| Issue                     | Cause                      | Fix                                     |
-| ------------------------- | -------------------------- | --------------------------------------- |
-| "Token generation failed" | Missing env variables      | Verify `.env.local` has all 5 variables |
-| "Connection timed out"    | Wrong LIVEKIT_URL          | Check server URL is correct             |
-| "Permission denied"       | Browser blocked microphone | Check browser permissions               |
-| No audio from agent       | Agent server issue         | Not a client problem                    |
-| Audio glitchy/cuts out    | Network latency            | User's internet connection              |
-
-## See Also
-
-- [Component Patterns](assets/component-patterns.md) — UI layout examples
-- [Component Template](assets/component-template.tsx) — Full working code
-- [Styling](references/STYLING.md) — CSS and theming
-- [Technical Details](references/REFERENCE.md) — Advanced topics
+- [ ] File is `"use client"`.
+- [ ] `tokenSource` defined at module scope with a valid template slug.
+- [ ] Idle → Active gating via `useState`.
+- [ ] `session.start()` guarded by `useRef`; cleanup calls `session.end()`.
+- [ ] `<SessionProvider>` wraps UI and contains `<RoomAudioRenderer />`.
+- [ ] `useAgent()` used inside the provider; UI branches on `agent.state`.
+- [ ] No backend, worker, or env var changes.
