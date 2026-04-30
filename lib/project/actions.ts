@@ -156,6 +156,63 @@ export async function getProjectPrompts(projectId: string): Promise<Prompt[]> {
   return (data as Prompt[]) ?? [];
 }
 
+/**
+ * Update the content of the latest prompt for a project (or insert one if
+ * none exists). Returns the resulting prompt row, or null on failure.
+ *
+ * Used by the widget agent's `updatePrompt` tool to refine the system
+ * instructions that will be injected into the LiveKit voice agent.
+ */
+export async function updateProjectPrompt(
+  projectId: string,
+  organizationId: string,
+  content: string,
+  userId?: string,
+): Promise<Prompt | null> {
+  const supabase = await createClient();
+
+  // Look up the most recent prompt for this project
+  const { data: existing } = await supabase
+    .from("prompts")
+    .select("prompt_id")
+    .eq("project_id", projectId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (existing?.prompt_id) {
+    const { data, error } = await supabase
+      .from("prompts")
+      .update({ content })
+      .eq("prompt_id", existing.prompt_id)
+      .select()
+      .single();
+    if (error) {
+      console.error("Error updating prompt:", error.message);
+      return null;
+    }
+    return data as Prompt;
+  }
+
+  // No prompt exists — insert one
+  const { data, error } = await supabase
+    .from("prompts")
+    .insert({
+      prompt_id: crypto.randomUUID(),
+      project_id: projectId,
+      organization_id: organizationId,
+      content,
+      created_by_user_id: userId,
+    })
+    .select()
+    .single();
+  if (error) {
+    console.error("Error inserting prompt:", error.message);
+    return null;
+  }
+  return data as Prompt;
+}
+
 export async function getProjects(organizationId: string): Promise<Project[]> {
   const supabase = await createClient();
   const { data } = await supabase

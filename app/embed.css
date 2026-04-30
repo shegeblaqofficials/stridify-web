@@ -1,0 +1,248 @@
+@import "tailwindcss";
+@import "../node_modules/tw-animate-css/dist/tw-animate.css";
+
+@custom-variant dark {
+  &:where(.dark *),
+  &:where(:host(.dark) *) {
+    @slot;
+  }
+}
+
+/*
+ * Stridify embed token system.
+ *
+ * Bridges the LiveKit-style component tokens (bg1..bg3, fg0..fg4, separator*,
+ * fgAccent, button-*, destructive-*) to the parent Stridify brand palette so
+ * the embed inherits the host theme automatically.
+ */
+:root,
+:host {
+  /* Foregrounds */
+  --fg0: #0a0a0a;
+  --fg1: #18181b;
+  --fg2: #27272a;
+  --fg3: #52525b;
+  --fg4: #71717a;
+  --fgSerious: #ef4444;
+  --fgSuccess: #16a34a;
+  --fgModerate: #d97706;
+  --fgAccent: #6366f1;
+
+  /* Backgrounds */
+  --bg1: #fafafa;
+  --bg2: #ffffff;
+  --bg3: #f4f4f5;
+  --bgSerious: #fef2f2;
+  --bgSerious2: #fee2e2;
+  --bgSuccess: #ecfdf5;
+  --bgModerate: #fffbeb;
+  --bgAccent: #eef2ff;
+  --bgAccentPrimary: #e0e7ff;
+
+  /* Separators */
+  --separator1: #e4e4e7;
+  --separator2: #d4d4d8;
+  --separatorSerious: #fecaca;
+  --separatorSuccess: #bbf7d0;
+  --separatorModerate: #fde68a;
+  --separatorAccent: #c7d2fe;
+
+  /* Shadcn-compatible base tokens */
+  --radius: 0.625rem;
+  --background: #fafafa;
+  --foreground: #0a0a0a;
+  --card: #ffffff;
+  --card-foreground: #0a0a0a;
+  --popover: #ffffff;
+  --popover-foreground: #0a0a0a;
+  --primary: #18181b;
+  --primary-hover: #27272a;
+  --primary-foreground: #fafafa;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #18181b;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  --accent: #f4f4f5;
+  --accent-foreground: #18181b;
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: #18181b;
+}
+
+.dark,
+:host(.dark) {
+  --fg0: #fafafa;
+  --fg1: #e4e4e7;
+  --fg2: #d4d4d8;
+  --fg3: #a1a1aa;
+  --fg4: #71717a;
+  --fgSerious: #fb7185;
+  --fgSuccess: #4ade80;
+  --fgModerate: #fbbf24;
+  --fgAccent: #818cf8;
+
+  --bg1: #09090b;
+  --bg2: #0f0f12;
+  --bg3: #18181b;
+  --bgSerious: #1f0e0b;
+  --bgSerious2: #5a1c16;
+  --bgSuccess: #052e16;
+  --bgModerate: #1a0e04;
+  --bgAccent: #1e1b4b;
+  --bgAccentPrimary: #312e81;
+
+  --separator1: #27272a;
+  --separator2: #3f3f46;
+  --separatorSerious: #5a1c16;
+  --separatorSuccess: #14532d;
+  --separatorModerate: #3f2208;
+  --separatorAccent: #312e81;
+
+  --background: #09090b;
+  --foreground: #fafafa;
+  --card: #0f0f12;
+  --card-foreground: #fafafa;
+  --popover: #18181b;
+  --popover-foreground: #fafafa;
+  --primary: #fafafa;
+  --primary-hover: #e4e4e7;
+  --primary-foreground: #09090b;
+  --secondary: #27272a;
+  --secondary-foreground: #fafafa;
+  --muted: #18181b;
+  --muted-foreground: #a1a1aa;
+  --accent: #27272a;
+  --accent-foreground: #fafafa;
+  --border: #27272a;
+  --input: #27272a;
+  --ring: #fafafa;
+}
+
+@theme inline {
+  --color-fg0: var(--fg0);
+  --color-fg1: var(--fg1);
+  --color-fg2: var(--fg2);
+  --color-fg3: var(--fg3);
+  --color-fg4: var(--fg4);
+  --color-fgSerious: var(--fgSerious);
+  --color-fgSuccess: var(--fgSuccess);
+  --color-fgModerate: var(--fgModerate);
+  --color-fgAccent: var(--fgAccent);
+
+  --color-bg1: var(--bg1);
+  --color-bg2: var(--bg2);
+  --color-bg3: var(--bg3);
+  --color-bgSerious: var(--bgSerious);
+  --color-bgSerious2: var(--bgSerious2);
+  --color-bgSuccess: var(--bgSuccess);
+  --color-bgModerate: var(--bgModerate);
+  --color-bgAccent: var(--bgAccent);
+  --color-bgAccentPrimary: var(--bgAccentPrimary);
+
+  --color-separator1: var(--separator1);
+  --color-separator2: var(--separator2);
+  --color-separatorSerious: var(--separatorSerious);
+  --color-separatorSuccess: var(--separatorSuccess);
+  --color-separatorModerate: var(--separatorModerate);
+  --color-separatorAccent: var(--separatorAccent);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--separator1);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-button: var(--bg2);
+  --color-button-hover: var(--bg3);
+  --color-button-foreground: var(--fg1);
+  --color-button-border: var(--separator1);
+  --color-button-border-selected: var(--separator2);
+  --color-button-selected: var(--bg3);
+  --color-button-primary: var(--bg2);
+  --color-button-primary-foreground: var(--fgSerious);
+  --color-button-secondary: var(--bgAccentPrimary);
+  --color-button-secondary-foreground: var(--fgAccent);
+
+  --color-destructive: var(--bgSerious);
+  --color-destructive-hover: var(--bgSerious2);
+  --color-destructive-foreground: var(--fgSerious);
+
+  --font-sans: var(--font-geist-sans, ui-sans-serif, system-ui, sans-serif);
+  --font-mono: var(--font-geist-mono, ui-monospace, monospace);
+}
+
+@layer base {
+  * {
+    border-color: var(--separator1);
+  }
+  body {
+    color: var(--foreground);
+    background: transparent;
+  }
+  /* Shadow-DOM host (popup bundle) — body rules don't apply there. */
+  :host {
+    color: var(--foreground);
+    background: transparent;
+    font-family: var(--font-sans);
+  }
+}
+
+@layer utilities {
+  .animate-text-shimmer {
+    animation: text-shimmer 3s linear infinite;
+    background: linear-gradient(
+      90deg,
+      var(--muted-foreground) 0%,
+      var(--foreground) 50%,
+      var(--muted-foreground) 100%
+    );
+    background-size: 200% 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  @keyframes text-shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  .scrollbar-on-hover {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color 0.2s linear;
+  }
+  .scrollbar-on-hover:hover {
+    scrollbar-color: var(--fg4) transparent;
+  }
+  .scrollbar-on-hover::-webkit-scrollbar {
+    width: 8px;
+  }
+  .scrollbar-on-hover::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    transition: background-color 0.2s linear;
+  }
+  .scrollbar-on-hover:hover::-webkit-scrollbar-thumb {
+    background-color: var(--fg4);
+  }
+  .scrollbar-on-hover::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
+}

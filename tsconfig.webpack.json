@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "isolatedModules": false
+  },
+  "include": [
+    "components/embed/**/*.ts",
+    "components/embed/**/*.tsx",
+    "hooks/embed/**/*.ts",
+    "hooks/embed/**/*.tsx",
+    "lib/embed/**/*.ts"
+  ]
+}
