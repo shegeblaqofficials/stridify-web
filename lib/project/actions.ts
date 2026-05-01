@@ -14,6 +14,7 @@ import {
   deleteProjectRedisData,
 } from "@/lib/redis/metrics";
 import { deleteChatMessages } from "@/lib/redis/chat";
+import { refineAgentPrompt } from "@/lib/agents/prompt-refiner";
 
 const PENDING_PROMPT_COOKIE = "pendingPrompt";
 
@@ -91,13 +92,35 @@ export async function createProject(
     return null;
   }
 
+  // For voice-driven agent types, refine the user's raw description into a
+  // structured system prompt before persisting. The web (coding) flow keeps
+  // the raw prompt unchanged.
+  let finalPromptContent = promptContent;
+  let extractedAgentName: string | null = null;
+  if (agentType === "telephony" || agentType === "widget") {
+    const refined = await refineAgentPrompt(promptContent, agentType);
+    finalPromptContent = refined.prompt;
+    extractedAgentName = refined.agentName;
+    // Replace the auto-truncated title with the AI-generated one when
+    // available, and keep the in-memory project object in sync.
+    if (refined.projectTitle && refined.projectTitle !== project.title) {
+      const { data: titled } = await supabase
+        .from("projects")
+        .update({ title: refined.projectTitle })
+        .eq("project_id", project.project_id)
+        .select()
+        .single();
+      if (titled) project.title = titled.title;
+    }
+  }
+
   const { data: prompt, error: promptError } = await supabase
     .from("prompts")
     .insert({
       prompt_id: crypto.randomUUID(),
       project_id: project.project_id,
       organization_id: organizationId,
-      content: promptContent,
+      content: finalPromptContent,
       created_by_user_id: user_id,
     })
     .select()
@@ -108,15 +131,20 @@ export async function createProject(
     return null;
   }
 
-  // If agent type is telephony, create a telephony_projects record
   if (agentType === "telephony") {
     await createTelephonyProject({
       projectId: project.project_id,
       organizationId: organizationId,
-      agentName: "Voice Assistant",
+      agentName: extractedAgentName ?? "Voice Assistant",
       agentVoice: "nova-professional",
       voiceProvider: "openai",
       provider: "livekit",
+    });
+  } else if (agentType === "widget") {
+    await createWidgetProject({
+      projectId: project.project_id,
+      organizationId: organizationId,
+      agentName: extractedAgentName ?? undefined,
     });
   }
 
@@ -342,12 +370,20 @@ export async function deleteProject(projectId: string): Promise<boolean> {
     console.error("Error deleting telephony project for project:", err);
   }
 
+  // Cascade: delete associated widget project record
+  try {
+    await supabase.from("widget_projects").delete().eq("project_id", projectId);
+  } catch (err) {
+    console.error("Error deleting widget project for project:", err);
+  }
+
   return true;
 }
 
 // ─── Telephony Project Helpers ─────────────────────────────
 
 import type { TelephonyProject } from "@/model/project/telephony-project";
+import type { WidgetProject } from "@/model/project/widget-project";
 
 export async function createTelephonyProject(params: {
   projectId: string;
@@ -430,4 +466,90 @@ export async function updateTelephonyProject(params: {
   }
 
   return data as TelephonyProject;
+}
+
+// ─── Widget Project Helpers ───────────────────────────────
+
+export async function createWidgetProject(params: {
+  projectId: string;
+  organizationId: string;
+  agentName?: string;
+  agentVoice?: string;
+  triggerLabel?: string;
+  companyName?: string;
+}): Promise<WidgetProject | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("widget_projects")
+    .insert({
+      widget_project_id: crypto.randomUUID(),
+      project_id: params.projectId,
+      organization_id: params.organizationId,
+      agent_name: params.agentName ?? "Voice Assistant",
+      agent_voice: params.agentVoice ?? "default",
+      trigger_label: params.triggerLabel ?? "Talk to us",
+      company_name: params.companyName ?? "Stridify",
+    })
+    .select()
+    .single();
+
+  if (error || !data) {
+    console.error("[widget] Error creating widget project:", error?.message);
+    return null;
+  }
+  return data as WidgetProject;
+}
+
+export async function getWidgetProject(
+  projectId: string,
+): Promise<WidgetProject | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("widget_projects")
+    .select()
+    .eq("project_id", projectId)
+    .maybeSingle();
+  if (error || !data) return null;
+  return data as WidgetProject;
+}
+
+export async function updateWidgetProject(params: {
+  projectId: string;
+  agentName?: string;
+  agentVoice?: string;
+  triggerLabel?: string;
+  companyName?: string;
+  logoUrl?: string | null;
+  logoDarkUrl?: string | null;
+  accent?: string | null;
+  accentDark?: string | null;
+}): Promise<WidgetProject | null> {
+  const supabase = await createClient();
+  const update: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
+  if (params.agentName !== undefined) update.agent_name = params.agentName;
+  if (params.agentVoice !== undefined) update.agent_voice = params.agentVoice;
+  if (params.triggerLabel !== undefined)
+    update.trigger_label = params.triggerLabel;
+  if (params.companyName !== undefined)
+    update.company_name = params.companyName;
+  if (params.logoUrl !== undefined) update.logo_url = params.logoUrl;
+  if (params.logoDarkUrl !== undefined)
+    update.logo_dark_url = params.logoDarkUrl;
+  if (params.accent !== undefined) update.accent = params.accent;
+  if (params.accentDark !== undefined) update.accent_dark = params.accentDark;
+
+  const { data, error } = await supabase
+    .from("widget_projects")
+    .update(update)
+    .eq("project_id", params.projectId)
+    .select()
+    .maybeSingle();
+
+  if (error || !data) {
+    console.error("[widget] Error updating widget project:", error?.message);
+    return null;
+  }
+  return data as WidgetProject;
 }

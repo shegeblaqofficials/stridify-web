@@ -208,3 +208,37 @@ CREATE INDEX idx_telephony_projects_telephony_project_id ON public.telephony_pro
 CREATE INDEX idx_telephony_projects_project_id ON public.telephony_projects (project_id);
 CREATE INDEX idx_telephony_projects_organization_id ON public.telephony_projects (organization_id);
 CREATE INDEX idx_telephony_projects_telephone_number ON public.telephony_projects (telephone_number);
+
+-- 1. Table to store widget project (embed iframe / popup) settings
+CREATE TABLE public.widget_projects (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  widget_project_id character varying NOT NULL,
+  project_id character varying NOT NULL,
+  organization_id character varying NOT NULL,
+  agent_name character varying NOT NULL DEFAULT 'Voice Assistant',
+  agent_voice character varying NOT NULL DEFAULT 'default',
+  trigger_label character varying NOT NULL DEFAULT 'Talk to us',
+  company_name character varying NOT NULL DEFAULT 'Stridify',
+  logo_url text,
+  logo_dark_url text,
+  accent character varying,
+  accent_dark character varying,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT widget_project_pkey PRIMARY KEY (id)
+);
+
+-- 2. Enable RLS on widget_projects
+alter table widget_projects enable row level security;
+
+-- 3. Create policy for widget_projects
+create policy "Full access to widget_projects"
+on widget_projects for all
+to authenticated, anon
+using ( true )
+with check ( true );
+
+-- 4. Add index on widget_project_id, project_id, organization_id for faster lookups
+CREATE INDEX idx_widget_projects_widget_project_id ON public.widget_projects (widget_project_id);
+CREATE INDEX idx_widget_projects_project_id ON public.widget_projects (project_id);
+CREATE INDEX idx_widget_projects_organization_id ON public.widget_projects (organization_id);

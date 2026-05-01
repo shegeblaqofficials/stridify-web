@@ -1,6 +1,14 @@
-import { AccessToken } from "livekit-server-sdk";
-import { RoomConfiguration } from "@livekit/protocol";
-import { getProject, getProjectPrompts } from "@/lib/project/actions";
+import {
+  AccessToken,
+  RoomAgentDispatch,
+  RoomConfiguration,
+} from "livekit-server-sdk";
+import {
+  getProject,
+  getProjectPrompts,
+  getTelephonyProject,
+  getWidgetProject,
+} from "@/lib/project/actions";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -22,21 +30,6 @@ know an answer, say so clearly instead of guessing.`;
 
 const DEFAULT_TTS = "inworld/inworld-tts-1:Ashley";
 
-export function OPTIONS() {
-  return new Response(null, { status: 204, headers: CORS_HEADERS });
-}
-
-/**
- * POST /api/livekit/connection-details
- *
- * Generates a LiveKit access token for an embed session. The agent's
- * instructions and prompt are loaded from the project's most recent prompt
- * row in the database (authored by the widget assistant).
- *
- * Request:
- *   Headers: X-Sandbox-Id - the project identifier
- *   Body:    { room_config?, room_name?, participant_name?, participant_identity? }
- */
 export async function POST(req: Request) {
   const { LIVEKIT_API_KEY, LIVEKIT_API_SECRET, LIVEKIT_URL } = process.env;
 
@@ -63,30 +56,48 @@ export async function POST(req: Request) {
     );
   }
 
-  const prompts = await getProjectPrompts(sandboxId);
+  // Pull project-type-specific config (voice, agent name, branding) so the
+  // worker has everything it needs to spin up the right TTS / persona.
+  const [widget, telephony, prompts] = await Promise.all([
+    project.agent_type === "widget"
+      ? getWidgetProject(sandboxId)
+      : Promise.resolve(null),
+    project.agent_type === "telephony"
+      ? getTelephonyProject(sandboxId)
+      : Promise.resolve(null),
+    getProjectPrompts(sandboxId),
+  ]);
+
   const latestPrompt = prompts.length > 0 ? prompts[prompts.length - 1] : null;
   const promptContent = latestPrompt?.content?.trim() ?? "";
 
-  console.log("Generating LiveKit token with prompt:", promptContent);
-
-  const metadata = JSON.stringify({
+  const jobContext = {
+    projectId: project.project_id,
     instructions: GENERIC_INSTRUCTIONS,
     prompt: promptContent,
     tts: DEFAULT_TTS,
-  });
+  };
+
+  const metadata = JSON.stringify(jobContext);
 
   const body = await req.json().catch(() => ({}));
 
   const roomName = `embed-${sandboxId}-${crypto.randomUUID().slice(0, 8)}`;
   const participantIdentity =
     body.participant_identity ?? `embed-user-${Date.now()}`;
-  const participantName = body.participant_name ?? "Embed User";
+  const participantName = "Embed User";
 
   const at = new AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET, {
     identity: participantIdentity,
     name: participantName,
     ttl: "15m",
-    metadata,
+  });
+  at.roomConfig = new RoomConfiguration({
+    agents: [
+      new RoomAgentDispatch({
+        metadata,
+      }),
+    ],
   });
 
   at.addGrant({
@@ -96,18 +107,6 @@ export async function POST(req: Request) {
     canPublishData: true,
     canSubscribe: true,
   });
-
-  // Only attach an explicit RoomAgentDispatch when the caller specified an
-  // agent_name. Setting `roomConfig.agents` without an agent_name forces
-  // explicit dispatch and prevents the auto-dispatched worker from ever
-  // joining the room (which is what broke voice playback).
-  // if (body.room_config) {
-  //   const rc = new RoomConfiguration(body.room_config);
-  //   if (rc.agents && rc.agents.length > 0) {
-  //     rc.agents[0].metadata = metadata;
-  //   }
-  //   at.roomConfig = rc;
-  // }
 
   const participantToken = await at.toJwt();
 

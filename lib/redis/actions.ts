@@ -11,12 +11,6 @@ export async function getChatMessages(projectId: string): Promise<UIMessage[]> {
   return loadChatMessages(projectId);
 }
 
-export async function getWidgetChatMessages(
-  projectId: string,
-): Promise<UIMessage[]> {
-  return loadChatMessages(`widget:${projectId}`);
-}
-
 export async function storeChatMessages(
   projectId: string,
   messages: UIMessage[],

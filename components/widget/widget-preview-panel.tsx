@@ -23,7 +23,7 @@ export function WidgetPreviewPanel({
   projectId,
   origin,
 }: WidgetPreviewPanelProps) {
-  const [variant, setVariant] = useState<Variant>("iframe");
+  const [variant, setVariant] = useState<Variant>("popup");
 
   const baseOrigin = useMemo(() => {
     if (origin) return origin;
@@ -75,16 +75,12 @@ export function WidgetPreviewPanel({
         <div className="mx-auto w-full max-w-3xl px-6 py-8 space-y-8">
           {/* Header */}
           <header className="space-y-2">
-            <div className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-              <HiOutlineSparkles className="size-3.5" />
-              Widget preview
-            </div>
             <h2 className="text-lg font-semibold text-foreground">
               Embed your voice agent anywhere
             </h2>
             <p className="text-sm text-muted-foreground leading-relaxed">
               The Stridify widget is a low-code way to drop a voice agent into
-              any website or web app. Pick a variant and paste the snippet —
+              any website or web app. Pick a variant and paste the snippet
               that&apos;s it.
             </p>
           </header>
@@ -100,18 +96,18 @@ export function WidgetPreviewPanel({
               className="grid grid-cols-2 gap-1 rounded-xl border border-border bg-surface p-1"
             >
               <VariantButton
-                active={variant === "iframe"}
-                onClick={() => setVariant("iframe")}
-                icon={HiOutlineWindow}
-                label="Iframe"
-                description="Inline bar"
-              />
-              <VariantButton
                 active={variant === "popup"}
                 onClick={() => setVariant("popup")}
                 icon={HiOutlineChatBubbleBottomCenterText}
                 label="Popup"
                 description="Floating bubble"
+              />
+              <VariantButton
+                active={variant === "iframe"}
+                onClick={() => setVariant("iframe")}
+                icon={HiOutlineWindow}
+                label="Iframe"
+                description="Inline bar"
               />
             </div>
           </section>
@@ -149,11 +145,11 @@ export function WidgetPreviewPanel({
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm font-semibold text-foreground">
-                    Floating bubble in the bottom-right
+                    Floating bubble in the bottom right
                   </p>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    The live popup is now mounted on this page — look for the
-                    floating bubble in the bottom-right corner and click it to
+                    The live popup is now mounted on this page look for the
+                    floating bubble in the bottom right corner and click it to
                     test the voice assistant.
                   </p>
                 </div>

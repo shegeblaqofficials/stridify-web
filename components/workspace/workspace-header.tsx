@@ -38,6 +38,12 @@ interface WorkspaceHeaderProps {
   tokenUsage?: TokenUsageDisplay | null;
   onSaveVersion?: (versionName: string) => Promise<void>;
   saving?: boolean;
+  hideVersions?: boolean;
+  hideMoreMenu?: boolean;
+  deployLabel?: string;
+  deployIcon?: React.ComponentType<{ className?: string }>;
+  deployDisabled?: boolean;
+  onDeployOverride?: () => void | Promise<void>;
 }
 
 function formatSnapshotDate(dateStr: string) {
@@ -57,6 +63,12 @@ export function WorkspaceHeader({
   tokenUsage,
   onSaveVersion,
   saving = false,
+  hideVersions = false,
+  hideMoreMenu = false,
+  deployLabel = "Deploy",
+  deployIcon: DeployIcon = HiOutlineRocketLaunch,
+  deployDisabled = false,
+  onDeployOverride,
 }: WorkspaceHeaderProps) {
   const { user, organization } = useAccount();
   const [isEditing, setIsEditing] = useState(false);
@@ -191,77 +203,83 @@ export function WorkspaceHeader({
             </button>
           )}
 
-          <div className="hidden sm:block h-4 w-px bg-border mx-3" />
+          {!hideVersions && (
+            <>
+              <div className="hidden sm:block h-4 w-px bg-border mx-3" />
 
-          {/* Snapshot version dropdown */}
-          <div ref={dropdownRef} className="relative">
-            <button
-              ref={dropdownButtonRef}
-              onClick={() => snapshots.length > 0 && setShowVersions((v) => !v)}
-              className={`flex items-center gap-1 px-1.5 py-0.5 rounded transition-colors ${
-                snapshots.length > 0
-                  ? "hover:bg-surface-elevated cursor-pointer"
-                  : "opacity-50 cursor-default"
-              }`}
-            >
-              {activeSnapshot ? (
-                <>
-                  <span className="text-xs text-muted-foreground">
-                    v{activeSnapshot.version_number}
-                  </span>
-                  <span className="hidden sm:inline text-xs text-muted-foreground/60">
-                    — {formatSnapshotDate(activeSnapshot.created_at)}
-                  </span>
-                </>
-              ) : (
-                <span className="text-xs text-muted-foreground">v0</span>
-              )}
-              {snapshots.length > 0 && (
-                <HiOutlineChevronDown
-                  className={`size-3 transition-transform ${showVersions ? "rotate-180" : ""}`}
-                />
-              )}
-            </button>
+              {/* Snapshot version dropdown */}
+              <div ref={dropdownRef} className="relative">
+                <button
+                  ref={dropdownButtonRef}
+                  onClick={() =>
+                    snapshots.length > 0 && setShowVersions((v) => !v)
+                  }
+                  className={`flex items-center gap-1 px-1.5 py-0.5 rounded transition-colors ${
+                    snapshots.length > 0
+                      ? "hover:bg-surface-elevated cursor-pointer"
+                      : "opacity-50 cursor-default"
+                  }`}
+                >
+                  {activeSnapshot ? (
+                    <>
+                      <span className="text-xs text-muted-foreground">
+                        v{activeSnapshot.version_number}
+                      </span>
+                      <span className="hidden sm:inline text-xs text-muted-foreground/60">
+                        — {formatSnapshotDate(activeSnapshot.created_at)}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">v0</span>
+                  )}
+                  {snapshots.length > 0 && (
+                    <HiOutlineChevronDown
+                      className={`size-3 transition-transform ${showVersions ? "rotate-180" : ""}`}
+                    />
+                  )}
+                </button>
 
-            {showVersions && snapshots.length > 0 && (
-              <div className="absolute top-full left-0 mt-1.5 w-56 rounded-xl border border-border bg-surface shadow-lg py-1 z-50">
-                <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Snapshots
-                </div>
-                {snapshots.map((s) => {
-                  const isActive = s.snapshot_id === currentSnapshotId;
-                  return (
-                    <button
-                      key={s.snapshot_id}
-                      onClick={() => selectSnapshot(s.snapshot_id)}
-                      className="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-surface-elevated transition-colors"
-                    >
-                      <div className="flex flex-col items-start">
-                        <span
-                          className={
-                            isActive
-                              ? "text-foreground font-medium"
-                              : "text-muted-foreground"
-                          }
+                {showVersions && snapshots.length > 0 && (
+                  <div className="absolute top-full left-0 mt-1.5 w-56 rounded-xl border border-border bg-surface shadow-lg py-1 z-50">
+                    <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Snapshots
+                    </div>
+                    {snapshots.map((s) => {
+                      const isActive = s.snapshot_id === currentSnapshotId;
+                      return (
+                        <button
+                          key={s.snapshot_id}
+                          onClick={() => selectSnapshot(s.snapshot_id)}
+                          className="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-surface-elevated transition-colors"
                         >
-                          v{s.version_number}
-                          <span className="ml-1.5 text-xs text-muted-foreground/60">
-                            {s.version_name}
-                          </span>
-                        </span>
-                        <span className="text-[10px] text-muted-foreground/50">
-                          {new Date(s.created_at).toLocaleString()}
-                        </span>
-                      </div>
-                      {isActive && (
-                        <HiOutlineCheck className="size-4 text-primary shrink-0" />
-                      )}
-                    </button>
-                  );
-                })}
+                          <div className="flex flex-col items-start">
+                            <span
+                              className={
+                                isActive
+                                  ? "text-foreground font-medium"
+                                  : "text-muted-foreground"
+                              }
+                            >
+                              v{s.version_number}
+                              <span className="ml-1.5 text-xs text-muted-foreground/60">
+                                {s.version_name}
+                              </span>
+                            </span>
+                            <span className="text-[10px] text-muted-foreground/50">
+                              {new Date(s.created_at).toLocaleString()}
+                            </span>
+                          </div>
+                          {isActive && (
+                            <HiOutlineCheck className="size-4 text-primary shrink-0" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -277,89 +295,98 @@ export function WorkspaceHeader({
         )}
 
         {/* More menu dropdown */}
-        <div ref={menuRef} className="relative">
-          <button
-            ref={menuButtonRef}
-            onClick={() => setShowMenu((v) => !v)}
-            className="hidden md:flex items-center gap-2 px-3 py-1.5 text-sm font-semibold rounded-lg bg-surface-elevated hover:opacity-80 transition-colors"
-          >
-            <span>More</span>
-            <HiOutlineEllipsisHorizontal className="size-4 text-muted-foreground" />
-          </button>
+        {!hideMoreMenu && (
+          <div ref={menuRef} className="relative">
+            <button
+              ref={menuButtonRef}
+              onClick={() => setShowMenu((v) => !v)}
+              className="hidden md:flex items-center gap-2 px-3 py-1.5 text-sm font-semibold rounded-lg bg-surface-elevated hover:opacity-80 transition-colors"
+            >
+              <span>More</span>
+              <HiOutlineEllipsisHorizontal className="size-4 text-muted-foreground" />
+            </button>
 
-          {showMenu && (
-            <div className="absolute top-full right-0 mt-1.5 w-48 rounded-xl border border-border bg-surface shadow-lg py-1 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
-              <button
-                disabled={!projectId || saving}
-                onClick={() => {
-                  setVersionLabel("");
-                  setShowSaveModal(true);
-                  setShowMenu(false);
-                }}
-                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-surface-elevated transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <HiOutlineBookmarkSquare
-                  className={`size-4 ${saving ? "animate-pulse" : ""}`}
-                />
-                {saving ? "Saving..." : "Save Version"}
-              </button>
-              <button
-                disabled={!projectId || downloading}
-                onClick={async () => {
-                  if (!projectId) return;
-                  setShowMenu(false);
-                  setDownloading(true);
-                  try {
-                    const res = await fetch(
-                      `/api/sandbox/download?projectId=${encodeURIComponent(projectId)}`,
-                    );
-                    if (!res.ok) {
-                      console.error("[download] failed:", res.status);
-                      return;
+            {showMenu && (
+              <div className="absolute top-full right-0 mt-1.5 w-48 rounded-xl border border-border bg-surface shadow-lg py-1 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+                <button
+                  disabled={!projectId || saving}
+                  onClick={() => {
+                    setVersionLabel("");
+                    setShowSaveModal(true);
+                    setShowMenu(false);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-surface-elevated transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <HiOutlineBookmarkSquare
+                    className={`size-4 ${saving ? "animate-pulse" : ""}`}
+                  />
+                  {saving ? "Saving..." : "Save Version"}
+                </button>
+                <button
+                  disabled={!projectId || downloading}
+                  onClick={async () => {
+                    if (!projectId) return;
+                    setShowMenu(false);
+                    setDownloading(true);
+                    try {
+                      const res = await fetch(
+                        `/api/sandbox/download?projectId=${encodeURIComponent(projectId)}`,
+                      );
+                      if (!res.ok) {
+                        console.error("[download] failed:", res.status);
+                        return;
+                      }
+                      const blob = await res.blob();
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download =
+                        res.headers
+                          .get("Content-Disposition")
+                          ?.match(/filename="(.+)"/)?.[1] ?? "project.tar.gz";
+                      document.body.appendChild(a);
+                      a.click();
+                      a.remove();
+                      URL.revokeObjectURL(url);
+                    } catch (err) {
+                      console.error("[download] error:", err);
+                    } finally {
+                      setDownloading(false);
                     }
-                    const blob = await res.blob();
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download =
-                      res.headers
-                        .get("Content-Disposition")
-                        ?.match(/filename="(.+)"/)?.[1] ?? "project.tar.gz";
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-                    URL.revokeObjectURL(url);
-                  } catch (err) {
-                    console.error("[download] error:", err);
-                  } finally {
-                    setDownloading(false);
-                  }
-                }}
-                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-surface-elevated transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <HiOutlineArrowDownTray
-                  className={`size-4 ${downloading ? "animate-bounce" : ""}`}
-                />
-                {downloading ? "Downloading..." : "Download"}
-              </button>
-              <div className="h-px bg-border my-1" />
-              <button
-                onClick={() => setShowMenu(false)}
-                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-surface-elevated transition-colors"
-              >
-                <HiOutlineCog6Tooth className="size-4" />
-                Settings
-              </button>
-            </div>
-          )}
-        </div>
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-surface-elevated transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <HiOutlineArrowDownTray
+                    className={`size-4 ${downloading ? "animate-bounce" : ""}`}
+                  />
+                  {downloading ? "Downloading..." : "Download"}
+                </button>
+                <div className="h-px bg-border my-1" />
+                <button
+                  onClick={() => setShowMenu(false)}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-surface-elevated transition-colors"
+                >
+                  <HiOutlineCog6Tooth className="size-4" />
+                  Settings
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         <button
-          onClick={() => setShowDeploy(true)}
-          className="flex items-center gap-1.5 md:gap-2 p-1.5 md:px-4 md:py-1.5 text-xs md:text-sm font-semibold rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+          onClick={() => {
+            if (onDeployOverride) {
+              void onDeployOverride();
+            } else {
+              setShowDeploy(true);
+            }
+          }}
+          disabled={deployDisabled}
+          className="flex items-center gap-1.5 md:gap-2 p-1.5 md:px-4 md:py-1.5 text-xs md:text-sm font-semibold rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          <HiOutlineRocketLaunch className="size-4" />
-          <span className="hidden md:inline">Deploy</span>
+          <DeployIcon className="size-4" />
+          <span className="hidden md:inline">{deployLabel}</span>
         </button>
 
         {user && <UserDropdown user={user} />}

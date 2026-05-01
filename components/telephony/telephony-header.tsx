@@ -5,13 +5,11 @@ import Link from "next/link";
 import { StridifyLogo } from "@/components/ui/logo";
 import { useAccount } from "@/provider/account-provider";
 import { UserDropdown } from "@/components/auth/user-dropdown";
-import { DeployModal } from "@/components/workspace/deploy-modal";
+import { updateProjectStatus } from "@/lib/project/actions";
 import {
   HiOutlineFolderOpen,
-  HiOutlineShare,
   HiOutlineRocketLaunch,
-  HiOutlineCog6Tooth,
-  HiOutlineEllipsisHorizontal,
+  HiOutlineCheckCircle,
   HiOutlinePencilSquare,
 } from "react-icons/hi2";
 
@@ -26,40 +24,16 @@ export function TelephonyHeader({
   projectName = "Untitled Agent",
   onProjectNameChange,
 }: TelephonyHeaderProps) {
-  const { user, organization } = useAccount();
+  const { user } = useAccount();
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(projectName);
-  const [showDeploy, setShowDeploy] = useState(false);
-  const [showMenu, setShowMenu] = useState(false);
+  const [isLive, setIsLive] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const menuButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (isEditing) inputRef.current?.select();
   }, [isEditing]);
-
-  useEffect(() => {
-    if (!showMenu) return;
-    const handleClick = (e: MouseEvent) => {
-      const target = e.target as Node;
-      const isClickOnButton = menuButtonRef.current?.contains(target);
-      const isClickOnMenu = menuRef.current?.contains(target);
-
-      if (!isClickOnButton && !isClickOnMenu) {
-        setShowMenu(false);
-      }
-    };
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setShowMenu(false);
-    };
-    document.addEventListener("mousedown", handleClick);
-    document.addEventListener("keydown", handleKey);
-    return () => {
-      document.removeEventListener("mousedown", handleClick);
-      document.removeEventListener("keydown", handleKey);
-    };
-  }, [showMenu]);
 
   const commitName = () => {
     setIsEditing(false);
@@ -68,10 +42,13 @@ export function TelephonyHeader({
     onProjectNameChange?.(trimmed);
   };
 
-  const menuItems = [
-    { label: "Share", icon: HiOutlineShare, onClick: () => {} },
-    { label: "Settings", icon: HiOutlineCog6Tooth, onClick: () => {} },
-  ];
+  const handleGoLive = async () => {
+    if (!projectId || publishing || isLive) return;
+    setPublishing(true);
+    const ok = await updateProjectStatus(projectId, "deployed");
+    setPublishing(false);
+    if (ok) setIsLive(true);
+  };
 
   return (
     <header className="flex h-14 items-center justify-between px-3 md:px-6 border-b border-border bg-surface shrink-0">
@@ -119,54 +96,23 @@ export function TelephonyHeader({
       </div>
 
       <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
-        {/* More menu dropdown */}
-        <div ref={menuRef} className="relative">
-          <button
-            ref={menuButtonRef}
-            onClick={() => setShowMenu((v) => !v)}
-            className="hidden md:flex items-center gap-2 px-3 py-1.5 text-sm font-semibold rounded-lg bg-surface-elevated hover:opacity-80 transition-colors"
-          >
-            <span>More</span>
-            <HiOutlineEllipsisHorizontal className="size-4 text-muted-foreground" />
-          </button>
-
-          {showMenu && (
-            <div className="absolute top-full right-0 mt-1.5 w-44 rounded-xl border border-border bg-surface shadow-lg py-1 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
-              {menuItems.map((item) => (
-                <button
-                  key={item.label}
-                  onClick={() => {
-                    item.onClick();
-                    setShowMenu(false);
-                  }}
-                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-surface-elevated transition-colors"
-                >
-                  <item.icon className="size-4" />
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
         <button
-          onClick={() => setShowDeploy(true)}
-          className="flex items-center gap-1.5 md:gap-2 p-1.5 md:px-4 md:py-1.5 text-xs md:text-sm font-semibold rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+          onClick={handleGoLive}
+          disabled={publishing || isLive || !projectId}
+          className="flex items-center gap-1.5 md:gap-2 p-1.5 md:px-4 md:py-1.5 text-xs md:text-sm font-semibold rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          <HiOutlineRocketLaunch className="size-4" />
-          <span className="hidden md:inline">Deploy Agent</span>
+          {isLive ? (
+            <HiOutlineCheckCircle className="size-4" />
+          ) : (
+            <HiOutlineRocketLaunch className="size-4" />
+          )}
+          <span className="hidden md:inline">
+            {isLive ? "Live" : publishing ? "Publishing…" : "Go Live"}
+          </span>
         </button>
 
         {user && <UserDropdown user={user} />}
       </div>
-
-      <DeployModal
-        open={showDeploy}
-        onClose={() => setShowDeploy(false)}
-        projectId={projectId}
-        organizationId={organization?.organization_id}
-        userId={user?.id}
-      />
     </header>
   );
 }
