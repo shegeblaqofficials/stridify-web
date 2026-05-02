@@ -17,8 +17,26 @@ const protectedRoutes = [
 const publicOnlyRoutes = ["/"];
 
 export async function middleware(request: NextRequest) {
-  const { supabase, response } = createClient(request);
   const { pathname } = request.nextUrl;
+
+  // Return CORS headers immediately for OPTIONS preflight requests to public
+  // API routes so that infrastructure-level redirects (www ↔ non-www, etc.)
+  // never intercept the preflight before the route handler can respond.
+  if (
+    request.method === "OPTIONS" &&
+    pathname.startsWith("/api/livekit/connection-details")
+  ) {
+    return new NextResponse(null, {
+      status: 204,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, X-Sandbox-Id",
+      },
+    });
+  }
+
+  const { supabase, response } = createClient(request);
 
   // Refresh the session (important for Supabase SSR)
   const {
@@ -84,7 +102,11 @@ export const config = {
      * - public assets
      * - API routes
      * - auth callback
+     *
+     * Plus explicitly include connection-details so the OPTIONS preflight
+     * handler above can fire before any infrastructure-level redirect.
      */
     "/((?!_next/static|_next/image|favicon.ico|assets|api|auth).*)",
+    "/api/livekit/connection-details",
   ],
 };
