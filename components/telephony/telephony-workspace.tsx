@@ -10,9 +10,12 @@ import {
   getProject,
   getProjectPrompts,
   getTelephonyProject,
+  createTelephonyProject,
   updateProjectPrompt,
   updateProjectTitle,
   updateTelephonyProject,
+  getVoices,
+  type Voice,
 } from "@/lib/project/actions";
 import type { Project } from "@/model/project/project";
 import type { TelephonyProject } from "@/model/project/telephony-project";
@@ -23,6 +26,7 @@ import {
   HiOutlineXMark,
 } from "react-icons/hi2";
 import { TelephonySetupPanel } from "./telephony-setup-panel";
+import { BuyNumberModal } from "./buy-number-modal";
 
 type MobileTab = "setup" | "simulator";
 
@@ -41,15 +45,19 @@ export default function TelephonyWorkspace({
   const [mobileTab, setMobileTab] = useState<MobileTab>("setup");
   const [showMobileBanner, setShowMobileBanner] = useState(true);
   const [showKnowledgeBase, setShowKnowledgeBase] = useState(false);
+  const [showBuyNumber, setShowBuyNumber] = useState(false);
+  const [releasingNumber, setReleasingNumber] = useState(false);
+  const [voices, setVoices] = useState<Voice[]>([]);
+  const [setupError, setSetupError] = useState(false);
 
-  const [selectedVoice, setSelectedVoice] = useState("nova-professional");
+  const [selectedVoice, setSelectedVoice] = useState("");
   const [inboundEnabled, setInboundEnabled] = useState(true);
   const [assistantName, setAssistantName] = useState("Agent Name");
 
   useEffect(() => {
     if (telephonyProject) {
       setAssistantName(telephonyProject.agent_name || "Agent Name");
-      setSelectedVoice(telephonyProject.agent_voice || "nova-professional");
+      setSelectedVoice(telephonyProject.agent_voice || "");
     }
   }, [telephonyProject]);
 
@@ -65,6 +73,8 @@ export default function TelephonyWorkspace({
     : [];
 
   const { user, account, organization, loading } = useAccount();
+  const isPaidPlan =
+    Boolean(organization?.is_subscribed) && !organization?.is_free_plan;
 
   useEffect(() => {
     let cancelled = false;
@@ -72,10 +82,31 @@ export default function TelephonyWorkspace({
       getProject(projectId),
       getTelephonyProject(projectId),
       getProjectPrompts(projectId),
-    ]).then(([proj, telProj, prompts]) => {
+      getVoices(),
+    ]).then(async ([proj, telProj, prompts, v]) => {
       if (cancelled) return;
+
+      let resolvedTelProj = telProj;
+      if (!resolvedTelProj && proj) {
+        resolvedTelProj = await createTelephonyProject({
+          projectId: proj.project_id,
+          organizationId: proj.organization_id,
+          agentName: "Voice Assistant",
+          agentVoice: "inworld/inworld-tts-1:Ashley",
+          voiceProvider: "inworld",
+          provider: "livekit",
+        });
+      }
+
+      if (!resolvedTelProj) {
+        setSetupError(true);
+        setDataLoading(false);
+        return;
+      }
+
       setProject(proj);
-      setTelephonyProject(telProj);
+      setTelephonyProject(resolvedTelProj);
+      setVoices(v);
       setSystemPrompt(
         prompts.length > 0 ? prompts[prompts.length - 1].content : "",
       );
@@ -96,6 +127,24 @@ export default function TelephonyWorkspace({
 
   if (loading || !user || !account || !organization || dataLoading) {
     return <PageLoader />;
+  }
+
+  if (setupError) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center gap-3 bg-background text-foreground">
+        <p className="text-[15px] font-semibold">Telephony project not found</p>
+        <p className="text-[13px] text-muted-foreground">
+          This project doesn&apos;t have a telephony configuration. Please
+          contact support or create a new telephony project.
+        </p>
+        <a
+          href="/projects"
+          className="mt-2 text-[13px] text-accent underline underline-offset-2"
+        >
+          Back to projects
+        </a>
+      </div>
+    );
   }
 
   return (
@@ -158,7 +207,10 @@ export default function TelephonyWorkspace({
           ].join(" ")}
         >
           <TelephonySetupPanel
+            voices={voices}
             phoneNumbers={phoneNumbers}
+            canBuyNumber={isPaidPlan}
+            releasingNumber={releasingNumber}
             selectedVoice={selectedVoice}
             inboundEnabled={inboundEnabled}
             assistantName={assistantName}
@@ -179,16 +231,63 @@ export default function TelephonyWorkspace({
               }
             }}
             onBuyNumber={() => {
-              /* TODO: open buy number modal */
+              if (isPaidPlan) {
+                setShowBuyNumber(true);
+              }
+            }}
+            onReleaseNumber={async () => {
+              if (!telephonyProject?.telephone_number || releasingNumber)
+                return;
+              const confirmed = window.confirm(
+                "Release this phone number? This removes it from your agent and cannot be undone.",
+              );
+              if (!confirmed) return;
+
+              setReleasingNumber(true);
+              try {
+                const res = await fetch("/api/livekit/phone-numbers", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ action: "release", projectId }),
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                  throw new Error(data.error ?? "Failed to release number");
+                }
+
+                setTelephonyProject((prev) =>
+                  prev
+                    ? {
+                        ...prev,
+                        telephone_number: null,
+                        phone_number_provider: null,
+                        livekit_phone_number_id: null,
+                        sip_dispatch_rule_id: null,
+                        sip_trunk_id: null,
+                        agent_status: "not_connected",
+                      }
+                    : prev,
+                );
+              } catch (err) {
+                alert(
+                  err instanceof Error
+                    ? err.message
+                    : "Failed to release number",
+                );
+              } finally {
+                setReleasingNumber(false);
+              }
+            }}
+            onUpgradePlan={() => {
+              window.location.href = "/pricing";
             }}
             onVoiceChange={async (voiceId) => {
               setSelectedVoice(voiceId);
-              if (voiceId !== telephonyProject?.agent_voice) {
-                await updateTelephonyProject({
-                  projectId,
-                  agentVoice: voiceId,
-                });
-              }
+              const next = await updateTelephonyProject({
+                projectId,
+                agentVoice: voiceId,
+              });
+              if (next) setTelephonyProject(next);
             }}
             onToggleInbound={setInboundEnabled}
             onOpenKnowledgeBase={() => setShowKnowledgeBase(true)}
@@ -205,6 +304,7 @@ export default function TelephonyWorkspace({
           <PhoneSimulator
             projectId={projectId}
             agentName={assistantName || "Agent Name"}
+            selectedVoice={selectedVoice}
             onStartCall={(number) => {
               console.log("[telephony] start test call:", number);
             }}
@@ -217,6 +317,19 @@ export default function TelephonyWorkspace({
         <KnowledgeBaseOverlay
           open={showKnowledgeBase}
           onClose={() => setShowKnowledgeBase(false)}
+        />
+
+        <BuyNumberModal
+          projectId={projectId}
+          open={showBuyNumber}
+          onClose={() => setShowBuyNumber(false)}
+          onNumberPurchased={(e164) => {
+            setTelephonyProject((prev) =>
+              prev
+                ? { ...prev, telephone_number: e164, agent_status: "connected" }
+                : prev,
+            );
+          }}
         />
       </main>
     </div>

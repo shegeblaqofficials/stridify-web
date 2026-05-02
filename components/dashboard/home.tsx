@@ -13,6 +13,7 @@ import {
   HiOutlineCommandLine,
   HiOutlineSparkles,
   HiOutlineLockClosed,
+  HiOutlineXMark,
 } from "react-icons/hi2";
 import { createProject, getProjects } from "@/lib/project/actions";
 
@@ -107,13 +108,16 @@ function useTypingPlaceholder(
 
 export default function DashboardHome() {
   const placeholder = useTypingPlaceholder(placeholderPhrases);
-  const { account } = useAccount();
+  const { account, organization } = useAccount();
+  const isPaidPlan =
+    Boolean(organization?.is_subscribed) && !organization?.is_free_plan;
   const router = useRouter();
   const [prompt, setPrompt] = useState("");
   const [agentType, setAgentType] = useState<AgentType>("web");
   const [typeOpen, setTypeOpen] = useState(false);
   const [visibility, setVisibility] = useState<Visibility>("public");
   const [visOpen, setVisOpen] = useState(false);
+  const [showUpgradeBanner, setShowUpgradeBanner] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const visDropdownRef = useRef<HTMLDivElement>(null);
@@ -147,6 +151,10 @@ export default function DashboardHome() {
 
   const handleGenerate = async () => {
     if (!account || isCreating) return;
+    if (visibility === "private" && !isPaidPlan) {
+      setShowUpgradeBanner(true);
+      return;
+    }
     setIsCreating(true);
     try {
       const result = await createProject(
@@ -289,12 +297,20 @@ export default function DashboardHome() {
                         {visibilityOptions.map((opt) => {
                           const Icon = opt.icon;
                           const isActive = visibility === opt.id;
+                          const isPrivateLocked =
+                            opt.id === "private" && !isPaidPlan;
                           return (
                             <button
                               key={opt.id}
                               type="button"
                               onClick={() => {
+                                if (isPrivateLocked) {
+                                  setShowUpgradeBanner(true);
+                                  setVisOpen(false);
+                                  return;
+                                }
                                 setVisibility(opt.id);
+                                setShowUpgradeBanner(false);
                                 setVisOpen(false);
                               }}
                               className={[
@@ -306,9 +322,13 @@ export default function DashboardHome() {
                             >
                               <Icon className="h-4 w-4" />
                               {opt.label}
-                              {isActive && (
+                              {isPrivateLocked ? (
+                                <span className="ml-auto rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-500">
+                                  Pro
+                                </span>
+                              ) : isActive ? (
                                 <span className="ml-auto h-1.5 w-1.5 rounded-full bg-foreground" />
-                              )}
+                              ) : null}
                             </button>
                           );
                         })}
@@ -334,6 +354,29 @@ export default function DashboardHome() {
                 </Button>
               </div>
             </div>
+
+            {showUpgradeBanner && (
+              <div className="mt-3 flex items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 animate-in fade-in slide-in-from-top-1 duration-200">
+                <HiOutlineLockClosed className="h-4 w-4 shrink-0 text-amber-500" />
+                <p className="flex-1 text-xs text-amber-700 dark:text-amber-400">
+                  Private projects are available on paid plans only.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => router.push("/pricing")}
+                  className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground transition-all hover:bg-primary/90 active:scale-[0.98]"
+                >
+                  Upgrade →
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowUpgradeBanner(false)}
+                  className="rounded p-0.5 transition-colors hover:bg-amber-500/20"
+                >
+                  <HiOutlineXMark className="h-3.5 w-3.5 text-amber-500" />
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Quick prompts */}

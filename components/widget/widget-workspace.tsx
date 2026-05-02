@@ -8,8 +8,11 @@ import {
   getProject,
   getProjectPrompts,
   getWidgetProject,
+  createWidgetProject,
   updateProjectStatus,
   updateProjectTitle,
+  getVoices,
+  type Voice,
 } from "@/lib/project/actions";
 import type { Project } from "@/model/project/project";
 import type { WidgetProject } from "@/model/project/widget-project";
@@ -38,6 +41,8 @@ export default function WidgetWorkspace({ projectId }: WidgetWorkspaceProps) {
   const [showKnowledgeBase, setShowKnowledgeBase] = useState(false);
   const [isLive, setIsLive] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [voices, setVoices] = useState<Voice[]>([]);
+  const [setupError, setSetupError] = useState(false);
   const { user, account, organization, loading } = useAccount();
 
   useEffect(() => {
@@ -46,10 +51,27 @@ export default function WidgetWorkspace({ projectId }: WidgetWorkspaceProps) {
       getProject(projectId),
       getWidgetProject(projectId),
       getProjectPrompts(projectId),
-    ]).then(([proj, w, prompts]) => {
+      getVoices(),
+    ]).then(async ([proj, w, prompts, v]) => {
       if (cancelled) return;
+
+      let resolvedWidget = w;
+      if (!resolvedWidget && proj) {
+        resolvedWidget = await createWidgetProject({
+          projectId: proj.project_id,
+          organizationId: proj.organization_id,
+        });
+      }
+
+      if (!resolvedWidget) {
+        setSetupError(true);
+        setDataLoading(false);
+        return;
+      }
+
       setProject(proj);
-      setWidget(w);
+      setWidget(resolvedWidget);
+      setVoices(v);
       setSystemPrompt(
         prompts.length > 0 ? prompts[prompts.length - 1].content : "",
       );
@@ -81,6 +103,24 @@ export default function WidgetWorkspace({ projectId }: WidgetWorkspaceProps) {
 
   if (loading || !user || !account || !organization || dataLoading) {
     return <PageLoader />;
+  }
+
+  if (setupError) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center gap-3 bg-background text-foreground">
+        <p className="text-[15px] font-semibold">Widget project not found</p>
+        <p className="text-[13px] text-muted-foreground">
+          This project doesn&apos;t have a widget configuration. Please contact
+          support or create a new widget project.
+        </p>
+        <a
+          href="/projects"
+          className="mt-2 text-[13px] text-accent underline underline-offset-2"
+        >
+          Back to projects
+        </a>
+      </div>
+    );
   }
 
   return (
@@ -130,6 +170,7 @@ export default function WidgetWorkspace({ projectId }: WidgetWorkspaceProps) {
             <WidgetSetupPanel
               projectId={projectId}
               organizationId={organization.organization_id}
+              voices={voices}
               widget={widget}
               systemPrompt={systemPrompt}
               onOpenKnowledgeBase={() => setShowKnowledgeBase(true)}

@@ -36,6 +36,8 @@ interface PhoneSimulatorProps {
   agentName?: string;
   onStartCall?: (phoneNumber: string) => void;
   onEndCall?: () => void;
+  /** Current TTS voice ID — published to the agent when changed mid-call. */
+  selectedVoice?: string;
 }
 
 export function PhoneSimulator({
@@ -43,6 +45,7 @@ export function PhoneSimulator({
   agentName = "Stridify AI",
   onStartCall,
   onEndCall,
+  selectedVoice,
 }: PhoneSimulatorProps) {
   const [state, setState] = useState<SimulatorState>("idle");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -86,6 +89,20 @@ export function PhoneSimulator({
       if (room.state !== "disconnected") room.disconnect();
     };
   }, [room]);
+
+  // When voice changes mid-call, publish a data message so the agent can adapt.
+  useEffect(() => {
+    if (!selectedVoice || state !== "connected") return;
+    const data = new TextEncoder().encode(
+      JSON.stringify({ type: "tts_update", tts: selectedVoice }),
+    );
+    room.localParticipant
+      .publishData(data, { reliable: true })
+      .catch((err) =>
+        console.warn("[telephony-simulator] tts_update dispatch failed:", err),
+      );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedVoice]);
 
   useEffect(() => {
     if (state === "connected") {

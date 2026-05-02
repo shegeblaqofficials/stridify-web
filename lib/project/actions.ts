@@ -392,6 +392,7 @@ export async function createTelephonyProject(params: {
   agentVoice: string;
   voiceProvider: string;
   provider: string;
+  phoneNumberProvider?: string | null;
 }): Promise<TelephonyProject | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -406,6 +407,7 @@ export async function createTelephonyProject(params: {
       agent_status: "not_connected",
       provider: params.provider,
       telephone_number: null,
+      phone_number_provider: params.phoneNumberProvider ?? "livekit",
     })
     .select()
     .single();
@@ -440,7 +442,11 @@ export async function updateTelephonyProject(params: {
   agentName?: string;
   agentVoice?: string;
   telephoneNumber?: string | null;
+  phoneNumberProvider?: string | null;
   agentStatus?: string;
+  sipTrunkId?: string | null;
+  sipDispatchRuleId?: string | null;
+  livekitPhoneNumberId?: string | null;
 }): Promise<TelephonyProject | null> {
   const supabase = await createClient();
   const update: Record<string, any> = {};
@@ -448,7 +454,14 @@ export async function updateTelephonyProject(params: {
   if (params.agentVoice) update.agent_voice = params.agentVoice;
   if (params.telephoneNumber !== undefined)
     update.telephone_number = params.telephoneNumber;
+  if (params.phoneNumberProvider !== undefined)
+    update.phone_number_provider = params.phoneNumberProvider;
   if (params.agentStatus) update.agent_status = params.agentStatus;
+  if (params.sipTrunkId !== undefined) update.sip_trunk_id = params.sipTrunkId;
+  if (params.sipDispatchRuleId !== undefined)
+    update.sip_dispatch_rule_id = params.sipDispatchRuleId;
+  if (params.livekitPhoneNumberId !== undefined)
+    update.livekit_phone_number_id = params.livekitPhoneNumberId;
 
   const { data, error } = await supabase
     .from("telephony_projects")
@@ -552,4 +565,23 @@ export async function updateWidgetProject(params: {
     return null;
   }
   return data as WidgetProject;
+}
+
+export interface Voice {
+  id: string; // TTS model ID e.g. "inworld/inworld-tts-1:Ashley"
+  name: string;
+  description: string;
+}
+
+export async function getVoices(): Promise<Voice[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("voices")
+    .select("tts_id, name, description")
+    .order("id");
+  return (data ?? []).map((r) => ({
+    id: r.tts_id as string,
+    name: r.name as string,
+    description: r.description as string,
+  }));
 }

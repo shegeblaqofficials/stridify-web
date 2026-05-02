@@ -12,18 +12,13 @@ import type { WidgetProject } from "@/model/project/widget-project";
 import {
   updateWidgetProject,
   updateProjectPrompt,
+  type Voice,
 } from "@/lib/project/actions";
-
-const VOICE_OPTIONS = [
-  { id: "nova-professional", label: "Nova", style: "Professional & Concise" },
-  { id: "luna-friendly", label: "Luna", style: "Warm & Friendly" },
-  { id: "atlas-authoritative", label: "Atlas", style: "Authoritative & Calm" },
-  { id: "ember-energetic", label: "Ember", style: "Energetic & Upbeat" },
-];
 
 interface WidgetSetupPanelProps {
   projectId: string;
   organizationId: string;
+  voices: Voice[];
   widget: WidgetProject;
   systemPrompt: string;
   onOpenKnowledgeBase: () => void;
@@ -33,6 +28,7 @@ interface WidgetSetupPanelProps {
 export function WidgetSetupPanel({
   projectId,
   organizationId,
+  voices,
   widget,
   systemPrompt,
   onOpenKnowledgeBase,
@@ -42,7 +38,7 @@ export function WidgetSetupPanel({
   const [companyName, setCompanyName] = useState(widget.company_name);
   const [triggerLabel, setTriggerLabel] = useState(widget.trigger_label);
   const [voiceId, setVoiceId] = useState(
-    widget.agent_voice || "nova-professional",
+    widget.agent_voice || voices[0]?.id || "",
   );
   const [voiceOpen, setVoiceOpen] = useState(false);
 
@@ -75,8 +71,7 @@ export function WidgetSetupPanel({
     if (res) flashSaved();
   };
 
-  const activeVoice =
-    VOICE_OPTIONS.find((v) => v.id === voiceId) ?? VOICE_OPTIONS[0];
+  const activeVoice = voices.find((v) => v.id === voiceId) ?? voices[0];
 
   const voiceRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -183,9 +178,9 @@ export function WidgetSetupPanel({
               className="w-full flex items-center justify-between rounded-xl border border-border bg-background px-4 py-3.5 text-[13px] font-medium text-foreground hover:bg-surface-elevated transition-colors"
             >
               <span>
-                {activeVoice.label}{" "}
+                {activeVoice?.name}{" "}
                 <span className="text-muted-foreground">
-                  — {activeVoice.style}
+                  — {activeVoice?.description}
                 </span>
               </span>
               <HiOutlineChevronDown
@@ -194,7 +189,7 @@ export function WidgetSetupPanel({
             </button>
             {voiceOpen && (
               <div className="absolute top-full left-0 mt-1.5 w-full rounded-xl border border-border bg-surface shadow-xl z-20 py-1 animate-in fade-in slide-in-from-top-1 duration-150">
-                {VOICE_OPTIONS.map((v) => (
+                {voices.map((v) => (
                   <button
                     key={v.id}
                     onClick={() => {
@@ -210,9 +205,9 @@ export function WidgetSetupPanel({
                     }`}
                   >
                     <span>
-                      {v.label}{" "}
+                      {v.name}{" "}
                       <span className="text-muted-foreground/60">
-                        — {v.style}
+                        — {v.description}
                       </span>
                     </span>
                     {v.id === voiceId && (
@@ -225,7 +220,7 @@ export function WidgetSetupPanel({
           </div>
           <button className="text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5 px-1">
             <HiOutlineSignal className="size-3.5" />
-            Preview {activeVoice.label}
+            Preview {activeVoice?.name}
           </button>
         </section>
 

@@ -9,7 +9,6 @@ import { DeployModal } from "@/components/workspace/deploy-modal";
 import {
   HiOutlineFolderOpen,
   HiOutlineChevronDown,
-  HiOutlineShare,
   HiOutlineCog6Tooth,
   HiOutlineRocketLaunch,
   HiOutlineCheck,

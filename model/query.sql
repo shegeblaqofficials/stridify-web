@@ -183,6 +183,7 @@ CREATE TABLE public.telephony_projects (
   project_id character varying NOT NULL,
   organization_id character varying NOT NULL,
   telephone_number character varying,
+  phone_number_provider character varying,
   agent_name character varying,
   agent_voice character varying,
   voice_provider character varying,
@@ -209,6 +210,12 @@ CREATE INDEX idx_telephony_projects_project_id ON public.telephony_projects (pro
 CREATE INDEX idx_telephony_projects_organization_id ON public.telephony_projects (organization_id);
 CREATE INDEX idx_telephony_projects_telephone_number ON public.telephony_projects (telephone_number);
 
+-- 5. Add LiveKit SIP columns for phone number provisioning
+ALTER TABLE public.telephony_projects ADD COLUMN IF NOT EXISTS sip_trunk_id character varying;
+ALTER TABLE public.telephony_projects ADD COLUMN IF NOT EXISTS sip_dispatch_rule_id character varying;
+ALTER TABLE public.telephony_projects ADD COLUMN IF NOT EXISTS livekit_phone_number_id character varying;
+ALTER TABLE public.telephony_projects ADD COLUMN IF NOT EXISTS phone_number_provider character varying;
+
 -- 1. Table to store widget project (embed iframe / popup) settings
 CREATE TABLE public.widget_projects (
   id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
@@ -218,7 +225,7 @@ CREATE TABLE public.widget_projects (
   agent_name character varying NOT NULL DEFAULT 'Voice Assistant',
   agent_voice character varying NOT NULL DEFAULT 'default',
   trigger_label character varying NOT NULL DEFAULT 'Talk to us',
-  company_name character varying NOT NULL DEFAULT 'Stridify',
+  company_name character varying NOT NULL DEFAULT '',
   logo_url text,
   logo_dark_url text,
   accent character varying,
@@ -242,3 +249,28 @@ with check ( true );
 CREATE INDEX idx_widget_projects_widget_project_id ON public.widget_projects (widget_project_id);
 CREATE INDEX idx_widget_projects_project_id ON public.widget_projects (project_id);
 CREATE INDEX idx_widget_projects_organization_id ON public.widget_projects (organization_id);
+
+-- Voices table (TTS voice catalogue)
+CREATE TABLE IF NOT EXISTS public.voices (
+  id serial PRIMARY KEY,
+  name character varying NOT NULL,
+  description character varying NOT NULL,
+  tts_id character varying NOT NULL UNIQUE,
+  created_at timestamp with time zone DEFAULT now()
+);
+
+-- 2. Enable RLS on voices
+ALTER TABLE public.voices ENABLE ROW LEVEL SECURITY;
+
+-- 3. Anyone (authenticated or anon) can read voices; only service role can write
+CREATE POLICY "Public read access to voices"
+ON public.voices FOR SELECT
+TO authenticated, anon
+USING ( true );
+
+INSERT INTO public.voices (name, description, tts_id) VALUES
+  ('Ashley', 'Warm, natural American female',     'inworld/inworld-tts-1:Ashley'),
+  ('Edward', 'Fast talking, emphatic American male', 'inworld/inworld-tts-1:Edward'),
+  ('Olivia', 'Upbeat, friendly British female',   'inworld/inworld-tts-1:Olivia'),
+  ('Diego',  'Soothing, gentle Mexican male',     'inworld/inworld-tts-1:Diego')
+ON CONFLICT (tts_id) DO NOTHING;

@@ -30,6 +30,10 @@ know an answer, say so clearly instead of guessing.`;
 
 const DEFAULT_TTS = "inworld/inworld-tts-1:Ashley";
 
+export async function OPTIONS() {
+  return new Response(null, { status: 204, headers: CORS_HEADERS });
+}
+
 export async function POST(req: Request) {
   const { LIVEKIT_API_KEY, LIVEKIT_API_SECRET, LIVEKIT_URL } = process.env;
 
@@ -71,11 +75,14 @@ export async function POST(req: Request) {
   const latestPrompt = prompts.length > 0 ? prompts[prompts.length - 1] : null;
   const promptContent = latestPrompt?.content?.trim() ?? "";
 
+  // Use the saved agent voice if it looks like a real TTS model ID (contains "/"),
+  // otherwise fall back to the default.
+  const savedVoice = widget?.agent_voice || telephony?.agent_voice;
   const jobContext = {
     projectId: project.project_id,
     instructions: GENERIC_INSTRUCTIONS,
     prompt: promptContent,
-    tts: DEFAULT_TTS,
+    tts: savedVoice ? savedVoice : DEFAULT_TTS,
   };
 
   const metadata = JSON.stringify(jobContext);

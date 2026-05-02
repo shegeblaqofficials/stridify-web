@@ -5,22 +5,11 @@ import {
   HiOutlinePhone,
   HiOutlinePlusCircle,
   HiOutlineChevronRight,
-  HiOutlineEllipsisVertical,
   HiOutlineBookOpen,
-  HiOutlineChatBubbleLeftRight,
   HiOutlineSignal,
   HiOutlineCheckCircle,
 } from "react-icons/hi2";
-
-/* ------------------------------------------------------------------ */
-/*  Voice options                                                     */
-/* ------------------------------------------------------------------ */
-const voiceOptions = [
-  { id: "nova-professional", label: "Nova", style: "Professional & Concise" },
-  { id: "luna-friendly", label: "Luna", style: "Warm & Friendly" },
-  { id: "atlas-authoritative", label: "Atlas", style: "Authoritative & Calm" },
-  { id: "ember-energetic", label: "Ember", style: "Energetic & Upbeat" },
-];
+import type { Voice } from "@/lib/project/actions";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                             */
@@ -33,7 +22,10 @@ interface PhoneNumber {
 }
 
 interface TelephonySetupProps {
+  voices: Voice[];
   phoneNumbers: PhoneNumber[];
+  canBuyNumber: boolean;
+  releasingNumber: boolean;
   selectedVoice: string;
   inboundEnabled: boolean;
   assistantName: string;
@@ -42,7 +34,9 @@ interface TelephonySetupProps {
   onAssistantNameChange?: (name: string) => void;
   onAssistantNameBlur?: () => void;
   onBuyNumber?: () => void;
-  onVoiceChange?: (voiceId: string) => void;
+  onReleaseNumber?: () => void;
+  onUpgradePlan?: () => void;
+  onVoiceChange?: (voiceId: string) => Promise<void> | void;
   onToggleInbound?: (enabled: boolean) => void;
   onOpenKnowledgeBase?: () => void;
 }
@@ -51,7 +45,10 @@ interface TelephonySetupProps {
 /*  Component                                                         */
 /* ------------------------------------------------------------------ */
 export function TelephonySetupPanel({
+  voices,
   phoneNumbers,
+  canBuyNumber,
+  releasingNumber,
   selectedVoice,
   inboundEnabled,
   assistantName,
@@ -60,6 +57,8 @@ export function TelephonySetupPanel({
   onAssistantNameChange,
   onAssistantNameBlur,
   onBuyNumber,
+  onReleaseNumber,
+  onUpgradePlan,
   onVoiceChange,
   onToggleInbound,
   onOpenKnowledgeBase,
@@ -75,8 +74,7 @@ export function TelephonySetupPanel({
     return () => clearTimeout(t);
   }, [savedAt]);
 
-  const activeVoice =
-    voiceOptions.find((v) => v.id === selectedVoice) ?? voiceOptions[0];
+  const activeVoice = voices.find((v) => v.id === selectedVoice) ?? voices[0];
 
   return (
     <div className="h-full w-full overflow-y-auto workspace-scrollbar bg-surface">
@@ -125,11 +123,28 @@ export function TelephonySetupPanel({
             </label>
             <button
               onClick={onBuyNumber}
-              className="text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors"
+              disabled={!canBuyNumber}
+              className="text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
             >
               Buy New Number
             </button>
           </div>
+
+          {!canBuyNumber && (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 space-y-2">
+              <p className="text-[11px] text-amber-700 dark:text-amber-400">
+                Buying phone numbers is available on paid plans only. Free US
+                local number is included with paid plans.
+              </p>
+              <button
+                type="button"
+                onClick={onUpgradePlan}
+                className="text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors"
+              >
+                Upgrade to a paid plan
+              </button>
+            </div>
+          )}
 
           {phoneNumbers.length > 0 ? (
             <div className="space-y-2">
@@ -152,8 +167,12 @@ export function TelephonySetupPanel({
                       </span>
                     )}
                   </div>
-                  <button className="p-1.5 rounded-lg hover:bg-surface-elevated transition-colors">
-                    <HiOutlineEllipsisVertical className="size-4 text-muted-foreground" />
+                  <button
+                    onClick={onReleaseNumber}
+                    disabled={releasingNumber}
+                    className="px-2.5 py-1 rounded-lg text-[11px] font-semibold text-red-500 hover:bg-red-500/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {releasingNumber ? "Releasing…" : "Release"}
                   </button>
                 </div>
               ))}
@@ -161,6 +180,7 @@ export function TelephonySetupPanel({
           ) : (
             <button
               onClick={onBuyNumber}
+              disabled={!canBuyNumber}
               className="w-full flex items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-background px-4 py-6 text-sm text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
             >
               <HiOutlinePlusCircle className="size-5" />
@@ -181,9 +201,9 @@ export function TelephonySetupPanel({
               className="w-full flex items-center justify-between rounded-xl border border-border bg-background px-4 py-3.5 text-[13px] font-medium text-foreground hover:bg-surface-elevated transition-colors"
             >
               <span>
-                {activeVoice.label}{" "}
+                {activeVoice?.name}{" "}
                 <span className="text-muted-foreground">
-                  — {activeVoice.style}
+                  — {activeVoice?.description}
                 </span>
               </span>
               <svg
@@ -203,12 +223,13 @@ export function TelephonySetupPanel({
 
             {voiceDropdownOpen && (
               <div className="absolute top-full left-0 mt-1.5 w-full rounded-xl border border-border bg-surface shadow-xl z-20 py-1 animate-in fade-in slide-in-from-top-1 duration-150">
-                {voiceOptions.map((v) => (
+                {voices.map((v) => (
                   <button
                     key={v.id}
-                    onClick={() => {
-                      onVoiceChange?.(v.id);
+                    onClick={async () => {
                       setVoiceDropdownOpen(false);
+                      await onVoiceChange?.(v.id);
+                      setSavedAt(Date.now());
                     }}
                     className={`w-full flex items-center justify-between px-4 py-2.5 text-[13px] transition-colors hover:bg-surface-elevated ${
                       v.id === selectedVoice
@@ -217,9 +238,9 @@ export function TelephonySetupPanel({
                     }`}
                   >
                     <span>
-                      {v.label}{" "}
+                      {v.name}{" "}
                       <span className="text-muted-foreground/60">
-                        — {v.style}
+                        — {v.description}
                       </span>
                     </span>
                     {v.id === selectedVoice && (
@@ -233,7 +254,7 @@ export function TelephonySetupPanel({
 
           <button className="text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5 px-1">
             <HiOutlineSignal className="size-3.5" />
-            Preview {activeVoice.label}
+            Preview {activeVoice?.name}
           </button>
         </section>
 
@@ -307,7 +328,7 @@ export function TelephonySetupPanel({
             className="w-full rounded-xl border border-border bg-background mt-2 px-4 py-3 text-[12.5px] leading-relaxed text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50 transition-colors resize-y workspace-scrollbar font-sans"
           />
           <p className="text-[11px] text-muted-foreground -mt-1">
-            Auto-generated from your description. Edit to refine.
+            Auto generated from your description. Edit to refine.
           </p>
         </section>
       </div>
