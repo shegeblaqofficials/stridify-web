@@ -161,6 +161,35 @@ export const PopupView = ({
         </AnimatePresence>
 
         <AnimatePresence>
+          {(agentState === "connecting" || agentState === "disconnected") &&
+            sessionStarted && (
+              <motion.div
+                key="connecting-message"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 6 }}
+                transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+                className="pointer-events-none absolute bottom-20 left-0 right-0 flex flex-col items-center gap-1.5"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="flex gap-0.5">
+                    {[0, 1, 2].map((i) => (
+                      <span
+                        key={i}
+                        className="bg-accent inline-block h-1.5 w-1.5 animate-bounce rounded-full"
+                        style={{ animationDelay: `${i * 0.15}s` }}
+                      />
+                    ))}
+                  </span>
+                  <span className="text-fg1 text-[13px] font-medium">
+                    Connecting with our agent…
+                  </span>
+                </div>
+              </motion.div>
+            )}
+        </AnimatePresence>
+
+        <AnimatePresence>
           {agentVideoTrack && (
             <motion.div
               key="avatar"

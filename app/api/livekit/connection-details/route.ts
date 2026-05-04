@@ -78,8 +78,11 @@ export async function POST(req: Request) {
   // Use the saved agent voice if it looks like a real TTS model ID (contains "/"),
   // otherwise fall back to the default.
   const savedVoice = widget?.agent_voice || telephony?.agent_voice;
+  const sessionId = `${sandboxId}:${Date.now()}:${crypto.randomUUID().slice(0, 8)}`;
   const jobContext = {
     projectId: project.project_id,
+    orgId: project.organization_id,
+    sessionId,
     instructions: GENERIC_INSTRUCTIONS,
     prompt: promptContent,
     tts: savedVoice ? savedVoice : DEFAULT_TTS,

@@ -1,5 +1,5 @@
 import { redis } from "./client";
-import { createClient } from "@/lib/supabase/server";
+import { getBalance, debitBalance } from "./token-balance";
 
 // ── Key patterns ──────────────────────────────────────────────────────
 // Org total input tokens:   org:tokens:input:{orgId}     → number
@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 // Project output tokens:    project:tokens:output:{projectId} → number
 // Project last active:      project:tokens:last:{projectId}   → string (ISO)
 // Org project set:          org:projects:{orgId}         → Set<projectId>
-// Balance (token_balance) lives in Supabase — it is the source of truth.
+// Balance lives in Redis (org:balance:{orgId}) — Supabase is the backup.
 
 const keys = {
   orgInputTokens: (orgId: string) => `org:tokens:input:${orgId}`,
@@ -21,38 +21,27 @@ const keys = {
   orgProjects: (orgId: string) => `org:projects:${orgId}`,
 };
 
-// ── Balance (Supabase — source of truth) ──────────────────────────────
+// ── Balance (Redis — source of truth, Supabase is the persistent backup) ──
 
+/**
+ * Returns the current spendable token balance.
+ * Reads from Redis (fast, atomic). On a cache miss seeds from Supabase.
+ */
 export async function getOrganizationBalance(
   organizationId: string,
 ): Promise<number> {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("organizations")
-    .select("token_balance")
-    .eq("organization_id", organizationId)
-    .single();
-  return data?.token_balance ?? 0;
+  return getBalance(organizationId);
 }
 
+/**
+ * Deduct `tokensUsed` from the organisation's balance via a Redis DECRBY.
+ * Atomic — safe under concurrent agent sessions.
+ */
 export async function deductOrganizationTokens(
   organizationId: string,
   tokensUsed: number,
 ): Promise<void> {
-  const supabase = await createClient();
-  const { data: org } = await supabase
-    .from("organizations")
-    .select("token_balance")
-    .eq("organization_id", organizationId)
-    .single();
-
-  const currentBalance = org?.token_balance ?? 0;
-  const newBalance = Math.max(0, currentBalance - tokensUsed);
-
-  await supabase
-    .from("organizations")
-    .update({ token_balance: newBalance })
-    .eq("organization_id", organizationId);
+  await debitBalance(organizationId, tokensUsed);
 }
 
 // ── Record a session metric ───────────────────────────────────────────

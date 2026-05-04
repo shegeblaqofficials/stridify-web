@@ -135,46 +135,11 @@ async function pruneOldSnapshots(
 }
 
 /* --------------------------------------------------------------------------
- * Incremental token deduction
- * --------------------------------------------------------------------------
- * Called after each orchestrator step to deduct only the delta since the
- * last deduction. This keeps the DB balance accurate in near-real-time
- * rather than waiting until the stream finishes.
- * ----------------------------------------------------------------------- */
-
-export async function deductTokensIncremental(
-  organizationId: string,
-  tokensToDeduct: number,
-): Promise<number> {
-  if (tokensToDeduct <= 0) return 0;
-  try {
-    const supabase = createAdminClient();
-    const { data: org } = await supabase
-      .from("organizations")
-      .select("token_balance")
-      .eq("organization_id", organizationId)
-      .single();
-
-    const currentBalance = org?.token_balance ?? 0;
-    const newBalance = Math.max(0, currentBalance - tokensToDeduct);
-
-    await supabase
-      .from("organizations")
-      .update({ token_balance: newBalance })
-      .eq("organization_id", organizationId);
-
-    console.log(
-      `[metric] incremental deduct ${tokensToDeduct} tokens — balance ${currentBalance} → ${newBalance}`,
-    );
-    return newBalance;
-  } catch (err) {
-    console.error("[metric] incremental deduction failed:", err);
-    return -1;
-  }
-}
-
-/* --------------------------------------------------------------------------
  * Token metrics
+ * --------------------------------------------------------------------------
+ * Records session statistics only. Token balance reconciliation is handled
+ * separately by reconcileBooking() in lib/redis/token-balance.ts (atomic
+ * Redis INCRBY/DECRBY — no Supabase read-modify-write race conditions).
  * ----------------------------------------------------------------------- */
 
 export interface TokenUsage {
@@ -188,46 +153,19 @@ export async function logTokenMetrics(
   projectId: string,
   projectTitle: string,
   usage: TokenUsage,
-  alreadyDeducted: number,
 ): Promise<void> {
   try {
-    const remainder = Math.max(0, usage.totalTokens - alreadyDeducted);
     console.log(
-      `[metric] logging tokens — in=${usage.inputTokens} out=${usage.outputTokens} total=${usage.totalTokens} alreadyDeducted=${alreadyDeducted} remainder=${remainder}`,
+      `[metric] logging tokens — in=${usage.inputTokens} out=${usage.outputTokens} total=${usage.totalTokens}`,
     );
-
-    const supabase = createAdminClient();
-
-    // Only deduct the remainder that wasn't covered by incremental deductions
-    const deductPromise =
-      remainder > 0
-        ? (async () => {
-            const { data: org } = await supabase
-              .from("organizations")
-              .select("token_balance")
-              .eq("organization_id", organizationId)
-              .single();
-            const currentBalance = org?.token_balance ?? 0;
-            const newBalance = Math.max(0, currentBalance - remainder);
-            await supabase
-              .from("organizations")
-              .update({ token_balance: newBalance })
-              .eq("organization_id", organizationId);
-          })()
-        : Promise.resolve();
-
-    await Promise.all([
-      recordSessionMetric({
-        organizationId,
-        projectId,
-        projectTitle,
-        inputTokens: usage.inputTokens,
-        outputTokens: usage.outputTokens,
-      }),
-      deductPromise,
-    ]);
-
-    console.log(`[metric] session recorded & tokens deducted for ${projectId}`);
+    await recordSessionMetric({
+      organizationId,
+      projectId,
+      projectTitle,
+      inputTokens: usage.inputTokens,
+      outputTokens: usage.outputTokens,
+    });
+    console.log(`[metric] session recorded for ${projectId}`);
   } catch (err) {
     console.error("[metric] failed to save metrics:", err);
   }

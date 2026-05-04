@@ -25,11 +25,8 @@ function PopupAgentClient({ appConfig }: EmbedPopupAgentClientProps) {
   const room = useMemo(() => new Room(), []);
   const [popupOpen, setPopupOpen] = useState(false);
   const [error, setError] = useState<EmbedErrorDetails | null>(null);
-  const {
-    connectionDetails,
-    refreshConnectionDetails,
-    existingOrRefreshConnectionDetails,
-  } = useConnectionDetails(appConfig);
+  const { refreshConnectionDetails, existingOrRefreshConnectionDetails } =
+    useConnectionDetails(appConfig);
 
   const handleTogglePopup = () => {
     if (isAnimating.current) return;
@@ -69,13 +66,6 @@ function PopupAgentClient({ appConfig }: EmbedPopupAgentClientProps) {
 
   useEffect(() => {
     if (!popupOpen) return;
-    if (!connectionDetails) {
-      setError({
-        title: "Error fetching connection details",
-        description: "Please try again later",
-      });
-      return;
-    }
     if (room.state !== "disconnected") return;
 
     const connect = async () => {
@@ -101,7 +91,6 @@ function PopupAgentClient({ appConfig }: EmbedPopupAgentClientProps) {
   }, [
     room,
     popupOpen,
-    connectionDetails,
     existingOrRefreshConnectionDetails,
     appConfig.isPreConnectBufferEnabled,
   ]);

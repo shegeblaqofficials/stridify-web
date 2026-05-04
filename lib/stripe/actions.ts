@@ -8,6 +8,7 @@ import {
   TOPUP_CREDITS,
   getPlanByPriceId,
 } from "./config";
+import { setBalance, creditBalance } from "@/lib/redis/token-balance";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
@@ -267,13 +268,12 @@ export async function upgradeSubscription(
     },
   });
 
-  // Update org immediately (webhook will also fire, but this is faster for UX)
+  // Update org metadata immediately (webhook will also fire, but this is faster for UX)
   const { error } = await supabase
     .from("organizations")
     .update({
       plan: targetPlanName,
       is_free_plan: false,
-      token_balance: targetPlan.creditsPerMonth,
       updated_at: new Date().toISOString(),
     })
     .eq("organization_id", organizationId);
@@ -285,6 +285,14 @@ export async function upgradeSubscription(
       organizationId,
       targetPlanName,
     );
+
+  // Reset balance to the new plan's monthly allotment (atomic Redis SET + Supabase sync)
+  await setBalance(organizationId, targetPlan.creditsPerMonth);
+  console.log(
+    "[stripe] balance reset to %d for org %s",
+    targetPlan.creditsPerMonth,
+    organizationId,
+  );
 
   return { type: "updated" };
 }
@@ -317,34 +325,14 @@ export async function handleCheckoutCompleted(session: {
   // Credit top-up (one-time payment)
   if (meta.type === "credit_topup" && meta.credits) {
     const credits = parseInt(meta.credits, 10);
-    const { data: org, error: fetchErr } = await supabase
-      .from("organizations")
-      .select("token_balance")
-      .eq("organization_id", meta.organization_id)
-      .single();
-
-    if (fetchErr) {
-      console.error("[stripe] topup fetch org error:", fetchErr.message);
-      return;
-    }
-
-    if (org) {
-      const { error } = await supabase
-        .from("organizations")
-        .update({
-          token_balance: org.token_balance + credits,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("organization_id", meta.organization_id);
-
-      if (error) console.error("[stripe] topup update error:", error.message);
-      else
-        console.log(
-          "[stripe] topup granted %d credits to org %s",
-          credits,
-          meta.organization_id,
-        );
-    }
+    // Atomic Redis INCRBY — no read needed, no race condition
+    const newBalance = await creditBalance(meta.organization_id, credits);
+    console.log(
+      "[stripe] topup granted %d credits to org %s — new balance=%d",
+      credits,
+      meta.organization_id,
+      newBalance,
+    );
     return;
   }
 
@@ -364,7 +352,6 @@ export async function handleCheckoutCompleted(session: {
         is_subscribed: true,
         is_free_plan: false,
         plan: meta.plan_name,
-        token_balance: plan.creditsPerMonth,
         updated_at: new Date().toISOString(),
       })
       .eq("organization_id", meta.organization_id);
@@ -380,6 +367,14 @@ export async function handleCheckoutCompleted(session: {
         meta.organization_id,
         meta.plan_name,
       );
+
+    // Set balance to the plan's monthly allotment (atomic Redis SET + Supabase sync)
+    await setBalance(meta.organization_id, plan.creditsPerMonth);
+    console.log(
+      "[stripe] balance set to %d for org %s",
+      plan.creditsPerMonth,
+      meta.organization_id,
+    );
   } else {
     console.warn(
       "[stripe] checkout completed but no subscription or plan_name — subscription=%s plan_name=%s",
@@ -494,12 +489,11 @@ export async function handleInvoicePaid(invoice: {
   const plan = PLANS[org.plan];
   if (!plan) return;
 
-  // Reset credits to the plan's monthly allotment
-  await supabase
-    .from("organizations")
-    .update({
-      token_balance: plan.creditsPerMonth,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("organization_id", org.organization_id);
+  // Reset credits to the plan's monthly allotment (atomic Redis SET + Supabase sync)
+  await setBalance(org.organization_id, plan.creditsPerMonth);
+  console.log(
+    "[stripe] monthly credits reset to %d for org %s",
+    plan.creditsPerMonth,
+    org.organization_id,
+  );
 }

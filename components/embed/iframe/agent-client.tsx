@@ -26,7 +26,7 @@ interface AppProps {
 function EmbedAgentClient({ appConfig }: AppProps) {
   const room = useMemo(() => new Room(), []);
   const [sessionStarted, setSessionStarted] = useState(false);
-  const { connectionDetails, refreshConnectionDetails } =
+  const { refreshConnectionDetails, existingOrRefreshConnectionDetails } =
     useConnectionDetails(appConfig);
 
   const [currentError, setCurrentError] = useState<EmbedErrorDetails | null>(
@@ -55,14 +55,11 @@ function EmbedAgentClient({ appConfig }: AppProps) {
   useEffect(() => {
     if (!sessionStarted) return;
     if (room.state !== "disconnected") return;
-    if (!connectionDetails) return;
 
     const connect = async () => {
       try {
-        await room.connect(
-          connectionDetails.serverUrl,
-          connectionDetails.participantToken,
-        );
+        const details = await existingOrRefreshConnectionDetails();
+        await room.connect(details.serverUrl, details.participantToken);
         await room.localParticipant.setMicrophoneEnabled(true, undefined, {
           preConnectBuffer: appConfig.isPreConnectBufferEnabled,
         });
@@ -83,7 +80,7 @@ function EmbedAgentClient({ appConfig }: AppProps) {
   }, [
     room,
     sessionStarted,
-    connectionDetails,
+    existingOrRefreshConnectionDetails,
     appConfig.isPreConnectBufferEnabled,
   ]);
 

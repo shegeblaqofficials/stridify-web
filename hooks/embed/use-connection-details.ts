@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { decodeJwt } from "jose";
 import type { AppConfig } from "@/lib/embed/types";
 import { getStridifyApiOrigin } from "@/lib/embed/env";
@@ -45,12 +45,6 @@ export default function useConnectionDetails(appConfig: AppConfig) {
     setConnectionDetails(data);
     return data;
   }, [appConfig.sandboxId, appConfig.agentName]);
-
-  useEffect(() => {
-    fetchConnectionDetails().catch((err) =>
-      console.error("[stridify-embed] connection details error:", err),
-    );
-  }, [fetchConnectionDetails]);
 
   const isExpired = useCallback(() => {
     const token = connectionDetails?.participantToken;

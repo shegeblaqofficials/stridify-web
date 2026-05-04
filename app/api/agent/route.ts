@@ -11,12 +11,13 @@ import { getLatestSnapshot } from "@/lib/snapshot/actions";
 import { getProject } from "@/lib/project/actions";
 import { getOrganizationBalance } from "@/lib/redis/metrics";
 import { loadChatMessages, saveChatMessages } from "@/lib/redis/chat";
+import { resolveSandbox, emergencySnapshot, logTokenMetrics } from "./actions";
 import {
-  resolveSandbox,
-  emergencySnapshot,
-  logTokenMetrics,
-  deductTokensIncremental,
-} from "./actions";
+  bookTokens,
+  checkAndRebook,
+  reconcileBooking,
+  BOOK_AMOUNT,
+} from "@/lib/redis/token-balance";
 
 export async function POST(req: NextRequest) {
   const { message, id: chatId, projectId } = await req.json();
@@ -48,6 +49,16 @@ export async function POST(req: NextRequest) {
     console.log(`[route] insufficient balance for org ${organizationId}`);
     return Response.json({ error: "insufficient_balance" }, { status: 402 });
   }
+
+  // Reserve tokens atomically before the agent starts.
+  // bookTokens() does a Redis DECRBY so no concurrent session can
+  // read the same balance and double-spend.
+  // sessionId is unique per request — prevents BOOKED_KEY clashes
+  // between concurrent sessions in the same org.
+  const sessionId = `${projectId}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+  const { balance: bookedBalance, totalBooked: initialBooked } =
+    await bookTokens(organizationId, sessionId);
+  let totalBooked = initialBooked;
 
   // Load previous messages from Redis, append the new one.
   // Filter out any messages with empty parts — the SDK requires at least one.
@@ -103,8 +114,7 @@ export async function POST(req: NextRequest) {
   let orchestratorOutputTokens = 0;
   let stepCount = 0;
   let balanceExhausted = false;
-  let tokensDeductedSoFar = 0;
-  let liveBalance = balance;
+  let liveBalance = bookedBalance;
   const abortController = new AbortController();
 
   /** Combined total across orchestrator + all subagents. */
@@ -118,20 +128,23 @@ export async function POST(req: NextRequest) {
 
   const nextVersion = (latestSnapshot?.version_number ?? 0) + 1;
 
-  // After the response is sent, log token metrics (fire-and-forget).
-  // Only deducts the remainder not already covered by incremental deductions.
+  // After the response is sent: reconcile the booking (credit back unused or
+  // debit the overage) then record session metrics — fire-and-forget.
   after(async () => {
     const usage = getTotalUsage();
     console.log(
-      `[metric] orchestrator: in=${orchestratorInputTokens} out=${orchestratorOutputTokens} | subagents: in=${subagentUsageTracker.inputTokens} out=${subagentUsageTracker.outputTokens} | steps=${stepCount} | deductedSoFar=${tokensDeductedSoFar}`,
+      `[metric] orchestrator: in=${orchestratorInputTokens} out=${orchestratorOutputTokens} | subagents: in=${subagentUsageTracker.inputTokens} out=${subagentUsageTracker.outputTokens} | steps=${stepCount} | totalBooked=${totalBooked}`,
     );
-    await logTokenMetrics(
+    // Reconcile the booking: credit back unused tokens or debit the overage.
+    // This is the single atomic Redis operation that finalises the balance.
+    await reconcileBooking(
       organizationId,
-      projectId,
-      projectTitle,
-      usage,
-      tokensDeductedSoFar,
+      sessionId,
+      usage.totalTokens,
+      totalBooked,
     );
+    // Record session metrics (no token deduction — reconcile handles it).
+    await logTokenMetrics(organizationId, projectId, projectTitle, usage);
   });
 
   return createAgentUIStreamResponse({
@@ -189,20 +202,23 @@ export async function POST(req: NextRequest) {
       // Keep sandbox alive while the agent is still working
       extendSandboxTimeout(sandbox);
 
-      // Incrementally deduct tokens used since last deduction
-      const delta = combined.totalTokens - tokensDeductedSoFar;
-      if (delta > 0) {
-        const deductAmount = delta;
-        tokensDeductedSoFar = combined.totalTokens;
-        deductTokensIncremental(organizationId, deductAmount).then(
-          (newBalance) => {
-            if (newBalance >= 0) liveBalance = newBalance;
-          },
-        );
-      }
+      // Check if the agent has consumed ≥ 80 % of what was booked.
+      // If so, atomically reserve another BOOK_AMOUNT so it never stalls.
+      checkAndRebook(
+        organizationId,
+        sessionId,
+        combined.totalTokens,
+        totalBooked,
+      ).then(({ reBooked, newTotalBooked, balance: newBalance }) => {
+        if (reBooked) totalBooked = newTotalBooked;
+        liveBalance = newBalance;
+      });
 
-      // Check if balance is exhausted after this step
-      if (liveBalance <= 0 && !balanceExhausted) {
+      // Check if balance is exhausted after this step.
+      // A balance of 0 or slightly negative is normal (org used exactly what
+      // they had). Only abort when the balance has gone more than one full
+      // BOOK_AMOUNT into debt — meaning a rebook attempt failed to recover.
+      if (liveBalance < -BOOK_AMOUNT && !balanceExhausted) {
         balanceExhausted = true;
         console.log(
           `[agent] balance exhausted mid-stream (used=${combined.totalTokens}, liveBalance=${liveBalance}). Emergency snapshot & aborting.`,
