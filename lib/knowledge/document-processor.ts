@@ -6,7 +6,6 @@
 import { embed } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { parse as csvParse } from "csv-parse/sync";
-import { createClient } from "@/lib/supabase/server";
 
 // Dynamic import for pdf-parse to handle ESM/CommonJS compatibility
 let pdfParse: any = null;
