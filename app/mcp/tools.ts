@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { getProject } from "@/lib/project/actions";
 import { getOrganizationBalance } from "@/lib/redis/metrics";
+import { searchKnowledge } from "@/lib/knowledge/search";
 
 function jsonResult(data: unknown) {
   return {
@@ -17,41 +18,49 @@ function errorResult(message: string) {
 }
 
 export function registerStridifyTools(server: McpServer) {
+  // Knowledge Tools for RAG with pgvector
   server.tool(
-    "get_company_details",
-    "Fetch company details for a given project.",
-    { projectId: z.string().uuid() },
-    async ({ projectId }) => {
-      return jsonResult({
-        projectId,
-        company: {
-          name: "Acme Corp",
-          industry: "Technology",
-          founded: 2018,
-          employees: 142,
-          website: "https://acme.example.com",
-          headquarters: "San Francisco, CA",
-          plan: "pro",
-        },
-      });
+    "query_knowledge",
+    "Search the knowledge base for the organization to answer questions using semantic similarity. Returns the most relevant document chunks.",
+    {
+      query: z.string().describe("The search query or question"),
+      organization_id: z.string().describe("Organization ID"),
+      project_id: z.string().describe("Project ID"),
+      limit: z.number().optional().default(5).describe("Max results (1-20)"),
     },
-  );
+    async ({ query, organization_id, project_id, limit }) => {
+      try {
+        const results = await searchKnowledge(
+          query,
+          organization_id,
+          project_id,
+          limit || 5,
+        );
 
-  server.tool(
-    "get_balance",
-    "Fetch the token balance for the organization that owns a project.",
-    { projectId: z.string().uuid() },
-    async ({ projectId }) => {
-      const project = await getProject(projectId);
-      if (!project) return errorResult(`Project ${projectId} not found`);
+        if (results.length === 0) {
+          return jsonResult({
+            success: true,
+            message: "No matching documents found",
+            results: [],
+          });
+        }
 
-      const balance = await getOrganizationBalance(project.organization_id);
-
-      return jsonResult({
-        projectId: project.project_id,
-        organizationId: project.organization_id,
-        balance,
-      });
+        return jsonResult({
+          success: true,
+          query,
+          results: results.map((r) => ({
+            filename: r.filename,
+            text: r.text,
+            similarity: (r.similarity * 100).toFixed(1) + "%",
+            chunk_index: r.chunk_index,
+          })),
+          count: results.length,
+        });
+      } catch (error) {
+        return errorResult(
+          `Knowledge search failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+        );
+      }
     },
   );
 }

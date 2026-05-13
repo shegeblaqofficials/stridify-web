@@ -81,7 +81,7 @@ export async function POST(req: Request) {
   const sessionId = `${sandboxId}:${Date.now()}:${crypto.randomUUID().slice(0, 8)}`;
   const jobContext = {
     projectId: project.project_id,
-    orgId: project.organization_id,
+    organizationId: project.organization_id,
     sessionId,
     instructions: GENERIC_INSTRUCTIONS,
     prompt: promptContent,
@@ -89,6 +89,8 @@ export async function POST(req: Request) {
   };
 
   const metadata = JSON.stringify(jobContext);
+
+  console.log("Generating LiveKit token with metadata:", jobContext);
 
   const body = await req.json().catch(() => ({}));
 

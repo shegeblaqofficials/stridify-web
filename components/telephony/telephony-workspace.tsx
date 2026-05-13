@@ -317,6 +317,8 @@ export default function TelephonyWorkspace({
         <KnowledgeBaseOverlay
           open={showKnowledgeBase}
           onClose={() => setShowKnowledgeBase(false)}
+          projectId={projectId}
+          organizationId={organization.organization_id}
         />
 
         <BuyNumberModal

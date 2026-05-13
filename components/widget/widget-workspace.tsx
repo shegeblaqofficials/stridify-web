@@ -192,6 +192,8 @@ export default function WidgetWorkspace({ projectId }: WidgetWorkspaceProps) {
         <KnowledgeBaseOverlay
           open={showKnowledgeBase}
           onClose={() => setShowKnowledgeBase(false)}
+          projectId={projectId}
+          organizationId={organization.organization_id}
         />
       </main>
     </div>

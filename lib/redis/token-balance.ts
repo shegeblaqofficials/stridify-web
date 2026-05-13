@@ -141,32 +141,48 @@ export async function debitBalance(
 // ── Booking ───────────────────────────────────────────────────────────
 
 /**
- * Reserve BOOK_AMOUNT tokens before starting an LLM call.
+ * Reserve tokens before starting an LLM call.
+ *
+ * Books min(currentBalance, BOOK_AMOUNT) — if balance is low, books only what's available.
+ * Only rejects if balance is 0 or negative (cannot proceed at all).
  *
  * Atomically:
- *   - Decrements `org:balance:{orgId}` by BOOK_AMOUNT
- *   - Sets `org:balance:booked:{orgId}:{sessionId}` += BOOK_AMOUNT
+ *   - Decrements `org:balance:{orgId}` by the amount to book
+ *   - Sets `org:balance:booked:{orgId}:{sessionId}` += amount booked
  *     (session-scoped key with TTL — cannot clash with other sessions)
  *
  * Returns the new balance and the running booked total for this session.
+ *
+ * Throws: Error if balance <= 0 (no tokens available to book)
  */
 export async function bookTokens(
   orgId: string,
   sessionId: string,
 ): Promise<{ balance: number; totalBooked: number }> {
+  // Check current balance first — reject only if 0 or negative
+  const currentBalance = await getBalance(orgId);
+  if (currentBalance <= 0) {
+    throw new Error(
+      `No tokens available for booking. Current balance: ${currentBalance}`,
+    );
+  }
+
+  // Book whatever is available (up to BOOK_AMOUNT)
+  const amountToBook = Math.min(currentBalance, BOOK_AMOUNT);
+
   const bookedKey = BOOKED_KEY(orgId, sessionId);
 
   // Atomically deduct from balance, increment session booking counter,
   // and (re)set the TTL — all in a single round-trip.
   const [balance, totalBooked] = (await redis
     .pipeline()
-    .decrby(BALANCE_KEY(orgId), BOOK_AMOUNT)
-    .incrby(bookedKey, BOOK_AMOUNT)
+    .decrby(BALANCE_KEY(orgId), amountToBook)
+    .incrby(bookedKey, amountToBook)
     .expire(bookedKey, BOOKED_KEY_TTL_SECONDS)
     .exec()) as [number, number, number];
 
   console.log(
-    `[token-balance] booked ${BOOK_AMOUNT} for org=${orgId} session=${sessionId} — balance=${balance} sessionBooked=${totalBooked}`,
+    `[token-balance] booked ${amountToBook} (of ${BOOK_AMOUNT} requested) for org=${orgId} session=${sessionId} — balance=${balance} sessionBooked=${totalBooked}`,
   );
   return { balance, totalBooked };
 }

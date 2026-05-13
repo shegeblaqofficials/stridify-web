@@ -51,13 +51,31 @@ export async function POST(req: NextRequest) {
   }
 
   // Reserve tokens atomically before the agent starts.
-  // bookTokens() does a Redis DECRBY so no concurrent session can
-  // read the same balance and double-spend.
+  // bookTokens() books min(currentBalance, BOOK_AMOUNT) — it only rejects if balance is 0.
   // sessionId is unique per request — prevents BOOKED_KEY clashes
   // between concurrent sessions in the same org.
   const sessionId = `${projectId}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
-  const { balance: bookedBalance, totalBooked: initialBooked } =
-    await bookTokens(organizationId, sessionId);
+  let bookedBalance: number;
+  let initialBooked: number;
+
+  try {
+    const result = await bookTokens(organizationId, sessionId);
+    bookedBalance = result.balance;
+    initialBooked = result.totalBooked;
+  } catch (error) {
+    // bookTokens throws only if balance <= 0
+    if (
+      error instanceof Error &&
+      error.message.includes("No tokens available")
+    ) {
+      console.log(
+        `[route] booking failed for org ${organizationId}: no tokens available`,
+      );
+      return Response.json({ error: "insufficient_balance" }, { status: 402 });
+    }
+    throw error;
+  }
+
   let totalBooked = initialBooked;
 
   // Load previous messages from Redis, append the new one.

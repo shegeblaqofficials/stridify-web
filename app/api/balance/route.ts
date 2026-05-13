@@ -104,8 +104,25 @@ export async function POST(req: NextRequest) {
       if (typeof sessionId !== "string" || !sessionId) {
         return Response.json({ error: "Missing sessionId" }, { status: 400 });
       }
-      const { balance, totalBooked } = await bookTokens(orgId, sessionId);
-      return Response.json({ balance, totalBooked, sessionId });
+      try {
+        const { balance, totalBooked } = await bookTokens(orgId, sessionId);
+        return Response.json({ balance, totalBooked, sessionId });
+      } catch (error) {
+        // bookTokens throws only if balance <= 0
+        if (
+          error instanceof Error &&
+          error.message.includes("No tokens available")
+        ) {
+          return Response.json(
+            {
+              error: "insufficient_balance",
+              message: error.message,
+            },
+            { status: 402 },
+          );
+        }
+        throw error;
+      }
     }
 
     // ── credit ─────────────────────────────────────────────────────
