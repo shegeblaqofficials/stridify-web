@@ -38,7 +38,7 @@ export interface PlanConfig {
 export const PLANS: Record<string, PlanConfig> = {
   Starter: {
     name: "Starter",
-    stripePriceId: null, // free — no Stripe subscription
+    stripePriceId: process.env.STRIPE_PRICE_STARTER ?? "",
     priceMonthly: 0,
     creditsPerMonth: 1_000,
     isFree: true,

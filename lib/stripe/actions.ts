@@ -137,6 +137,119 @@ export async function ensureStripeCustomer(
   }
 }
 
+/** Create a Stripe subscription directly for an organization (no checkout). */
+export async function createStripeSubscription(
+  organizationId: string,
+  customerId: string,
+  planName: string,
+): Promise<void> {
+  try {
+    const plan = PLANS[planName];
+    if (!plan) {
+      throw new Error(`Invalid plan: ${planName}`);
+    }
+
+    // If no Stripe price ID is configured, just update the database
+    if (!plan.stripePriceId) {
+      console.log(
+        "[stripe] no price ID configured for plan %s, updating org %s in DB only",
+        planName,
+        organizationId,
+      );
+
+      const supabase = createAdminClient();
+      const { error } = await supabase
+        .from("organizations")
+        .update({
+          is_subscribed: true,
+          is_free_plan: plan.isFree,
+          plan: planName,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("organization_id", organizationId);
+
+      if (error) {
+        console.error(
+          "[stripe] failed to update org %s with plan %s: %s",
+          organizationId,
+          planName,
+          error.message,
+        );
+        throw new Error(`Failed to update org: ${error.message}`);
+      }
+
+      // Set balance to the plan's monthly allotment
+      await setBalance(organizationId, plan.creditsPerMonth);
+      console.log(
+        "[stripe] org %s set to plan %s with balance %d",
+        organizationId,
+        planName,
+        plan.creditsPerMonth,
+      );
+      return;
+    }
+
+    // Create Stripe subscription (works for both free and paid plans with price IDs)
+    console.log(
+      "[stripe] creating subscription for org %s customer %s plan %s",
+      organizationId,
+      customerId,
+      planName,
+    );
+
+    const subscription = await stripe.subscriptions.create({
+      customer: customerId,
+      items: [{ price: plan.stripePriceId }],
+      metadata: {
+        organization_id: organizationId,
+        plan_name: planName,
+      },
+    });
+
+    console.log("[stripe] subscription created: %s", subscription.id);
+
+    // Update organization with subscription details
+    const supabase = createAdminClient();
+    const { error } = await supabase
+      .from("organizations")
+      .update({
+        stripe_subscription_id: subscription.id,
+        subscription_status: subscription.status,
+        is_subscribed: true,
+        is_free_plan: plan.isFree,
+        plan: planName,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("organization_id", organizationId);
+
+    if (error) {
+      console.error(
+        "[stripe] failed to update org %s with subscription %s: %s",
+        organizationId,
+        subscription.id,
+        error.message,
+      );
+      throw new Error(`Failed to persist subscription: ${error.message}`);
+    }
+
+    // Set balance to the plan's monthly allotment
+    await setBalance(organizationId, plan.creditsPerMonth);
+    console.log(
+      "[stripe] org %s subscribed to %s with balance %d",
+      organizationId,
+      planName,
+      plan.creditsPerMonth,
+    );
+  } catch (err) {
+    console.error(
+      "[stripe] createStripeSubscription failed for org %s:",
+      organizationId,
+      err instanceof Error ? err.message : String(err),
+    );
+    throw err;
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /*  Checkout Sessions                                                  */
 /* ------------------------------------------------------------------ */

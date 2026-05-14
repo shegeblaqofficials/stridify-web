@@ -38,7 +38,7 @@ const plans: Plan[] = [
     features: [
       { label: "1,000 credits / month", included: true },
       { label: "Access to standard voice models", included: true },
-      { label: "Custom voice training", included: false },
+      { label: "Cloud deployment included", included: false },
       { label: "Priority platform access", included: false },
     ],
     cta: "Start for free",
@@ -108,27 +108,37 @@ const faqs: FaqItem[] = [
   {
     question: "What is vibe coding?",
     answer:
-      "Vibe coding is a developer-centric approach to building AI agents using intuitive prompting and real-time feedback loops. It focuses on the 'feel' and 'personality' of the interaction rather than just rigid logic, allowing for more natural human-AI synergy.",
+      "Vibe coding is a new way to build software by describing what you want in natural language instead of writing code. On Stridify, you write a prompt, and our platform generates a fully working voice agent with everything you need: conversation logic, AI models, and a live interface you can test immediately.",
   },
   {
-    question: "Can I export my voice agents?",
+    question: "What can I build with Stridify?",
     answer:
-      "Yes, all agents built on Stridify can be exported as a zip file containing the agent code and clear instructions for deployment and integration. Pro users also get access to raw model weights for custom-trained voices.",
+      "Anything that involves voice and AI. Customer support agents, booking assistants, language tutors, sales bots, phone receptionists, interactive guides if it talks, Stridify can build it. Your agent can live on a website, answer phone calls, run as an API backend, or work inside a mobile app.",
   },
   {
-    question: "How does pricing work for high-volume apps?",
+    question: "Do I need to know how to code?",
     answer:
-      "For applications scaling beyond the Pro tier, we offer usage-based billing at wholesale rates. Our Enterprise plan includes volume tiers that lower your cost-per-prompt as your traffic increases. Contact our sales team for a custom quote.",
+      "Not at all. Stridify is built for anyone with an idea. You describe what your voice agent should do in plain English, and the platform handles everything else, from setting up AI models to generating the UI and deploying to the cloud.",
   },
   {
-    question: "Is there a discount for open-source projects?",
+    question: "How do I deploy my voice agent?",
     answer:
-      "Absolutely. We believe in the power of the open community. Verified open-source contributors and non-profits can apply for a 50% discount on the Pro plan or free Enterprise credits.",
+      "Once you’re happy with your agent, hit Deploy. Stridify hosts it on our cloud and gives you a live URL, an embeddable widget, a phone number, or an API endpoint depending on how you want to use it. The whole process takes minutes.",
+  },
+  {
+    question: "Can I use my agent on a phone line?",
+    answer:
+      "Yes. Stridify supports telephony out of the box. You can connect your voice agent to a phone number so customers can call in and talk to it directly with no extra setup required.",
+  },
+  {
+    question: "How does pricing work for high volume apps?",
+    answer:
+      "For applications scaling beyond the Pro tier, we offer usage-based billing at wholesale rates. Our Enterprise plan includes volume tiers that lower your cost per interaction as your traffic increases. Contact our sales team for a custom quote.",
   },
   {
     question: "Can I switch plans at any time?",
     answer:
-      "Yes — all plans are flexible. You can upgrade, downgrade, or cancel at any time. Changes take effect immediately and billing is prorated automatically.",
+      "Yes, all plans are flexible and you can upgrade, downgrade, or cancel at any time. Changes take effect immediately and billing is prorated automatically.",
   },
 ];
 
@@ -160,7 +170,6 @@ const featureGroups: FeatureGroup[] = [
         values: [true, true, true, true],
       },
       { label: "Custom voice models", values: [false, true, true, true] },
-      { label: "Custom voice training", values: [false, true, true, true] },
       { label: "Multilingual support", values: [false, true, true, true] },
     ],
   },

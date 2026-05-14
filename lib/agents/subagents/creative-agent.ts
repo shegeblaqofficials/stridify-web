@@ -6,6 +6,7 @@ import {
   createWriteFileTool,
   createListFilesTool,
 } from "../tools";
+import { openai } from "@ai-sdk/openai";
 
 const CREATIVE_INSTRUCTIONS = `You are an elite frontend engineer and UI designer. You specialize in building stunning, modern, production-quality web pages using Next.js App Router, React, and Tailwind CSS.
 Your workflow:
@@ -30,7 +31,8 @@ Include file paths and a brief description of the design decisions made.`;
 
 export function createCreativeAgent(sandbox: Sandbox) {
   return new ToolLoopAgent({
-    model: anthropic("claude-opus-4-6"),
+    model: openai("openai-gpt-5.4"),
+    // model: anthropic("claude-opus-4-6"),
     // model: anthropic("claude-haiku-4-5"),
     instructions: CREATIVE_INSTRUCTIONS,
     tools: {

@@ -140,14 +140,14 @@ export async function POST(req: NextRequest) {
 
     // ── debit ──────────────────────────────────────────────────────
     case "debit": {
-      const amount = Number(body.amount);
-      if (!Number.isFinite(amount) || amount <= 0) {
+      const tokensUsed = Number(body.tokensUsed);
+      if (!Number.isFinite(tokensUsed) || tokensUsed <= 0) {
         return Response.json(
-          { error: "amount must be a positive number" },
+          { error: "tokensUsed must be a positive number" },
           { status: 400 },
         );
       }
-      const balance = await debitBalance(orgId, amount);
+      const balance = await debitBalance(orgId, tokensUsed);
       return Response.json({ balance });
     }
 

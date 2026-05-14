@@ -3,7 +3,10 @@
 import type { Account } from "@/model/account/account";
 import { createClient } from "../supabase/server";
 import { Organization } from "@/model/account/organization";
-import { ensureStripeCustomer } from "@/lib/stripe/actions";
+import {
+  ensureStripeCustomer,
+  createStripeSubscription,
+} from "@/lib/stripe/actions";
 import { onboardNewUser } from "@/lib/email/welcome";
 
 export async function upsertAccount(): Promise<Account | null> {
@@ -70,17 +73,28 @@ export async function upsertAccount(): Promise<Account | null> {
     role: "admin",
   });
 
-  // Create Stripe customer for the new organization (fire-and-forget, dedup-safe)
-  await ensureStripeCustomer(
-    company.organization_id,
-    user.email!,
-    fullName || undefined,
-  ).catch((err) => {
-    console.error(
-      "[account] Failed to create Stripe customer for new org:",
-      err instanceof Error ? err.message : String(err),
-    );
-  });
+  // Create Stripe customer and subscription for the new organization (fire-and-forget, dedup-safe)
+  await (async () => {
+    try {
+      const customerId = await ensureStripeCustomer(
+        company.organization_id,
+        user.email!,
+        fullName || undefined,
+      );
+
+      // Automatically subscribe new organizations to Starter plan
+      await createStripeSubscription(
+        company.organization_id,
+        customerId,
+        "Starter",
+      );
+    } catch (err) {
+      console.error(
+        "[account] Failed to create Stripe customer/subscription for new org:",
+        err instanceof Error ? err.message : String(err),
+      );
+    }
+  })();
 
   // Add to broadcast audience and send welcome email (fire-and-forget)
   await onboardNewUser(

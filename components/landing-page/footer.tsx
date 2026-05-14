@@ -44,7 +44,7 @@ export function Footer() {
             </Link>
             <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
               The vibe coding platform for voice AI. Write a prompt, get a
-              production-ready voice agent.
+              production ready voice agent.
             </p>
           </div>
 

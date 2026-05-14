@@ -157,11 +157,9 @@ function buildSkillsPrompt(skills: SkillMetadata[]): string {
     .join("\n");
 
   return `## Skills
-
 Use the \`loadSkill\` tool to load a skill when the user's request matches a skill description.
 The tool returns the skill's instructions and a \`skillDirectory\` path — use it to construct full paths
 to bundled resources (e.g. \`\${skillDirectory}/assets/template.tsx\`) that you can read with your other tools.
-
 Available skills:
 ${skillsList}`;
 }

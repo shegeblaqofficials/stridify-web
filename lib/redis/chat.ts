@@ -15,8 +15,8 @@ export async function saveChatMessages(
   projectId: string,
   messages: UIMessage[],
 ): Promise<void> {
-  // Store with 30-day TTL — active projects will keep refreshing
-  await redis.set(chatKey(projectId), messages, { ex: 60 * 60 * 24 * 30 });
+  // Store permanently — chat history is persisted forever like token balance
+  await redis.set(chatKey(projectId), messages);
 }
 
 export async function deleteChatMessages(projectId: string): Promise<void> {

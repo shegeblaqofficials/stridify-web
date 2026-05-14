@@ -34,7 +34,7 @@ const examplePrompts = [
   {
     label: "Customer Support",
     value:
-      "Build a website with an embedded voice assistant that greets visitors, answers FAQs about orders, shipping, and returns, escalates complex issues to a human, and confirms resolution before ending the call.",
+      "Build a website with a voice assistant that greets visitors, answers FAQs about orders, shipping, and returns, escalates complex issues to a human, and confirms resolution before ending the call.",
   },
   {
     label: "Restaurant Booking",
@@ -57,6 +57,47 @@ const examplePrompts = [
       "Create a real estate website with a voice assistant that helps visitors browse listings, filter by location and budget, schedule property tours, and answers questions about neighborhoods.",
   },
 ];
+
+function transformPromptForType(
+  originalPrompt: string,
+  agentType: AgentType,
+): string {
+  if (agentType === "web") return originalPrompt;
+
+  if (agentType === "widget") {
+    return originalPrompt
+      .replace(
+        /Build a (?:website|hotel website|product landing page) with (?:an? )?(?:embedded )?voice (?:assistant|concierge) that /i,
+        "Build an embeddable widget that ",
+      )
+      .replace(
+        /Create a landing page for a (\w+) with a voice assistant that /i,
+        "Build an embeddable widget for a $1 that ",
+      )
+      .replace(
+        /Create a real estate website with a voice assistant that /i,
+        "Build an embeddable widget for real estate that ",
+      );
+  }
+
+  if (agentType === "telephony") {
+    return originalPrompt
+      .replace(
+        /Build a (?:website|hotel website|product landing page) with (?:an? )?(?:embedded )?voice (?:assistant|concierge) that /i,
+        "Build a voice agent that answers the phone to ",
+      )
+      .replace(
+        /Create a landing page for a (\w+) with a voice assistant that /i,
+        "Build a voice agent that answers the phone to ",
+      )
+      .replace(
+        /Create a real estate website with a voice assistant that /i,
+        "Build a voice agent that answers the phone to ",
+      );
+  }
+
+  return originalPrompt;
+}
 
 const placeholderPhrases = [
   "Build a website with a voice assistant that books appointments...",
@@ -391,7 +432,9 @@ export function HeroSection() {
               <button
                 key={p.label}
                 type="button"
-                onClick={() => setPrompt(p.value)}
+                onClick={() =>
+                  setPrompt(transformPromptForType(p.value, agentType))
+                }
                 className="rounded-full border border-border px-3.5 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:border-foreground/30 hover:text-foreground"
               >
                 {p.label}
