@@ -35,7 +35,7 @@ const templates: Template[] = [
     icon: HiOutlineBuildingOffice2,
     description:
       "A conversational voice tour guide for a city. Provides information on landmarks, directions, and local tips to tourists.",
-    active: true,
+    active: false,
   },
   {
     id: "2b34ds9qwe",
@@ -45,7 +45,7 @@ const templates: Template[] = [
     icon: HiOutlineCpuChip,
     description:
       "An agent that answers the phone to help customers check reservations and bookings. It can handle inquiries about menu, hours, and location.",
-    active: true,
+    active: false,
   },
   {
     id: "3c56df7asd",
@@ -55,7 +55,7 @@ const templates: Template[] = [
     icon: HiOutlineBookOpen,
     description:
       "A voice AI agent that helps users practice speaking a new language through live and interactive conversation.",
-    active: true,
+    active: false,
   },
   {
     id: "4d78gh6fgh",
@@ -65,7 +65,7 @@ const templates: Template[] = [
     icon: HiOutlineShoppingBag,
     description:
       "An assistant that helps users choose the right product, provide recommendations, and guide users through the buying process.",
-    active: true,
+    active: false,
   },
 ];
 

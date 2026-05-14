@@ -54,13 +54,11 @@ function createGenerateImageTool(sandbox: Sandbox) {
 }
 
 const IMAGE_INSTRUCTIONS = `You are an expert image asset generator for websites. You create and place high-quality images that enhance web designs.
-
 Your workflow:
 1. Read existing files to understand the project structure and current design
 2. Determine what images are needed and where they should be placed
 3. Generate images with detailed, descriptive prompts
 4. Update component files to reference the new images if needed
-
 Guidelines:
 - Files are at /vercel/sandbox. The dev server runs on port 3000 and hot-reloads.
 - Write COMPLETE file contents when modifying files (not diffs or patches).
@@ -70,7 +68,6 @@ Guidelines:
 - Consider the brand and design context when generating images.
 - After generating images, update the relevant component to use them with proper Next.js Image or img tags.
 - Reference images in code as "/filename.png" (public directory is served at root).
-
 IMPORTANT: When finished, write a clear summary of what images you generated and where they were placed.`;
 
 export function createImageAgent(sandbox: Sandbox) {

@@ -44,6 +44,23 @@ export const BOOK_AMOUNT = 1000;
  */
 export const REBOOK_THRESHOLD = 0.8;
 
+/**
+ * Token deduction ratio: every N tokens used = 1 token deducted from balance.
+ * Central configuration for token consumption pricing.
+ * E.g., TOKENS_PER_DEDUCTION = 100 means 100 used tokens → 1 balance deduction.
+ */
+export const TOKENS_PER_DEDUCTION = 100;
+
+/**
+ * Convert actual tokens used to tokens deducted from balance.
+ * Uses the central TOKENS_PER_DEDUCTION ratio.
+ * E.g., 250 used tokens with ratio of 100 = 2.5 deducted (ceiling rounding).
+ */
+export function calculateDeductedTokens(usedTokens: number): number {
+  if (usedTokens <= 0) return 0;
+  return Math.ceil(usedTokens / TOKENS_PER_DEDUCTION);
+}
+
 // ── Key helpers ───────────────────────────────────────────────────────
 
 const BALANCE_KEY = (orgId: string) => `org:balance:${orgId}`;
@@ -126,16 +143,18 @@ export async function creditBalance(
 }
 
 /**
- * Subtract `amount` tokens from the balance.
+ * Deduct tokens from balance, automatically converting raw tokens to balance units.
+ * Uses the central TOKENS_PER_DEDUCTION ratio (e.g., every 100 tokens used = 1 deducted).
  * Atomic DECRBY — safe under concurrency. May go negative.
  * Callers should check the returned balance and handle < 0 accordingly.
  */
 export async function debitBalance(
   orgId: string,
-  amount: number,
+  tokensUsed: number,
 ): Promise<number> {
-  if (amount <= 0) return getBalance(orgId);
-  return redis.decrby(BALANCE_KEY(orgId), amount);
+  if (tokensUsed <= 0) return getBalance(orgId);
+  const deductedAmount = calculateDeductedTokens(tokensUsed);
+  return redis.decrby(BALANCE_KEY(orgId), deductedAmount);
 }
 
 // ── Booking ───────────────────────────────────────────────────────────
@@ -190,10 +209,11 @@ export async function bookTokens(
 /**
  * Reconcile a booking after LLM work completes.
  *
- * Compares `actualUsed` against `bookedAmount`:
- *   - actualUsed < bookedAmount → credit back the difference (agent used less)
- *   - actualUsed > bookedAmount → debit the extra   (agent ran over)
- *   - equal                    → no-op
+ * Compares actual token deduction (based on TOKENS_PER_DEDUCTION ratio)
+ * against the booked amount:
+ *   - actualDeducted < bookedAmount → credit back the difference (booked more than used)
+ *   - actualDeducted > bookedAmount → debit the extra   (used more than booked)
+ *   - equal                         → no-op
  *
  * Deletes the session-scoped booking key (releases the reservation).
  * Returns the final spendable balance.
@@ -204,7 +224,9 @@ export async function reconcileBooking(
   actualUsed: number,
   bookedAmount: number,
 ): Promise<number> {
-  const diff = bookedAmount - actualUsed; // positive → we over-booked
+  // Convert actual used tokens to deducted tokens using the central ratio
+  const actualDeducted = calculateDeductedTokens(actualUsed);
+  const diff = bookedAmount - actualDeducted; // positive → we over-booked
   const pipeline = redis.pipeline();
 
   if (diff > 0) {
@@ -222,7 +244,7 @@ export async function reconcileBooking(
   const [newBalance] = (await pipeline.exec()) as [number, number];
 
   console.log(
-    `[token-balance] reconcile org=${orgId} session=${sessionId} booked=${bookedAmount} used=${actualUsed} diff=${diff} balance=${newBalance}`,
+    `[token-balance] reconcile org=${orgId} session=${sessionId} booked=${bookedAmount} used=${actualUsed} deducted=${actualDeducted} diff=${diff} balance=${newBalance}`,
   );
 
   // Sync to Supabase at end of session (non-blocking)

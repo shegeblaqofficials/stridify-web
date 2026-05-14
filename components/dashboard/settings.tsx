@@ -355,7 +355,41 @@ export function Settings() {
                     </button>
                   ) : (
                     <>
-                      {planName !== "Team" && (
+                      {planName === "Starter" && (
+                        <button
+                          type="button"
+                          disabled={upgradeLoading}
+                          onClick={async () => {
+                            setUpgradeLoading(true);
+                            try {
+                              const res = await fetch("/api/stripe/checkout", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  type: "upgrade",
+                                  plan: "Professional",
+                                }),
+                              });
+                              const data = await res.json();
+                              if (data.url) {
+                                window.location.href = data.url;
+                              } else if (data.upgraded) {
+                                window.location.reload();
+                              }
+                            } catch (err) {
+                              console.error("Upgrade error:", err);
+                            } finally {
+                              setUpgradeLoading(false);
+                            }
+                          }}
+                          className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-all hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
+                        >
+                          {upgradeLoading
+                            ? "Upgrading…"
+                            : "Upgrade to Professional — $29/mo"}
+                        </button>
+                      )}
+                      {planName === "Professional" && (
                         <button
                           type="button"
                           disabled={upgradeLoading}
@@ -415,8 +449,8 @@ export function Settings() {
                 </div>
               </div>
 
-              {/* Buy Credits / Payment — only for subscribed orgs */}
-              {organization?.is_subscribed && (
+              {/* Buy Credits / Payment — only for paid plan subscribers */}
+              {organization?.is_subscribed && !isFree && (
                 <div className="flex flex-col justify-between rounded-xl border border-border bg-surface p-6">
                   <div>
                     <span className="mb-4 block text-[10px] font-bold uppercase tracking-widest text-muted-foreground">

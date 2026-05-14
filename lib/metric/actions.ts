@@ -207,6 +207,12 @@ export async function deductOrganizationTokens(
   organizationId: string,
   tokensUsed: number,
 ): Promise<void> {
+  // Use the same conversion ratio as Redis (central configuration)
+  const { calculateDeductedTokens } = await import("@/lib/redis/token-balance");
+  const deductedAmount = calculateDeductedTokens(tokensUsed);
+
+  if (deductedAmount <= 0) return;
+
   const supabase = await createClient();
   const { data: org } = await supabase
     .from("organizations")
@@ -215,7 +221,7 @@ export async function deductOrganizationTokens(
     .single();
 
   const currentBalance = org?.token_balance ?? 0;
-  const newBalance = Math.max(0, currentBalance - tokensUsed);
+  const newBalance = Math.max(0, currentBalance - deductedAmount);
 
   await supabase
     .from("organizations")
@@ -223,6 +229,6 @@ export async function deductOrganizationTokens(
     .eq("organization_id", organizationId);
 
   console.log(
-    `[metric] deducted ${tokensUsed} tokens from org ${organizationId}: ${currentBalance} → ${newBalance}`,
+    `[metric] deducted ${deductedAmount} tokens (from ${tokensUsed} used) from org ${organizationId}: ${currentBalance} → ${newBalance}`,
   );
 }

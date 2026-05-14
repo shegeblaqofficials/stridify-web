@@ -22,6 +22,7 @@ export type EmbedPopupAgentClientProps = {
 
 function PopupAgentClient({ appConfig }: EmbedPopupAgentClientProps) {
   const isAnimating = useRef(false);
+  const intentionalCloseRef = useRef(false);
   const room = useMemo(() => new Room(), []);
   const [popupOpen, setPopupOpen] = useState(false);
   const [error, setError] = useState<EmbedErrorDetails | null>(null);
@@ -31,6 +32,10 @@ function PopupAgentClient({ appConfig }: EmbedPopupAgentClientProps) {
   const handleTogglePopup = () => {
     if (isAnimating.current) return;
     setError(null);
+    // Mark that we're intentionally closing if we're about to close
+    if (popupOpen) {
+      intentionalCloseRef.current = true;
+    }
     setPopupOpen((open) => !open);
   };
 
@@ -47,8 +52,13 @@ function PopupAgentClient({ appConfig }: EmbedPopupAgentClientProps) {
 
   useEffect(() => {
     const onDisconnected = () => {
+      // Only refresh connection details if this was an unexpected disconnect
+      // If the user intentionally closed the popup, don't create a new token
+      if (!intentionalCloseRef.current) {
+        refreshConnectionDetails();
+      }
+      intentionalCloseRef.current = false;
       setPopupOpen(false);
-      refreshConnectionDetails();
     };
     const onMediaDevicesError = (e: Error) => {
       setError({

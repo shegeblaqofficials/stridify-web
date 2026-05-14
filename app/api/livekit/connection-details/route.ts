@@ -21,11 +21,10 @@ const CORS_HEADERS = {
  * The project-specific persona / scope comes from the `prompt` field, which
  * is authored via the widget assistant and stored in the `prompts` table.
  */
-const GENERIC_INSTRUCTIONS = `You are an embedded AI voice assistant powered by Stridify.
-
+const GENERIC_INSTRUCTIONS = `You are an AI voice assistant.
 Follow the system prompt below for your role, tone, and scope. Keep replies
 short and natural for spoken conversation, usually 1–3 sentences. If the
-user asks something outside your scope, politely redirect them. If you don't
+user asks something outside your scope, check the knowledge base and if not there politely redirect them. If you don't
 know an answer, say so clearly instead of guessing.`;
 
 const DEFAULT_TTS = "inworld/inworld-tts-1:Ashley";

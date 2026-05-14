@@ -7,6 +7,8 @@ import {
   HiOutlineArrowTrendingUp,
   HiOutlineSignal,
   HiOutlineArrowRight,
+  HiOutlineRectangleStack,
+  HiOutlinePhone,
 } from "react-icons/hi2";
 import Link from "next/link";
 
@@ -217,32 +219,30 @@ function DeployMockup() {
 
             <div className="flex items-center gap-3.5 p-3 rounded-xl border border-border">
               <div className="size-8 rounded-lg bg-surface-elevated flex items-center justify-center">
-                <HiOutlineSignal className="size-4 text-muted-foreground" />
+                <HiOutlineRectangleStack className="size-4 text-muted-foreground" />
               </div>
               <div className="flex-1">
                 <p className="text-xs font-medium text-foreground">
-                  API Endpoint
+                  Embeddable Widget
                 </p>
                 <p className="text-[10px] text-muted-foreground font-mono">
-                  api.stridify.app/v1
+                  &lt;iframe src="..." &gt;
                 </p>
               </div>
               <div className="size-4.5 rounded-full border-2 border-border" />
             </div>
-          </div>
 
-          {/* Usage bar */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-muted-foreground">
-                Auto scaling
-              </span>
-              <span className="text-[10px] font-medium text-foreground font-mono">
-                3 / 10
-              </span>
-            </div>
-            <div className="h-1.5 w-full rounded-full bg-surface-elevated">
-              <div className="h-full w-[30%] rounded-full bg-foreground" />
+            <div className="flex items-center gap-3.5 p-3 rounded-xl border border-border">
+              <div className="size-8 rounded-lg bg-surface-elevated flex items-center justify-center">
+                <HiOutlinePhone className="size-4 text-muted-foreground" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-medium text-foreground">Telephony</p>
+                <p className="text-[10px] text-muted-foreground font-mono">
+                  +1 (555) 123-4567
+                </p>
+              </div>
+              <div className="size-4.5 rounded-full border-2 border-border" />
             </div>
           </div>
 

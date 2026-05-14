@@ -98,7 +98,7 @@ export function BetaAccess() {
           Welcome to the Stridify Beta.
         </h1>
         <p className="mb-8 max-w-xl text-center text-lg text-muted-foreground">
-          We&apos;re currently in a limited-access beta to ensure the highest
+          We&apos;re currently in a limited access beta to ensure the highest
           quality experience for our early users. We&apos;ll notify you as soon
           as your account is ready for vibe coding.
         </p>

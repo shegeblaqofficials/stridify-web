@@ -1,3 +1,5 @@
+import { HiOutlineSparkles, HiOutlinePhone } from "react-icons/hi2";
+
 const testimonials = [
   {
     quote:
@@ -5,6 +7,7 @@ const testimonials = [
     name: "Jordan Lee",
     role: "Founder",
     company: "FreshBites",
+    icon: HiOutlineSparkles,
   },
   {
     quote:
@@ -12,6 +15,7 @@ const testimonials = [
     name: "Priya Patel",
     role: "Operations Lead",
     company: "Urban Goods",
+    icon: HiOutlinePhone,
   },
 ];
 
@@ -41,7 +45,9 @@ export function TestimonialSection() {
               </p>
 
               <div className="mt-8 flex items-center gap-3">
-                <div className="h-10 w-10 shrink-0 rounded-full bg-surface-elevated" />
+                <div className="h-10 w-10 shrink-0 rounded-full bg-surface-elevated flex items-center justify-center">
+                  <t.icon className="size-5 text-foreground" />
+                </div>
                 <div>
                   <p className="text-sm font-semibold text-foreground">
                     {t.name}

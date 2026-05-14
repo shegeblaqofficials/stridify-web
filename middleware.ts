@@ -9,8 +9,6 @@ const protectedRoutes = [
   "/deployments",
   "/templates",
   "/settings",
-  "/pricing",
-  "/discover",
 ];
 
 // Routes that authenticated users should be redirected away from

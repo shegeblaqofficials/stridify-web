@@ -35,13 +35,16 @@ export async function getOrganizationBalance(
 
 /**
  * Deduct `tokensUsed` from the organisation's balance via a Redis DECRBY.
+ * Automatically converts raw tokens to deducted amount using central TOKENS_PER_DEDUCTION ratio.
  * Atomic — safe under concurrent agent sessions.
  */
 export async function deductOrganizationTokens(
   organizationId: string,
   tokensUsed: number,
 ): Promise<void> {
-  await debitBalance(organizationId, tokensUsed);
+  if (tokensUsed > 0) {
+    await debitBalance(organizationId, tokensUsed);
+  }
 }
 
 // ── Record a session metric ───────────────────────────────────────────

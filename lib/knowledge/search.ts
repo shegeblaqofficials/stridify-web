@@ -70,23 +70,36 @@ export async function searchKnowledge(
   try {
     // Get embedding for query
     const queryEmbedding = await getQueryEmbedding(query);
+    console.log(
+      `[search] Query embedding generated (${queryEmbedding.length} dims) for: "${query.substring(0, 50)}..."`,
+    );
 
     // Query using cosine similarity (<=> operator)
     const { data, error } = await supabase.rpc("knowledge_search", {
       query_embedding: queryEmbedding,
       organization_id: organizationId,
       project_id: projectId,
-      limit,
+      result_limit: limit,
     });
 
     if (error) {
-      console.error("Search RPC error:", error);
+      console.error(
+        `[search] RPC error for org=${organizationId}, project=${projectId}:`,
+        error,
+      );
       return [];
     }
 
     if (!data) {
+      console.warn(
+        `[search] No data returned for org=${organizationId}, project=${projectId}`,
+      );
       return [];
     }
+
+    console.log(
+      `[search] Found ${data.length} results for org=${organizationId}, project=${projectId}`,
+    );
 
     // Map results to SearchResult type
     return data.map((result: any) => ({
@@ -98,7 +111,10 @@ export async function searchKnowledge(
       chunk_index: result.chunk_index,
     }));
   } catch (error) {
-    console.error("Knowledge search failed:", error);
+    console.error(
+      `[search] Knowledge search failed for org=${organizationId}, project=${projectId}:`,
+      error,
+    );
     return [];
   }
 }

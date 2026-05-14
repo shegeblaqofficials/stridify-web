@@ -32,7 +32,7 @@ const plans: Plan[] = [
       { label: "1,000 credits per month", included: true },
       { label: "Access to standard voice models", included: true },
       { label: "Community support", included: true },
-      { label: "Custom voice training", included: false },
+      { label: "Cloud deployment included", included: false },
       { label: "Priority platform access", included: false },
     ],
     cta: "Start for free",
