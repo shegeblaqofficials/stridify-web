@@ -72,7 +72,7 @@ IMPORTANT: When finished, write a clear summary of what images you generated and
 
 export function createImageAgent(sandbox: Sandbox) {
   return new ToolLoopAgent({
-    model: openai("gpt-4.1-mini"),
+    model: openai("gpt-5.5"),
     instructions: IMAGE_INSTRUCTIONS,
     tools: {
       generateImage: createGenerateImageTool(sandbox),

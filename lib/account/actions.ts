@@ -8,6 +8,7 @@ import {
   createStripeSubscription,
 } from "@/lib/stripe/actions";
 import { onboardNewUser } from "@/lib/email/welcome";
+import { syncBalanceFromDb } from "../redis/token-balance";
 
 export async function upsertAccount(): Promise<Account | null> {
   const supabase = await createClient();
@@ -154,6 +155,16 @@ export async function getOrganization(
     .select("*")
     .eq("organization_id", organizationId)
     .single();
+  if (data) {
+    // Sync Supabase balance → Redis on every workspace load so Redis reflects
+    // any out-of-band changes (top-ups, renewals) that occurred since last session.
+    syncBalanceFromDb(data.organization_id).catch((err) => {
+      console.error(
+        `[account] Failed to sync balance from DB for org ${data.organization_id}:`,
+        err instanceof Error ? err.message : String(err),
+      );
+    });
+  }
   return (data as Organization) ?? null;
 }
 
