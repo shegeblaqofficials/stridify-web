@@ -260,7 +260,22 @@ export async function extendSandboxTimeout(sandbox: Sandbox): Promise<void> {
     await sandbox.extendTimeout(SANDBOX_TIMEOUT);
     sandboxDeadlines.set(sandbox.name, now + SANDBOX_TIMEOUT);
     console.log(`[sandbox] extended timeout for ${sandbox.name}`);
-  } catch (err) {
+  } catch (err: any) {
+    // Vercel enforces a hard maximum execution time per sandbox session.
+    // When an extension would exceed that cap, the API returns 400
+    // sandbox_timeout_invalid. This is expected near the end of a long session —
+    // the sandbox will stop when it hits the ceiling and the next agent request
+    // will resume it automatically. No action needed.
+    const isMaxExceeded =
+      err?.json?.error?.code === "sandbox_timeout_invalid" ||
+      (typeof err?.text === "string" &&
+        err.text.includes("sandbox_timeout_invalid"));
+    if (isMaxExceeded) {
+      console.warn(
+        `[sandbox] ${sandbox.name} has reached the maximum execution time — cannot extend further. The sandbox will stop at its ceiling and resume on next request.`,
+      );
+      return;
+    }
     console.error(`[sandbox] failed to extend timeout:`, err);
   }
 }

@@ -293,6 +293,25 @@ export async function checkAndRebook(
 // ── Supabase sync ─────────────────────────────────────────────────────
 
 /**
+ * Force-sync the balance FROM Supabase INTO Redis.
+ * Unlike seedFromDb (which uses NX and only sets on cache miss), this always
+ * overwrites the Redis key with the authoritative Supabase value.
+ * Call on workspace load so Redis reflects any out-of-band balance changes
+ * (e.g. manual top-ups, subscription renewals applied while the user was away).
+ */
+export async function syncBalanceFromDb(orgId: string): Promise<number> {
+  const supabase = createAdminClient();
+  const { data } = await supabase
+    .from("organizations")
+    .select("token_balance")
+    .eq("organization_id", orgId)
+    .single();
+  const balance = data?.token_balance ?? 0;
+  await redis.set(BALANCE_KEY(orgId), balance);
+  return balance;
+}
+
+/**
  * Write the Redis balance back to Supabase for persistence and reporting.
  * Clamps to ≥ 0 so the DB column never goes negative.
  */

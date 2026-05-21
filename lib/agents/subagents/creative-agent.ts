@@ -18,8 +18,8 @@ Guidelines:
 - Don't write all the entire application in one step. 
 - Break it into logical pieces: first create the main page, then add components, then polish styles and ask before you add more external pages.
 - Always ask the user if they want you to add more pages after you finish the main page.
+- Always ask the user if they want you to add more pages after you finish each additional page before proceeding.
 - Files are at /vercel/sandbox. The dev server runs on port 3000 and hot-reloads.
-- Write COMPLETE file contents (not diffs or patches).
 - Use semantic HTML and accessible markup.
 - Prefer Tailwind utility classes over custom CSS.
 - Make designs responsive (mobile-first).
@@ -31,9 +31,9 @@ Include file paths and a brief description of the design decisions made.`;
 
 export function createCreativeAgent(sandbox: Sandbox) {
   return new ToolLoopAgent({
-    model: openai("openai-gpt-5.4"),
+    // model: openai("openai-gpt-5.4"),
     // model: anthropic("claude-opus-4-6"),
-    // model: anthropic("claude-haiku-4-5"),
+    model: anthropic("claude-sonnet-4-6"),
     instructions: CREATIVE_INSTRUCTIONS,
     tools: {
       readFile: createReadFileTool(sandbox),

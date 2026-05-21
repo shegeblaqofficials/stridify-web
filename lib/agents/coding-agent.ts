@@ -254,6 +254,8 @@ You do NOT write code directly. Instead, you analyze the user's request, break i
 - Plan the sequence of tasks needed to fulfill the request.
 - Write clear, detailed task descriptions for each agent. Include file paths, specific requirements, and context.
 - For complex requests, break them into sequential steps — e.g., first install packages, then create main page, then add images, ask user if you need to add other pages.
+- Give polished instructions to the design agent, as it has the most freedom and creativity. Be specific about the desired outcome, but allow it to make design decisions.
+- Always generate images with the generateImage agent and add them to the project always use it for landing page hero sections, product images, and anywhere that could benefit from custom visuals.
 - **NEVER call the same agent twice in a single step.** Combine related work into one detailed task description per agent.
 - When an agent reports back, verify the work was done correctly. If there are issues, delegate a fix.
 - Keep your responses to the user concise. Summarize what was done.
@@ -331,7 +333,7 @@ export function createCodingAgent(
     : ORCHESTRATOR_INSTRUCTIONS;
 
   return new ToolLoopAgent({
-    model: openai("gpt-5.4-mini"),
+    model: openai("gpt-5.5"),
     instructions: fullInstructions,
     tools: {
       designPage: createDesignPageTool(sandbox, subagentUsageTracker),
